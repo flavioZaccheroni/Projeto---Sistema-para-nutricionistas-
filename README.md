@@ -32,6 +32,7 @@ Construir um MVP Desktop em Python para nutricionistas, preparado para evoluir p
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-dev.txt
-python -m pytest
+$env:PYTHONPATH="src"
+python -m unittest discover -s tests
 python -m nutri_app
 ```

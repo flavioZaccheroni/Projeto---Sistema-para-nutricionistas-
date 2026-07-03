@@ -9,6 +9,8 @@ class AppSettings:
     app_name: str
     organization_name: str
     database_path: Path
+    migrations_path: Path
+    stylesheet_path: Path
 
     @classmethod
     def load(cls) -> "AppSettings":
@@ -17,4 +19,6 @@ class AppSettings:
             app_name="Sistema Profissional para Nutricionistas",
             organization_name="Projeto Sistema Nutricionistas",
             database_path=root / "database" / "local" / "nutri_app.sqlite",
+            migrations_path=root / "database" / "migrations",
+            stylesheet_path=root / "src" / "nutri_app" / "ui" / "resources" / "app.qss",
         )

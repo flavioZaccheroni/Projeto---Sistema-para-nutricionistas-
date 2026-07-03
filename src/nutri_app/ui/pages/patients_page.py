@@ -41,6 +41,7 @@ class PatientsPage(Page):
         form.addRow("Observacoes clinicas", self.notes)
 
         save = QPushButton("Salvar")
+        save.setObjectName("primaryButton")
         save.clicked.connect(self._save_patient)
         clear = QPushButton("Novo")
         clear.clicked.connect(self._clear_form)

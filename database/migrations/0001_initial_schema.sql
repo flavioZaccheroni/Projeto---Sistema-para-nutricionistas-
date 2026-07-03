@@ -1,12 +1,4 @@
--- Snapshot do schema inicial. A fonte de evolucao sao os arquivos em database/migrations.
-
 PRAGMA foreign_keys = ON;
-
-CREATE TABLE IF NOT EXISTS schema_migrations (
-    version TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
 
 CREATE TABLE IF NOT EXISTS usuarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

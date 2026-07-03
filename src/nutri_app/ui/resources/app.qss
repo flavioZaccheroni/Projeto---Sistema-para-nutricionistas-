@@ -1,0 +1,82 @@
+QMainWindow {
+    background: #f7f8fa;
+}
+
+QWidget#sidebar {
+    background: #ffffff;
+    border-right: 1px solid #dfe5ea;
+}
+
+QLabel#appTitle {
+    color: #167a6b;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+QLabel#pageTitle {
+    color: #1f2933;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+QLabel#pageSubtitle {
+    color: #536471;
+    font-size: 14px;
+}
+
+QLabel#indicatorValue {
+    color: #167a6b;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+QWidget#card {
+    background: #ffffff;
+    border: 1px solid #dfe5ea;
+    border-radius: 8px;
+}
+
+QListWidget {
+    border: none;
+    background: transparent;
+    padding: 8px;
+}
+
+QListWidget::item {
+    min-height: 38px;
+    border-radius: 6px;
+    padding-left: 12px;
+}
+
+QListWidget::item:selected {
+    background: #e1f2ef;
+    color: #167a6b;
+    font-weight: 700;
+}
+
+QPushButton {
+    min-height: 32px;
+    padding: 4px 14px;
+    border-radius: 6px;
+    border: 1px solid #b8c4ce;
+    background: #ffffff;
+}
+
+QPushButton:hover {
+    background: #f0f5f4;
+}
+
+QPushButton#primaryButton {
+    background: #167a6b;
+    border-color: #167a6b;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+QLineEdit,
+QTextEdit,
+QTableWidget {
+    background: #ffffff;
+    border: 1px solid #cdd6df;
+    border-radius: 6px;
+}

@@ -17,6 +17,15 @@ A implementação inicial usa Python com PySide6, alinhada ao ambiente de desenv
 - `database`: schema SQLite inicial e área para migrations futuras.
 - `tests`: testes automatizados, começando por cálculos clínicos.
 
+## Decisões consolidadas na Fase 2
+
+- A aplicação é montada por `AppContext`, que concentra configurações e conexão com banco.
+- O banco evolui por migrations SQL versionadas em `database/migrations`.
+- O arquivo `database/schema.sql` é apenas um snapshot de referência.
+- O tema Desktop fica centralizado em `src/nutri_app/ui/resources/app.qss`.
+- A navegação lateral já reserva espaço para os módulos do roadmap, mesmo quando a tela ainda é placeholder.
+- Serviços clínicos continuam independentes de PySide6 para permitir testes unitários.
+
 ## Módulos do MVP
 
 - Dashboard.

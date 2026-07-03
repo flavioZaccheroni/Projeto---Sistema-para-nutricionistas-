@@ -2,9 +2,9 @@
 
 ## Alta prioridade
 
-- Criar estrutura base do projeto.
+- Criar estrutura base do projeto. **Concluido na Fase 2.**
 - Implementar login e perfis.
-- Modelar banco inicial.
+- Modelar banco inicial. **Concluido na Fase 2.**
 - Criar cadastro de pacientes.
 - Criar anamnese inicial.
 - Criar antropometria básica com cálculos automáticos.

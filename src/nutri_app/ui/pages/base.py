@@ -19,3 +19,8 @@ class Page(QWidget):
 
         self.layout.addWidget(title_label)
         self.layout.addWidget(subtitle_label)
+
+    def add_card(self, widget: QWidget) -> QWidget:
+        widget.setObjectName("card")
+        self.layout.addWidget(widget)
+        return widget
