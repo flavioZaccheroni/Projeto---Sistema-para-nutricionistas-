@@ -97,7 +97,15 @@ class MainWindow(QMainWindow):
                     self.current_user.id,
                 ),
             ),
-            NavigationItem("Anamnese", "Anamnese", AnamnesisPage()),
+            NavigationItem(
+                "Anamnese",
+                "Anamnese",
+                AnamnesisPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
             NavigationItem(
                 "Triagem Nutricional",
                 "Triagem Nutricional",

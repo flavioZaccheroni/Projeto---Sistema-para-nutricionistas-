@@ -6,7 +6,7 @@
 - Implementar login e perfis. **Concluido na Fase 3.**
 - Modelar banco inicial. **Concluido na Fase 2.**
 - Criar cadastro de pacientes. **Concluido na Fase 5.**
-- Criar anamnese inicial.
+- Criar anamnese inicial. **Concluido na Fase 7.**
 - Criar antropometria básica com cálculos automáticos.
 - Criar relatório clínico simples.
 
