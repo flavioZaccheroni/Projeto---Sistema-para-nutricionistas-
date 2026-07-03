@@ -21,6 +21,7 @@ from nutri_app.domain.user import AuthenticatedUser
 from nutri_app.ui.pages.anamnesis_page import AnamnesisPage
 from nutri_app.ui.pages.anthropometry_page import AnthropometryPage
 from nutri_app.ui.pages.appointments_page import AppointmentsPage
+from nutri_app.ui.pages.body_composition_page import BodyCompositionPage
 from nutri_app.ui.pages.dashboard_page import DashboardPage
 from nutri_app.ui.pages.module_placeholder_page import ModulePlaceholderPage
 from nutri_app.ui.pages.patients_page import PatientsPage
@@ -70,7 +71,11 @@ class MainWindow(QMainWindow):
 
     def _navigation_items(self) -> list[NavigationItem]:
         items = [
-            NavigationItem("Dashboard", "Dashboard", DashboardPage(self.context.connection_factory)),
+            NavigationItem(
+                "Dashboard",
+                "Dashboard",
+                DashboardPage(self.context.connection_factory),
+            ),
             NavigationItem(
                 "Usuarios",
                 "Usuarios",
@@ -120,6 +125,15 @@ class MainWindow(QMainWindow):
                 "Antropometria",
                 "Antropometria",
                 AnthropometryPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Composicao Corporal",
+                "Composicao Corporal",
+                BodyCompositionPage(
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,
