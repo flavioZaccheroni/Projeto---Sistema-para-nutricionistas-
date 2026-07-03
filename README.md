@@ -51,3 +51,4 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 3: login e permissões.
 - Fase 4: dashboard inicial.
 - Fase 5: cadastro de pacientes.
+- Fase 6: agenda.
