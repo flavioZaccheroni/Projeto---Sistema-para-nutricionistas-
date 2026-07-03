@@ -43,3 +43,10 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 
 - E-mail: `admin@nutricionistas.local`
 - Senha: `Admin@123`
+
+## Fases concluídas
+
+- Fase 1: preparação do ambiente.
+- Fase 2: arquitetura base.
+- Fase 3: login e permissões.
+- Fase 4: dashboard inicial.

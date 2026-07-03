@@ -12,7 +12,7 @@
 
 ## Média prioridade
 
-- Dashboard com indicadores.
+- Dashboard com indicadores. **Concluido na Fase 4.**
 - Agenda e consultas.
 - Triagem nutricional.
 - Exames laboratoriais.

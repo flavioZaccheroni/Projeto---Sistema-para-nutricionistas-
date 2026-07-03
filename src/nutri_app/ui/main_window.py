@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
 
     def _navigation_items(self) -> list[NavigationItem]:
         items = [
-            NavigationItem("Dashboard", "Dashboard", DashboardPage()),
+            NavigationItem("Dashboard", "Dashboard", DashboardPage(self.context.connection_factory)),
             NavigationItem(
                 "Usuarios",
                 "Usuarios",
@@ -178,3 +178,7 @@ class MainWindow(QMainWindow):
     def _change_page(self, index: int) -> None:
         if index >= 0:
             self.pages.setCurrentIndex(index)
+            page = self.pages.currentWidget()
+            refresh = getattr(page, "refresh", None)
+            if callable(refresh):
+                refresh()
