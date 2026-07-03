@@ -164,3 +164,9 @@ CREATE TABLE IF NOT EXISTS logs_auditoria (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 );
+
+-- Dados iniciais aplicados pela migration 0002_seed_permissions.sql:
+-- Administrador: acesso completo.
+-- Nutricionista: acesso clinico sem exclusao.
+-- Recepcionista: acesso operacional.
+-- Auditor: acesso de leitura/exportacao.

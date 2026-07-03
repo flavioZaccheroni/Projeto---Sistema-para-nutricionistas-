@@ -36,3 +36,8 @@ $env:PYTHONPATH="src"
 python -m unittest discover -s tests
 python -m nutri_app
 ```
+
+## Primeiro acesso
+
+- E-mail: `admin@nutricionistas.local`
+- Senha: `Admin@123`

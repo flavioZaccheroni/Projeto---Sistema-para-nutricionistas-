@@ -16,24 +16,28 @@ from PySide6.QtWidgets import (
 )
 
 from nutri_app.app.context import AppContext
+from nutri_app.domain.user import AuthenticatedUser
 from nutri_app.ui.pages.anamnesis_page import AnamnesisPage
 from nutri_app.ui.pages.anthropometry_page import AnthropometryPage
 from nutri_app.ui.pages.dashboard_page import DashboardPage
 from nutri_app.ui.pages.module_placeholder_page import ModulePlaceholderPage
 from nutri_app.ui.pages.patients_page import PatientsPage
 from nutri_app.ui.pages.reports_page import ReportsPage
+from nutri_app.ui.pages.users_page import UsersPage
 
 
 @dataclass(frozen=True)
 class NavigationItem:
     title: str
+    module: str
     page: QWidget
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, context: AppContext) -> None:
+    def __init__(self, context: AppContext, current_user: AuthenticatedUser) -> None:
         super().__init__()
         self.context = context
+        self.current_user = current_user
         self.setWindowTitle(context.settings.app_name)
         self.resize(1200, 760)
 
@@ -60,10 +64,20 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(root)
 
     def _navigation_items(self) -> list[NavigationItem]:
-        return [
-            NavigationItem("Dashboard", DashboardPage()),
-            NavigationItem("Pacientes", PatientsPage(self.context.connection_factory)),
+        items = [
+            NavigationItem("Dashboard", "Dashboard", DashboardPage()),
             NavigationItem(
+                "Usuarios",
+                "Usuarios",
+                UsersPage(
+                    self.context.user_repository,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem("Pacientes", "Pacientes", PatientsPage(self.context.connection_factory)),
+            NavigationItem(
+                "Agenda",
                 "Agenda",
                 ModulePlaceholderPage(
                     "Agenda e Consultas",
@@ -72,8 +86,9 @@ class MainWindow(QMainWindow):
                     ["Agenda diaria", "Consulta inicial", "Retornos", "Pendencias"],
                 ),
             ),
-            NavigationItem("Anamnese", AnamnesisPage()),
+            NavigationItem("Anamnese", "Anamnese", AnamnesisPage()),
             NavigationItem(
+                "Triagem Nutricional",
                 "Triagem Nutricional",
                 ModulePlaceholderPage(
                     "Triagem Nutricional",
@@ -82,8 +97,9 @@ class MainWindow(QMainWindow):
                     ["NRS-2002", "MUST", "MST", "MNA", "STRONGkids", "MIS"],
                 ),
             ),
-            NavigationItem("Antropometria", AnthropometryPage()),
+            NavigationItem("Antropometria", "Antropometria", AnthropometryPage()),
             NavigationItem(
+                "Exames",
                 "Exames",
                 ModulePlaceholderPage(
                     "Exames Laboratoriais",
@@ -94,6 +110,7 @@ class MainWindow(QMainWindow):
             ),
             NavigationItem(
                 "Diagnostico",
+                "Diagnostico",
                 ModulePlaceholderPage(
                     "Diagnostico Nutricional",
                     "Classificacoes baseadas em protocolos clinicos.",
@@ -103,6 +120,7 @@ class MainWindow(QMainWindow):
             ),
             NavigationItem(
                 "Plano Alimentar",
+                "Plano Alimentar",
                 ModulePlaceholderPage(
                     "Planejamento Alimentar",
                     "Cardapio, substituicoes, receitas e lista de compras.",
@@ -110,8 +128,9 @@ class MainWindow(QMainWindow):
                     ["Distribuicao por refeicoes", "Plano semanal", "Lista de compras"],
                 ),
             ),
-            NavigationItem("Relatorios", ReportsPage()),
+            NavigationItem("Relatorios", "Relatorios", ReportsPage()),
             NavigationItem(
+                "Financeiro",
                 "Financeiro",
                 ModulePlaceholderPage(
                     "Financeiro",
@@ -122,6 +141,7 @@ class MainWindow(QMainWindow):
             ),
             NavigationItem(
                 "Configuracoes",
+                "Configuracoes",
                 ModulePlaceholderPage(
                     "Configuracoes",
                     "Parametros gerais, backup, seguranca e identidade da clinica.",
@@ -129,6 +149,11 @@ class MainWindow(QMainWindow):
                     ["Backup", "Permissoes", "Identidade dos relatorios"],
                 ),
             ),
+        ]
+        return [
+            item
+            for item in items
+            if self.context.user_repository.can_view_module(self.current_user.role, item.module)
         ]
 
     def _sidebar(self) -> QWidget:
@@ -139,10 +164,14 @@ class MainWindow(QMainWindow):
         title = QLabel("Nutri Clinic Pro")
         title.setObjectName("appTitle")
         title.setMargin(16)
+        user = QLabel(f"{self.current_user.name}\n{self.current_user.role.value}")
+        user.setObjectName("currentUser")
+        user.setMargin(16)
 
         layout = QVBoxLayout(sidebar)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(title)
+        layout.addWidget(user)
         layout.addWidget(self.menu)
         return sidebar
 

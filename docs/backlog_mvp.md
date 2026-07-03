@@ -3,7 +3,7 @@
 ## Alta prioridade
 
 - Criar estrutura base do projeto. **Concluido na Fase 2.**
-- Implementar login e perfis.
+- Implementar login e perfis. **Concluido na Fase 3.**
 - Modelar banco inicial. **Concluido na Fase 2.**
 - Criar cadastro de pacientes.
 - Criar anamnese inicial.

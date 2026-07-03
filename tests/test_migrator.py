@@ -23,8 +23,14 @@ class DatabaseMigratorTest(unittest.TestCase):
             first_run = migrator.migrate()
             second_run = migrator.migrate()
 
+            with factory.connect() as connection:
+                row = connection.execute(
+                    "SELECT COUNT(*) AS total FROM schema_migrations"
+                ).fetchone()
+
         self.assertEqual(len(first_run), 1)
         self.assertEqual(len(second_run), 0)
+        self.assertEqual(row["total"], 1)
 
 
 if __name__ == "__main__":

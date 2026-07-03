@@ -24,6 +24,13 @@ QLabel#pageSubtitle {
     font-size: 14px;
 }
 
+QLabel#currentUser {
+    color: #536471;
+    font-size: 12px;
+    border-top: 1px solid #edf1f4;
+    border-bottom: 1px solid #edf1f4;
+}
+
 QLabel#indicatorValue {
     color: #167a6b;
     font-size: 28px;

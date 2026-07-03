@@ -1,0 +1,45 @@
+INSERT OR IGNORE INTO perfis_permissao (
+    perfil, modulo, pode_visualizar, pode_criar, pode_editar, pode_excluir, pode_exportar
+)
+VALUES
+    ('Administrador', 'Dashboard', 1, 1, 1, 1, 1),
+    ('Administrador', 'Usuarios', 1, 1, 1, 1, 1),
+    ('Administrador', 'Pacientes', 1, 1, 1, 1, 1),
+    ('Administrador', 'Agenda', 1, 1, 1, 1, 1),
+    ('Administrador', 'Anamnese', 1, 1, 1, 1, 1),
+    ('Administrador', 'Triagem Nutricional', 1, 1, 1, 1, 1),
+    ('Administrador', 'Antropometria', 1, 1, 1, 1, 1),
+    ('Administrador', 'Exames', 1, 1, 1, 1, 1),
+    ('Administrador', 'Diagnostico', 1, 1, 1, 1, 1),
+    ('Administrador', 'Plano Alimentar', 1, 1, 1, 1, 1),
+    ('Administrador', 'Relatorios', 1, 1, 1, 1, 1),
+    ('Administrador', 'Financeiro', 1, 1, 1, 1, 1),
+    ('Administrador', 'Configuracoes', 1, 1, 1, 1, 1),
+
+    ('Nutricionista', 'Dashboard', 1, 0, 0, 0, 0),
+    ('Nutricionista', 'Pacientes', 1, 1, 1, 0, 1),
+    ('Nutricionista', 'Agenda', 1, 1, 1, 0, 0),
+    ('Nutricionista', 'Anamnese', 1, 1, 1, 0, 1),
+    ('Nutricionista', 'Triagem Nutricional', 1, 1, 1, 0, 1),
+    ('Nutricionista', 'Antropometria', 1, 1, 1, 0, 1),
+    ('Nutricionista', 'Exames', 1, 1, 1, 0, 1),
+    ('Nutricionista', 'Diagnostico', 1, 1, 1, 0, 1),
+    ('Nutricionista', 'Plano Alimentar', 1, 1, 1, 0, 1),
+    ('Nutricionista', 'Relatorios', 1, 1, 1, 0, 1),
+
+    ('Recepcionista', 'Dashboard', 1, 0, 0, 0, 0),
+    ('Recepcionista', 'Pacientes', 1, 1, 1, 0, 0),
+    ('Recepcionista', 'Agenda', 1, 1, 1, 0, 0),
+    ('Recepcionista', 'Financeiro', 1, 1, 1, 0, 0),
+
+    ('Auditor', 'Dashboard', 1, 0, 0, 0, 0),
+    ('Auditor', 'Pacientes', 1, 0, 0, 0, 1),
+    ('Auditor', 'Agenda', 1, 0, 0, 0, 1),
+    ('Auditor', 'Anamnese', 1, 0, 0, 0, 1),
+    ('Auditor', 'Triagem Nutricional', 1, 0, 0, 0, 1),
+    ('Auditor', 'Antropometria', 1, 0, 0, 0, 1),
+    ('Auditor', 'Exames', 1, 0, 0, 0, 1),
+    ('Auditor', 'Diagnostico', 1, 0, 0, 0, 1),
+    ('Auditor', 'Plano Alimentar', 1, 0, 0, 0, 1),
+    ('Auditor', 'Relatorios', 1, 0, 0, 0, 1),
+    ('Auditor', 'Financeiro', 1, 0, 0, 0, 1);
