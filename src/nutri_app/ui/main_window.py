@@ -75,7 +75,15 @@ class MainWindow(QMainWindow):
                     self.current_user.id,
                 ),
             ),
-            NavigationItem("Pacientes", "Pacientes", PatientsPage(self.context.connection_factory)),
+            NavigationItem(
+                "Pacientes",
+                "Pacientes",
+                PatientsPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
             NavigationItem(
                 "Agenda",
                 "Agenda",
