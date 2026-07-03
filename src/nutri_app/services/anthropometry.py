@@ -42,3 +42,13 @@ class AnthropometryService:
 
     def has_high_nutritional_risk_by_weight_loss(self, percentage: float) -> bool:
         return percentage > 10
+
+    def calculate_waist_hip_ratio(self, waist_cm: float, hip_cm: float) -> float:
+        if waist_cm <= 0 or hip_cm <= 0:
+            raise ValueError("Cintura e quadril devem ser maiores que zero.")
+        return waist_cm / hip_cm
+
+    def calculate_waist_height_ratio(self, waist_cm: float, height_meters: float) -> float:
+        if waist_cm <= 0 or height_meters <= 0:
+            raise ValueError("Cintura e altura devem ser maiores que zero.")
+        return waist_cm / (height_meters * 100)

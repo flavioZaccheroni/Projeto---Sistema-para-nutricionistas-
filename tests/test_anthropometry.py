@@ -27,6 +27,10 @@ class AnthropometryServiceTest(unittest.TestCase):
         self.assertAlmostEqual(loss, 12.5, places=2)
         self.assertTrue(self.service.has_high_nutritional_risk_by_weight_loss(loss))
 
+    def test_calcula_rcq_e_rcest(self) -> None:
+        self.assertAlmostEqual(self.service.calculate_waist_hip_ratio(80, 100), 0.8)
+        self.assertAlmostEqual(self.service.calculate_waist_height_ratio(80, 1.75), 0.46, places=2)
+
 
 if __name__ == "__main__":
     unittest.main()

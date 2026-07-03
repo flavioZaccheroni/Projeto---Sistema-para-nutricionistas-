@@ -116,7 +116,15 @@ class MainWindow(QMainWindow):
                     self.current_user.id,
                 ),
             ),
-            NavigationItem("Antropometria", "Antropometria", AnthropometryPage()),
+            NavigationItem(
+                "Antropometria",
+                "Antropometria",
+                AnthropometryPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
             NavigationItem(
                 "Exames",
                 "Exames",

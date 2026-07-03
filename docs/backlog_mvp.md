@@ -7,7 +7,7 @@
 - Modelar banco inicial. **Concluido na Fase 2.**
 - Criar cadastro de pacientes. **Concluido na Fase 5.**
 - Criar anamnese inicial. **Concluido na Fase 7.**
-- Criar antropometria básica com cálculos automáticos.
+- Criar antropometria básica com cálculos automáticos. **Concluido na Fase 9.**
 - Criar relatório clínico simples.
 
 ## Média prioridade
