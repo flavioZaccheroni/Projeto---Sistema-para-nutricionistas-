@@ -1,4 +1,4 @@
-# Sistema Profissional para Nutricionistas
+# Nutri Clinic Pro
 
 Projeto iniciado a partir do `Manual_Engenharia_Software_Sistema_Nutricionistas_V1.docx`.
 
@@ -52,3 +52,8 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 4: dashboard inicial.
 - Fase 5: cadastro de pacientes.
 - Fase 6: agenda.
+
+## Identidade do app
+
+- Nome: `Nutri Clinic Pro`
+- Icone: `icone.png`

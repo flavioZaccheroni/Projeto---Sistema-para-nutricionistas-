@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -40,6 +41,8 @@ class MainWindow(QMainWindow):
         self.context = context
         self.current_user = current_user
         self.setWindowTitle(context.settings.app_name)
+        if context.settings.icon_path.exists():
+            self.setWindowIcon(QIcon(str(context.settings.icon_path)))
         self.resize(1200, 760)
 
         self.menu = QListWidget()

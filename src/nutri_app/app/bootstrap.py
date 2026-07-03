@@ -9,6 +9,7 @@ from nutri_app.ui.resources.styles import load_stylesheet
 
 def run() -> int:
     try:
+        from PySide6.QtGui import QIcon
         from PySide6.QtWidgets import QApplication
 
         from nutri_app.ui.dialogs.login_dialog import LoginDialog
@@ -27,6 +28,8 @@ def run() -> int:
     app.setApplicationName(settings.app_name)
     app.setOrganizationName(settings.organization_name)
     app.setStyleSheet(load_stylesheet(settings.stylesheet_path))
+    if settings.icon_path.exists():
+        app.setWindowIcon(QIcon(str(settings.icon_path)))
 
     login_dialog = LoginDialog(context.auth_service)
     if login_dialog.exec() != LoginDialog.DialogCode.Accepted or login_dialog.user is None:

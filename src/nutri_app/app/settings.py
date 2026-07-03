@@ -11,14 +11,16 @@ class AppSettings:
     database_path: Path
     migrations_path: Path
     stylesheet_path: Path
+    icon_path: Path
 
     @classmethod
     def load(cls) -> "AppSettings":
         root = Path(__file__).resolve().parents[3]
         return cls(
-            app_name="Sistema Profissional para Nutricionistas",
-            organization_name="Projeto Sistema Nutricionistas",
+            app_name="Nutri Clinic Pro",
+            organization_name="Nutri Clinic Pro",
             database_path=root / "database" / "local" / "nutri_app.sqlite",
             migrations_path=root / "database" / "migrations",
             stylesheet_path=root / "src" / "nutri_app" / "ui" / "resources" / "app.qss",
+            icon_path=root / "icone.png",
         )
