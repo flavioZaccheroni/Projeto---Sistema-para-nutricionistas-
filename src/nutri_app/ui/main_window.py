@@ -25,6 +25,7 @@ from nutri_app.ui.pages.dashboard_page import DashboardPage
 from nutri_app.ui.pages.module_placeholder_page import ModulePlaceholderPage
 from nutri_app.ui.pages.patients_page import PatientsPage
 from nutri_app.ui.pages.reports_page import ReportsPage
+from nutri_app.ui.pages.screening_page import ScreeningPage
 from nutri_app.ui.pages.users_page import UsersPage
 
 
@@ -109,11 +110,10 @@ class MainWindow(QMainWindow):
             NavigationItem(
                 "Triagem Nutricional",
                 "Triagem Nutricional",
-                ModulePlaceholderPage(
-                    "Triagem Nutricional",
-                    "Protocolos e classificacao automatica de risco nutricional.",
-                    "Fase 8",
-                    ["NRS-2002", "MUST", "MST", "MNA", "STRONGkids", "MIS"],
+                ScreeningPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
                 ),
             ),
             NavigationItem("Antropometria", "Antropometria", AnthropometryPage()),

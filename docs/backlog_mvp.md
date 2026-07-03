@@ -14,7 +14,7 @@
 
 - Dashboard com indicadores. **Concluido na Fase 4.**
 - Agenda e consultas. **Concluido na Fase 6.**
-- Triagem nutricional.
+- Triagem nutricional. **Concluido na Fase 8.**
 - Exames laboratoriais.
 - Evolução gráfica.
 

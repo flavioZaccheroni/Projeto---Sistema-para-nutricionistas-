@@ -53,6 +53,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 5: cadastro de pacientes.
 - Fase 6: agenda.
 - Fase 7: anamnese.
+- Fase 8: triagem nutricional.
 
 ## Identidade do app
 
