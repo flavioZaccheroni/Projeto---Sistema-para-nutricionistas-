@@ -37,6 +37,8 @@ python -m unittest discover -s tests
 python -m nutri_app
 ```
 
+No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
+
 ## Primeiro acesso
 
 - E-mail: `admin@nutricionistas.local`
