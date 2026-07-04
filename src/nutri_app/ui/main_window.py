@@ -30,6 +30,7 @@ from nutri_app.ui.pages.meal_plan_page import MealPlanPage
 from nutri_app.ui.pages.module_placeholder_page import ModulePlaceholderPage
 from nutri_app.ui.pages.nutrition_diagnosis_page import NutritionDiagnosisPage
 from nutri_app.ui.pages.patients_page import PatientsPage
+from nutri_app.ui.pages.recipes_page import RecipesPage
 from nutri_app.ui.pages.reports_page import ReportsPage
 from nutri_app.ui.pages.screening_page import ScreeningPage
 from nutri_app.ui.pages.users_page import UsersPage
@@ -184,6 +185,15 @@ class MainWindow(QMainWindow):
                 "Banco de Alimentos",
                 "Banco de Alimentos",
                 FoodDatabasePage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Receitas",
+                "Receitas",
+                RecipesPage(
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,
