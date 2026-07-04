@@ -11,6 +11,7 @@
 - Criar composicao corporal com calculos automaticos. **Concluido na Fase 10.**
 - Criar gasto energetico com TMB, GET e macros. **Concluido na Fase 11.**
 - Criar exames laboratoriais com itens e alertas. **Concluido na Fase 12.**
+- Criar diagnostico nutricional por protocolos. **Concluido na Fase 13.**
 - Criar relatório clínico simples.
 
 ## Média prioridade
