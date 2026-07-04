@@ -10,6 +10,7 @@
 - Criar antropometria básica com cálculos automáticos. **Concluido na Fase 9.**
 - Criar composicao corporal com calculos automaticos. **Concluido na Fase 10.**
 - Criar gasto energetico com TMB, GET e macros. **Concluido na Fase 11.**
+- Criar exames laboratoriais com itens e alertas. **Concluido na Fase 12.**
 - Criar relatório clínico simples.
 
 ## Média prioridade
@@ -17,7 +18,6 @@
 - Dashboard com indicadores. **Concluido na Fase 4.**
 - Agenda e consultas. **Concluido na Fase 6.**
 - Triagem nutricional. **Concluido na Fase 8.**
-- Exames laboratoriais.
 - Evolução gráfica.
 
 ## Baixa prioridade

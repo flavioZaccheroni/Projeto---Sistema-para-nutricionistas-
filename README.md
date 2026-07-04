@@ -57,6 +57,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 9: antropometria.
 - Fase 10: composicao corporal.
 - Fase 11: gasto energetico.
+- Fase 12: exames laboratoriais.
 
 ## Identidade do app
 
