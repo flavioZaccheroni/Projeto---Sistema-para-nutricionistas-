@@ -59,6 +59,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 11: gasto energetico.
 - Fase 12: exames laboratoriais.
 - Fase 13: diagnostico nutricional.
+- Fase 14: planejamento alimentar.
 
 ## Identidade do app
 
