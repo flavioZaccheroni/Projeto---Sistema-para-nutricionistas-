@@ -56,6 +56,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 8: triagem nutricional.
 - Fase 9: antropometria.
 - Fase 10: composicao corporal.
+- Fase 11: gasto energetico.
 
 ## Identidade do app
 

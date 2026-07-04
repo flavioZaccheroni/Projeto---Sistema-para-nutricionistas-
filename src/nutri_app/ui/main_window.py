@@ -23,6 +23,7 @@ from nutri_app.ui.pages.anthropometry_page import AnthropometryPage
 from nutri_app.ui.pages.appointments_page import AppointmentsPage
 from nutri_app.ui.pages.body_composition_page import BodyCompositionPage
 from nutri_app.ui.pages.dashboard_page import DashboardPage
+from nutri_app.ui.pages.energy_expenditure_page import EnergyExpenditurePage
 from nutri_app.ui.pages.module_placeholder_page import ModulePlaceholderPage
 from nutri_app.ui.pages.patients_page import PatientsPage
 from nutri_app.ui.pages.reports_page import ReportsPage
@@ -134,6 +135,15 @@ class MainWindow(QMainWindow):
                 "Composicao Corporal",
                 "Composicao Corporal",
                 BodyCompositionPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Gasto Energetico",
+                "Gasto Energetico",
+                EnergyExpenditurePage(
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,

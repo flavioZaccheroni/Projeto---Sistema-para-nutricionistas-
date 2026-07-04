@@ -9,6 +9,7 @@
 - Criar anamnese inicial. **Concluido na Fase 7.**
 - Criar antropometria básica com cálculos automáticos. **Concluido na Fase 9.**
 - Criar composicao corporal com calculos automaticos. **Concluido na Fase 10.**
+- Criar gasto energetico com TMB, GET e macros. **Concluido na Fase 11.**
 - Criar relatório clínico simples.
 
 ## Média prioridade
