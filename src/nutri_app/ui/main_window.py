@@ -33,6 +33,7 @@ from nutri_app.ui.pages.patients_page import PatientsPage
 from nutri_app.ui.pages.recipes_page import RecipesPage
 from nutri_app.ui.pages.reports_page import ReportsPage
 from nutri_app.ui.pages.screening_page import ScreeningPage
+from nutri_app.ui.pages.supplements_page import SupplementsPage
 from nutri_app.ui.pages.users_page import UsersPage
 
 
@@ -194,6 +195,15 @@ class MainWindow(QMainWindow):
                 "Receitas",
                 "Receitas",
                 RecipesPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Suplementos",
+                "Suplementos",
+                SupplementsPage(
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,

@@ -62,6 +62,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 14: planejamento alimentar.
 - Fase 15: banco de alimentos.
 - Fase 16: receitas.
+- Fase 17: suplementos.
 
 ## Identidade do app
 
