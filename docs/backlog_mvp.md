@@ -13,6 +13,7 @@
 - Criar exames laboratoriais com itens e alertas. **Concluido na Fase 12.**
 - Criar diagnostico nutricional por protocolos. **Concluido na Fase 13.**
 - Criar planejamento alimentar com refeicoes e lista de compras. **Concluido na Fase 14.**
+- Criar banco de alimentos com porcoes e nutrientes. **Concluido na Fase 15.**
 - Criar relatório clínico simples.
 
 ## Média prioridade

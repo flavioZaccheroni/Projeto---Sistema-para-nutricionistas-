@@ -24,6 +24,7 @@ from nutri_app.ui.pages.appointments_page import AppointmentsPage
 from nutri_app.ui.pages.body_composition_page import BodyCompositionPage
 from nutri_app.ui.pages.dashboard_page import DashboardPage
 from nutri_app.ui.pages.energy_expenditure_page import EnergyExpenditurePage
+from nutri_app.ui.pages.food_database_page import FoodDatabasePage
 from nutri_app.ui.pages.laboratory_exams_page import LaboratoryExamsPage
 from nutri_app.ui.pages.meal_plan_page import MealPlanPage
 from nutri_app.ui.pages.module_placeholder_page import ModulePlaceholderPage
@@ -174,6 +175,15 @@ class MainWindow(QMainWindow):
                 "Plano Alimentar",
                 "Plano Alimentar",
                 MealPlanPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Banco de Alimentos",
+                "Banco de Alimentos",
+                FoodDatabasePage(
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,

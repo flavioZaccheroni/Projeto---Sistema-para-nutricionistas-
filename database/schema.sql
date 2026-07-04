@@ -264,6 +264,27 @@ CREATE TABLE IF NOT EXISTS plano_itens (
     FOREIGN KEY (refeicao_id) REFERENCES plano_refeicoes(id)
 );
 
+CREATE TABLE IF NOT EXISTS alimentos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    categoria TEXT,
+    fonte TEXT NOT NULL,
+    porcao_base_g REAL NOT NULL DEFAULT 100,
+    medida_caseira TEXT,
+    energia_kcal REAL NOT NULL DEFAULT 0,
+    proteina_g REAL NOT NULL DEFAULT 0,
+    carboidrato_g REAL NOT NULL DEFAULT 0,
+    lipidios_g REAL NOT NULL DEFAULT 0,
+    fibras_g REAL NOT NULL DEFAULT 0,
+    sodio_mg REAL NOT NULL DEFAULT 0,
+    indice_glicemico REAL,
+    micronutrientes TEXT,
+    observacoes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS relatorios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     paciente_id INTEGER,
