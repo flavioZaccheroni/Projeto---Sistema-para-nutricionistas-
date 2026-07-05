@@ -474,6 +474,33 @@ CREATE TABLE IF NOT EXISTS ia_assistente_execucoes (
     FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
 );
 
+CREATE TABLE IF NOT EXISTS integracoes_externas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    endpoint TEXT,
+    ativo INTEGER NOT NULL DEFAULT 1,
+    credencial_alias TEXT,
+    observacoes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS integracao_execucoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    integracao_id INTEGER,
+    direcao TEXT NOT NULL,
+    entidade TEXT NOT NULL,
+    status TEXT NOT NULL,
+    payload TEXT,
+    resultado TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT,
+    FOREIGN KEY (integracao_id) REFERENCES integracoes_externas(id)
+);
+
 CREATE TABLE IF NOT EXISTS configuracoes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     chave TEXT NOT NULL UNIQUE,

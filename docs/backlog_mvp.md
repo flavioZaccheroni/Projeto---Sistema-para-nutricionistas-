@@ -32,7 +32,7 @@
 - Aplicativo do paciente. **Concluido na Fase 21.**
 - Portal Web. **Concluido na Fase 22.**
 - IA assistiva. **Concluido na Fase 23.**
-- Integrações externas.
+- Integrações externas. **Concluido na Fase 24.**
 
 ## Critério de pronto por fase
 

@@ -27,6 +27,7 @@ from nutri_app.ui.pages.dashboard_page import DashboardPage
 from nutri_app.ui.pages.energy_expenditure_page import EnergyExpenditurePage
 from nutri_app.ui.pages.finance_page import FinancePage
 from nutri_app.ui.pages.food_database_page import FoodDatabasePage
+from nutri_app.ui.pages.integrations_page import IntegrationsPage
 from nutri_app.ui.pages.laboratory_exams_page import LaboratoryExamsPage
 from nutri_app.ui.pages.meal_plan_page import MealPlanPage
 from nutri_app.ui.pages.nutrition_diagnosis_page import NutritionDiagnosisPage
@@ -253,6 +254,15 @@ class MainWindow(QMainWindow):
                 "IA Assistiva",
                 "IA Assistiva",
                 AIAssistantPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Integracoes",
+                "Integracoes",
+                IntegrationsPage(
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,
