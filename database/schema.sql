@@ -447,6 +447,18 @@ CREATE TABLE IF NOT EXISTS paciente_app_adesoes (
     FOREIGN KEY (publicacao_id) REFERENCES paciente_app_publicacoes(id)
 );
 
+CREATE TABLE IF NOT EXISTS portal_web_publicacoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    titulo TEXT NOT NULL,
+    caminho_saida TEXT NOT NULL,
+    status TEXT NOT NULL,
+    total_paginas INTEGER NOT NULL DEFAULT 0,
+    observacoes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS configuracoes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     chave TEXT NOT NULL UNIQUE,

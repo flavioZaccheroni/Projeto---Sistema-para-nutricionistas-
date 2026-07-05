@@ -37,6 +37,7 @@ from nutri_app.ui.pages.screening_page import ScreeningPage
 from nutri_app.ui.pages.settings_page import SettingsPage
 from nutri_app.ui.pages.supplements_page import SupplementsPage
 from nutri_app.ui.pages.users_page import UsersPage
+from nutri_app.ui.pages.web_portal_page import WebPortalPage
 
 
 @dataclass(frozen=True)
@@ -233,6 +234,15 @@ class MainWindow(QMainWindow):
                 "Aplicativo Paciente",
                 "Aplicativo Paciente",
                 PatientAppPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Portal Web",
+                "Portal Web",
+                WebPortalPage(
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,

@@ -67,6 +67,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 19: financeiro.
 - Fase 20: backup e seguranca.
 - Fase 21: aplicativo do paciente.
+- Fase 22: portal web.
 
 ## Identidade do app
 

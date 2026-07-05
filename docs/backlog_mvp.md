@@ -30,7 +30,7 @@
 
 - Backup e seguranca. **Concluido na Fase 20.**
 - Aplicativo do paciente. **Concluido na Fase 21.**
-- Portal Web.
+- Portal Web. **Concluido na Fase 22.**
 - IA assistiva.
 - Integrações externas.
 
