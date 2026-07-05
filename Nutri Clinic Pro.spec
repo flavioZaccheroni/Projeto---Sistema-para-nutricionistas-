@@ -10,7 +10,10 @@ a = Analysis(
         ('database/migrations', 'database/migrations'),
         ('icone.png', '.'),
     ],
-    hiddenimports=[],
+    hiddenimports=[
+        'sqlite3',
+        '_sqlite3',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
