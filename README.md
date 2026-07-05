@@ -68,6 +68,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 20: backup e seguranca.
 - Fase 21: aplicativo do paciente.
 - Fase 22: portal web.
+- Fase 23: IA assistiva.
 
 ## Identidade do app
 

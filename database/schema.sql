@@ -459,6 +459,21 @@ CREATE TABLE IF NOT EXISTS portal_web_publicacoes (
     deleted_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS ia_assistente_execucoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    paciente_id INTEGER,
+    tipo TEXT NOT NULL,
+    entrada TEXT,
+    resultado TEXT NOT NULL,
+    alertas TEXT,
+    status TEXT NOT NULL,
+    observacoes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT,
+    FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
+);
+
 CREATE TABLE IF NOT EXISTS configuracoes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     chave TEXT NOT NULL UNIQUE,

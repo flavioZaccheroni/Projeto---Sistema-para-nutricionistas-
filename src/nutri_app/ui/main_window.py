@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from nutri_app.app.context import AppContext
 from nutri_app.domain.user import AuthenticatedUser
+from nutri_app.ui.pages.ai_assistant_page import AIAssistantPage
 from nutri_app.ui.pages.anamnesis_page import AnamnesisPage
 from nutri_app.ui.pages.anthropometry_page import AnthropometryPage
 from nutri_app.ui.pages.appointments_page import AppointmentsPage
@@ -243,6 +244,15 @@ class MainWindow(QMainWindow):
                 "Portal Web",
                 "Portal Web",
                 WebPortalPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "IA Assistiva",
+                "IA Assistiva",
+                AIAssistantPage(
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,

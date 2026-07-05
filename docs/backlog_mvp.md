@@ -31,7 +31,7 @@
 - Backup e seguranca. **Concluido na Fase 20.**
 - Aplicativo do paciente. **Concluido na Fase 21.**
 - Portal Web. **Concluido na Fase 22.**
-- IA assistiva.
+- IA assistiva. **Concluido na Fase 23.**
 - Integrações externas.
 
 ## Critério de pronto por fase
