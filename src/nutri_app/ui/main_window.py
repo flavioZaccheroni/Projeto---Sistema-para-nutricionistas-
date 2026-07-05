@@ -28,12 +28,12 @@ from nutri_app.ui.pages.finance_page import FinancePage
 from nutri_app.ui.pages.food_database_page import FoodDatabasePage
 from nutri_app.ui.pages.laboratory_exams_page import LaboratoryExamsPage
 from nutri_app.ui.pages.meal_plan_page import MealPlanPage
-from nutri_app.ui.pages.module_placeholder_page import ModulePlaceholderPage
 from nutri_app.ui.pages.nutrition_diagnosis_page import NutritionDiagnosisPage
 from nutri_app.ui.pages.patients_page import PatientsPage
 from nutri_app.ui.pages.recipes_page import RecipesPage
 from nutri_app.ui.pages.reports_page import ReportsPage
 from nutri_app.ui.pages.screening_page import ScreeningPage
+from nutri_app.ui.pages.settings_page import SettingsPage
 from nutri_app.ui.pages.supplements_page import SupplementsPage
 from nutri_app.ui.pages.users_page import UsersPage
 
@@ -231,11 +231,12 @@ class MainWindow(QMainWindow):
             NavigationItem(
                 "Configuracoes",
                 "Configuracoes",
-                ModulePlaceholderPage(
-                    "Configuracoes",
-                    "Parametros gerais, backup, seguranca e identidade da clinica.",
-                    "Fase 20",
-                    ["Backup", "Permissoes", "Identidade dos relatorios"],
+                SettingsPage(
+                    self.context.settings,
+                    self.context.connection_factory,
+                    self.context.user_repository,
+                    self.context.audit_repository,
+                    self.current_user.id,
                 ),
             ),
         ]

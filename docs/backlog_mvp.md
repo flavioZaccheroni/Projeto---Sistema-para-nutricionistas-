@@ -28,6 +28,7 @@
 
 ## Baixa prioridade
 
+- Backup e seguranca. **Concluido na Fase 20.**
 - Aplicativo do paciente.
 - Portal Web.
 - IA assistiva.

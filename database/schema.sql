@@ -387,6 +387,28 @@ CREATE TABLE IF NOT EXISTS financeiro_lancamentos (
     FOREIGN KEY (consulta_id) REFERENCES consultas(id)
 );
 
+CREATE TABLE IF NOT EXISTS backups_sistema (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    caminho_arquivo TEXT NOT NULL,
+    tamanho_bytes INTEGER NOT NULL DEFAULT 0,
+    checksum_sha256 TEXT NOT NULL,
+    status TEXT NOT NULL,
+    observacoes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS configuracoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chave TEXT NOT NULL UNIQUE,
+    valor TEXT NOT NULL,
+    descricao TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS logs_auditoria (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     usuario_id INTEGER,

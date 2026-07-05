@@ -65,6 +65,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 17: suplementos.
 - Fase 18: relatorios.
 - Fase 19: financeiro.
+- Fase 20: backup e seguranca.
 
 ## Identidade do app
 
