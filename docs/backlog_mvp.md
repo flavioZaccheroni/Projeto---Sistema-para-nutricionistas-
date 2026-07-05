@@ -33,6 +33,7 @@
 - Portal Web. **Concluido na Fase 22.**
 - IA assistiva. **Concluido na Fase 23.**
 - Integrações externas. **Concluido na Fase 24.**
+- Testes finais e implantacao comercial. **Concluido na Fase 25.**
 
 ## Critério de pronto por fase
 

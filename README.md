@@ -70,6 +70,13 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 22: portal web.
 - Fase 23: IA assistiva.
 - Fase 24: integracoes externas.
+- Fase 25: testes finais e implantacao.
+
+## Versao atual
+
+- Produto: `Nutri Clinic Pro`
+- Versao comercial inicial: `1.0.0`
+- Status: preparado para empacotamento Windows e validacao comercial.
 
 ## Identidade do app
 

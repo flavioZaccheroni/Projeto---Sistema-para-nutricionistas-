@@ -501,6 +501,16 @@ CREATE TABLE IF NOT EXISTS integracao_execucoes (
     FOREIGN KEY (integracao_id) REFERENCES integracoes_externas(id)
 );
 
+CREATE TABLE IF NOT EXISTS implantacao_checks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    status TEXT NOT NULL,
+    detalhes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS configuracoes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     chave TEXT NOT NULL UNIQUE,
