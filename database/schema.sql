@@ -367,6 +367,26 @@ CREATE TABLE IF NOT EXISTS relatorios (
     FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
 );
 
+CREATE TABLE IF NOT EXISTS financeiro_lancamentos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    paciente_id INTEGER,
+    consulta_id INTEGER,
+    tipo TEXT NOT NULL,
+    categoria TEXT NOT NULL,
+    descricao TEXT NOT NULL,
+    valor REAL NOT NULL,
+    data_vencimento TEXT NOT NULL,
+    data_pagamento TEXT,
+    forma_pagamento TEXT,
+    status TEXT NOT NULL,
+    observacoes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT,
+    FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+    FOREIGN KEY (consulta_id) REFERENCES consultas(id)
+);
+
 CREATE TABLE IF NOT EXISTS logs_auditoria (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     usuario_id INTEGER,
