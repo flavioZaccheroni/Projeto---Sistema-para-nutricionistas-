@@ -29,6 +29,7 @@ from nutri_app.ui.pages.food_database_page import FoodDatabasePage
 from nutri_app.ui.pages.laboratory_exams_page import LaboratoryExamsPage
 from nutri_app.ui.pages.meal_plan_page import MealPlanPage
 from nutri_app.ui.pages.nutrition_diagnosis_page import NutritionDiagnosisPage
+from nutri_app.ui.pages.patient_app_page import PatientAppPage
 from nutri_app.ui.pages.patients_page import PatientsPage
 from nutri_app.ui.pages.recipes_page import RecipesPage
 from nutri_app.ui.pages.reports_page import ReportsPage
@@ -223,6 +224,15 @@ class MainWindow(QMainWindow):
                 "Financeiro",
                 "Financeiro",
                 FinancePage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Aplicativo Paciente",
+                "Aplicativo Paciente",
+                PatientAppPage(
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,
