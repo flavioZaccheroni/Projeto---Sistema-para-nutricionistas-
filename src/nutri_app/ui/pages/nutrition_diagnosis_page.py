@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -23,6 +21,7 @@ from nutri_app.repositories.nutrition_diagnosis_repository import NutritionDiagn
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.nutrition_diagnosis import NutritionDiagnosisService
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date
 from nutri_app.ui.pages.base import Page
 
 
@@ -51,7 +50,7 @@ class NutritionDiagnosisPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.diagnosis_date = QLineEdit()
-        self.diagnosis_date.setPlaceholderText("AAAA-MM-DD")
+        self.diagnosis_date.setPlaceholderText("mm-dd-aaaa")
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in DiagnosisProtocol])
         self.primary_label = QLineEdit("Criterios principais/fenotipicos")
@@ -151,7 +150,7 @@ class NutritionDiagnosisPage(Page):
         self._reload_table()
 
     def _build_diagnosis(self) -> NutritionDiagnosis:
-        diagnosis_date = date.fromisoformat(self.diagnosis_date.text().strip())
+        diagnosis_date = parse_date(self.diagnosis_date.text())
         protocol = DiagnosisProtocol(self.protocol.currentText())
         primary_count = self._required_int(self.primary_count.text(), "Quantidade criterio 1")
         secondary_count = self._required_int(self.secondary_count.text(), "Quantidade criterio 2")
@@ -258,7 +257,7 @@ class NutritionDiagnosisPage(Page):
             if appointment.patient_id != patient_id or appointment.id is None:
                 continue
             self.appointment.addItem(
-                f"{appointment.scheduled_at:%Y-%m-%d %H:%M} - {appointment.kind.value}"
+                f"{format_datetime(appointment.scheduled_at)} - {appointment.kind.value}"
             )
             self.appointment_ids_by_index.append(appointment.id)
 
@@ -268,7 +267,7 @@ class NutritionDiagnosisPage(Page):
         for row, record in enumerate(records):
             self.table.setItem(row, 0, QTableWidgetItem(str(record.id or "")))
             self.table.setItem(row, 1, QTableWidgetItem(record.patient_name))
-            self.table.setItem(row, 2, QTableWidgetItem(record.diagnosis_date.isoformat()))
+            self.table.setItem(row, 2, QTableWidgetItem(format_date(record.diagnosis_date)))
             self.table.setItem(row, 3, QTableWidgetItem(record.protocol.value))
             self.table.setItem(row, 4, QTableWidgetItem(record.classification))
             self.table.setItem(row, 5, QTableWidgetItem(record.severity.value))
@@ -291,7 +290,7 @@ class NutritionDiagnosisPage(Page):
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
             self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
-        self.diagnosis_date.setText(record.diagnosis_date.isoformat())
+        self.diagnosis_date.setText(format_date(record.diagnosis_date))
         self.protocol.setCurrentText(record.protocol.value)
         self.criteria.setPlainText(record.criteria)
         self.classification.setText(record.classification)

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -22,6 +20,7 @@ from nutri_app.repositories.laboratory_exam_repository import LaboratoryExamRepo
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.laboratory_exam import LaboratoryExamService
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date
 from nutri_app.ui.pages.base import Page
 
 
@@ -52,7 +51,7 @@ class LaboratoryExamsPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.exam_date = QLineEdit()
-        self.exam_date.setPlaceholderText("AAAA-MM-DD")
+        self.exam_date.setPlaceholderText("mm-dd-aaaa")
         self.laboratory = QLineEdit()
         self.notes = QTextEdit()
         self.notes.setFixedHeight(60)
@@ -164,7 +163,7 @@ class LaboratoryExamsPage(Page):
             id=self.selected_exam_id,
             patient_id=self.patient_ids_by_index[self.patient.currentIndex()],
             appointment_id=self.appointment_ids_by_index[self.appointment.currentIndex()],
-            exam_date=date.fromisoformat(self.exam_date.text().strip()),
+            exam_date=parse_date(self.exam_date.text()),
             laboratory=self.laboratory.text().strip(),
             notes=self.notes.toPlainText().strip(),
             items=list(self.items),
@@ -284,7 +283,7 @@ class LaboratoryExamsPage(Page):
             if appointment.patient_id != patient_id or appointment.id is None:
                 continue
             self.appointment.addItem(
-                f"{appointment.scheduled_at:%Y-%m-%d %H:%M} - {appointment.kind.value}"
+                f"{format_datetime(appointment.scheduled_at)} - {appointment.kind.value}"
             )
             self.appointment_ids_by_index.append(appointment.id)
 
@@ -307,7 +306,7 @@ class LaboratoryExamsPage(Page):
             alerts = sum(1 for item in items if item.alert)
             self.exam_table.setItem(row, 0, QTableWidgetItem(str(record.id or "")))
             self.exam_table.setItem(row, 1, QTableWidgetItem(record.patient_name))
-            self.exam_table.setItem(row, 2, QTableWidgetItem(record.exam_date.isoformat()))
+            self.exam_table.setItem(row, 2, QTableWidgetItem(format_date(record.exam_date)))
             self.exam_table.setItem(row, 3, QTableWidgetItem(record.laboratory))
             self.exam_table.setItem(row, 4, QTableWidgetItem(str(len(items))))
             self.exam_table.setItem(row, 5, QTableWidgetItem(str(alerts)))
@@ -329,7 +328,7 @@ class LaboratoryExamsPage(Page):
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
             self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
-        self.exam_date.setText(record.exam_date.isoformat())
+        self.exam_date.setText(format_date(record.exam_date))
         self.laboratory.setText(record.laboratory)
         self.notes.setPlainText(record.notes)
         self.items = list(record.items)

@@ -71,12 +71,21 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 23: IA assistiva.
 - Fase 24: integracoes externas.
 - Fase 25: testes finais e implantacao.
+- Fase 26: anamnese avancada e atendimento adaptativo.
+- Fase 27: exames laboratoriais avancados.
+- Fase 28: protocolos clinicos BRASPEN/ASPEN/ESPEN e NFPE.
+- Fase 29: pediatria.
+- Fase 30: nefrologia e hemodialise.
+- Fase 31: antropometria avancada.
+- Fase 32: terapia nutricional enteral/parenteral.
+- Fase 33: plano alimentar inteligente.
 
 ## Versao atual
 
 - Produto: `Nutri Clinic Pro`
 - Versao comercial inicial: `1.0.0`
 - Status: preparado para empacotamento Windows e validacao comercial.
+- Datas na interface: `mm-dd-aaaa`.
 
 ## Identidade do app
 

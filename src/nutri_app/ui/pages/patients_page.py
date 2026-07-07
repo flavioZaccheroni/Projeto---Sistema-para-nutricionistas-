@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
 from PySide6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
@@ -18,6 +16,7 @@ from nutri_app.domain.patient import Patient
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.ui.date_format import format_date, parse_date
 from nutri_app.ui.pages.base import Page
 
 
@@ -40,7 +39,7 @@ class PatientsPage(Page):
 
         self.name = QLineEdit()
         self.birth_date = QLineEdit()
-        self.birth_date.setPlaceholderText("AAAA-MM-DD")
+        self.birth_date.setPlaceholderText("mm-dd-aaaa")
         self.phone = QLineEdit()
         self.email = QLineEdit()
         self.health_insurance = QLineEdit()
@@ -94,7 +93,7 @@ class PatientsPage(Page):
             patient = Patient(
                 id=self.selected_patient_id,
                 name=self.name.text().strip(),
-                birth_date=date.fromisoformat(self.birth_date.text().strip()),
+                birth_date=parse_date(self.birth_date.text()),
                 phone=self.phone.text().strip(),
                 email=self.email.text().strip(),
                 health_insurance=self.health_insurance.text().strip(),
@@ -103,7 +102,7 @@ class PatientsPage(Page):
                 clinical_notes=self.notes.toPlainText().strip(),
             )
         except ValueError:
-            QMessageBox.warning(self, "Validacao", "Use a data no formato AAAA-MM-DD.")
+            QMessageBox.warning(self, "Validacao", "Use a data no formato mm-dd-aaaa.")
             return
 
         if not patient.name:
@@ -150,7 +149,7 @@ class PatientsPage(Page):
         for row, patient in enumerate(patients):
             self.table.setItem(row, 0, QTableWidgetItem(str(patient.id or "")))
             self.table.setItem(row, 1, QTableWidgetItem(patient.name))
-            self.table.setItem(row, 2, QTableWidgetItem(patient.birth_date.isoformat()))
+            self.table.setItem(row, 2, QTableWidgetItem(format_date(patient.birth_date)))
             self.table.setItem(row, 3, QTableWidgetItem(patient.phone))
             self.table.setItem(row, 4, QTableWidgetItem(patient.email))
             self.table.setItem(row, 5, QTableWidgetItem(patient.health_insurance))
@@ -169,7 +168,7 @@ class PatientsPage(Page):
 
         self.selected_patient_id = patient.id
         self.name.setText(patient.name)
-        self.birth_date.setText(patient.birth_date.isoformat())
+        self.birth_date.setText(format_date(patient.birth_date))
         self.phone.setText(patient.phone)
         self.email.setText(patient.email)
         self.health_insurance.setText(patient.health_insurance)

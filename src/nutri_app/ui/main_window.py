@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
 
 from nutri_app.app.context import AppContext
 from nutri_app.domain.user import AuthenticatedUser
+from nutri_app.services.advanced_clinical import AdvancedClinicalService
+from nutri_app.ui.pages.advanced_module_page import AdvancedModulePage
 from nutri_app.ui.pages.ai_assistant_page import AIAssistantPage
 from nutri_app.ui.pages.anamnesis_page import AnamnesisPage
 from nutri_app.ui.pages.anthropometry_page import AnthropometryPage
@@ -83,6 +85,11 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(root)
 
     def _navigation_items(self) -> list[NavigationItem]:
+        advanced_service = AdvancedClinicalService()
+        advanced_definitions = {
+            definition.module: definition
+            for definition in advanced_service.definitions()
+        }
         items = [
             NavigationItem(
                 "Dashboard",
@@ -255,6 +262,86 @@ class MainWindow(QMainWindow):
                 "IA Assistiva",
                 "IA Assistiva",
                 AIAssistantPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Anamnese Avancada",
+                "Anamnese Avancada",
+                AdvancedModulePage(
+                    advanced_definitions["Anamnese Avancada"],
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Exames Avancados",
+                "Exames Avancados",
+                AdvancedModulePage(
+                    advanced_definitions["Exames Avancados"],
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Protocolos Clinicos",
+                "Protocolos Clinicos",
+                AdvancedModulePage(
+                    advanced_definitions["Protocolos Clinicos"],
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Pediatria",
+                "Pediatria",
+                AdvancedModulePage(
+                    advanced_definitions["Pediatria"],
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Nefrologia",
+                "Nefrologia",
+                AdvancedModulePage(
+                    advanced_definitions["Nefrologia"],
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Antropometria Avancada",
+                "Antropometria Avancada",
+                AdvancedModulePage(
+                    advanced_definitions["Antropometria Avancada"],
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Terapia Nutricional",
+                "Terapia Nutricional",
+                AdvancedModulePage(
+                    advanced_definitions["Terapia Nutricional"],
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
+                "Plano Inteligente",
+                "Plano Inteligente",
+                AdvancedModulePage(
+                    advanced_definitions["Plano Inteligente"],
                     self.context.connection_factory,
                     self.context.audit_repository,
                     self.current_user.id,

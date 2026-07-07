@@ -22,7 +22,7 @@ Concluida em nivel de MVP funcional.
 ## Regras consideradas nesta fase
 
 - Toda consulta deve estar vinculada a um paciente ativo.
-- Data/hora deve usar o formato `AAAA-MM-DD HH:MM`.
+- Data/hora deve usar o formato visual `mm-dd-aaaa HH:MM`.
 - Consultas removidas recebem `deleted_at` e deixam de aparecer na listagem.
 - O dashboard passa a refletir consultas agendadas, confirmadas e pendentes.
 

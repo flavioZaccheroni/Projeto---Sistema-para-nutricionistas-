@@ -19,6 +19,7 @@ from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.ui.date_format import format_datetime
 from nutri_app.ui.pages.base import Page
 
 
@@ -192,7 +193,7 @@ class AnamnesisPage(Page):
             if appointment.patient_id != patient_id or appointment.id is None:
                 continue
             self.appointment.addItem(
-                f"{appointment.scheduled_at:%Y-%m-%d %H:%M} - {appointment.kind.value}"
+                f"{format_datetime(appointment.scheduled_at)} - {appointment.kind.value}"
             )
             self.appointment_ids_by_index.append(appointment.id)
 
@@ -204,7 +205,7 @@ class AnamnesisPage(Page):
             self.table.setItem(row, 1, QTableWidgetItem(record.patient_name))
             self.table.setItem(row, 2, QTableWidgetItem(record.appointment_label))
             self.table.setItem(row, 3, QTableWidgetItem(record.chief_complaint))
-            self.table.setItem(row, 4, QTableWidgetItem(record.updated_at.isoformat() if record.updated_at else ""))
+            self.table.setItem(row, 4, QTableWidgetItem(format_datetime(record.updated_at)))
 
     def _select_anamnesis_from_table(self, row: int, _column: int) -> None:
         item = self.table.item(row, 0)

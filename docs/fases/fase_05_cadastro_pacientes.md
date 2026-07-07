@@ -18,7 +18,7 @@ Concluida em nivel de MVP funcional.
 ## Regras consideradas nesta fase
 
 - Nome completo e obrigatorio.
-- Data de nascimento deve usar o formato `AAAA-MM-DD`.
+- Data de nascimento deve usar o formato visual `mm-dd-aaaa`.
 - Pacientes removidos recebem `deleted_at` e deixam de aparecer na listagem ativa.
 - Historico clinico nao deve ser apagado fisicamente nesta fase.
 

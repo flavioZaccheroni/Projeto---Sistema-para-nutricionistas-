@@ -18,7 +18,7 @@ Implementar o modulo de diagnostico nutricional do Nutri Clinic Pro, permitindo 
 ## Validacoes
 
 - Diagnostico exige paciente selecionado.
-- Data deve estar no formato ISO `AAAA-MM-DD`.
+- Data deve estar no formato visual `mm-dd-aaaa`.
 - Quantidades de criterios nao podem ser negativas.
 - A classificacao automatica e apenas sugestiva e pode ser confirmada pela nutricionista.
 

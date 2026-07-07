@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 
 from PySide6.QtWidgets import (
     QComboBox,
@@ -20,6 +20,7 @@ from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.ui.date_format import format_datetime, parse_date, parse_datetime
 from nutri_app.ui.pages.base import Page
 
 
@@ -40,7 +41,7 @@ class AppointmentsPage(Page):
 
         self.patient = QComboBox()
         self.scheduled_at = QLineEdit()
-        self.scheduled_at.setPlaceholderText("AAAA-MM-DD HH:MM")
+        self.scheduled_at.setPlaceholderText("mm-dd-aaaa HH:MM")
         self.kind = QComboBox()
         self.kind.addItems([kind.value for kind in AppointmentKind])
         self.status = QComboBox()
@@ -75,9 +76,9 @@ class AppointmentsPage(Page):
         actions.addStretch()
 
         self.start_filter = QLineEdit()
-        self.start_filter.setPlaceholderText("Inicio AAAA-MM-DD")
+        self.start_filter.setPlaceholderText("Inicio mm-dd-aaaa")
         self.end_filter = QLineEdit()
-        self.end_filter.setPlaceholderText("Fim AAAA-MM-DD")
+        self.end_filter.setPlaceholderText("Fim mm-dd-aaaa")
         self.status_filter = QComboBox()
         self.status_filter.addItem("Todos")
         self.status_filter.addItems([status.value for status in AppointmentStatus])
@@ -117,13 +118,13 @@ class AppointmentsPage(Page):
             appointment = Appointment(
                 id=self.selected_appointment_id,
                 patient_id=self.patient_ids_by_index[self.patient.currentIndex()],
-                scheduled_at=datetime.strptime(self.scheduled_at.text().strip(), "%Y-%m-%d %H:%M"),
+                scheduled_at=parse_datetime(self.scheduled_at.text()),
                 kind=AppointmentKind(self.kind.currentText()),
                 status=AppointmentStatus(self.status.currentText()),
                 notes=self.notes.toPlainText().strip(),
             )
         except ValueError:
-            QMessageBox.warning(self, "Validacao", "Use data/hora no formato AAAA-MM-DD HH:MM.")
+            QMessageBox.warning(self, "Validacao", "Use data/hora no formato mm-dd-aaaa HH:MM.")
             return
 
         if appointment.id is None:
@@ -202,7 +203,7 @@ class AppointmentsPage(Page):
         for row, appointment in enumerate(appointments):
             self.table.setItem(row, 0, QTableWidgetItem(str(appointment.id or "")))
             self.table.setItem(row, 1, QTableWidgetItem(appointment.patient_name))
-            self.table.setItem(row, 2, QTableWidgetItem(appointment.scheduled_at.strftime("%Y-%m-%d %H:%M")))
+            self.table.setItem(row, 2, QTableWidgetItem(format_datetime(appointment.scheduled_at)))
             self.table.setItem(row, 3, QTableWidgetItem(appointment.kind.value))
             self.table.setItem(row, 4, QTableWidgetItem(appointment.status.value))
             self.table.setItem(row, 5, QTableWidgetItem(appointment.notes))
@@ -221,7 +222,7 @@ class AppointmentsPage(Page):
         self.selected_appointment_id = appointment.id
         if appointment.patient_id in self.patient_ids_by_index:
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(appointment.patient_id))
-        self.scheduled_at.setText(appointment.scheduled_at.strftime("%Y-%m-%d %H:%M"))
+        self.scheduled_at.setText(format_datetime(appointment.scheduled_at))
         self.kind.setCurrentText(appointment.kind.value)
         self.status.setCurrentText(appointment.status.value)
         self.notes.setPlainText(appointment.notes)
@@ -231,9 +232,9 @@ class AppointmentsPage(Page):
         if not value:
             return None
         try:
-            return date.fromisoformat(value)
+            return parse_date(value)
         except ValueError:
-            QMessageBox.warning(self, "Filtro", "Use datas de filtro no formato AAAA-MM-DD.")
+            QMessageBox.warning(self, "Filtro", "Use datas de filtro no formato mm-dd-aaaa.")
             return None
 
     def _filter_status(self) -> AppointmentStatus | None:

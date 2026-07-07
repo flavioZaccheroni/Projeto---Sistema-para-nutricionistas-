@@ -19,6 +19,7 @@ from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.ai_assistant import AIAssistantService
+from nutri_app.ui.date_format import format_datetime
 from nutri_app.ui.pages.base import Page
 
 
@@ -141,7 +142,7 @@ class AIAssistantPage(Page):
             self.table.setItem(row, 2, QTableWidgetItem(record.request_type.value))
             self.table.setItem(row, 3, QTableWidgetItem(record.status))
             self.table.setItem(row, 4, QTableWidgetItem(record.alerts))
-            created_at = record.created_at.isoformat() if record.created_at else ""
+            created_at = format_datetime(record.created_at)
             self.table.setItem(row, 5, QTableWidgetItem(created_at))
 
     def _select_execution_from_table(self, row: int, _column: int) -> None:

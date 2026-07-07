@@ -22,6 +22,7 @@ from nutri_app.repositories.meal_plan_repository import MealPlanRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.meal_plan import MealPlanService
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date, parse_optional_date
 from nutri_app.ui.pages.base import Page
 
 
@@ -52,9 +53,9 @@ class MealPlanPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.start_date = QLineEdit()
-        self.start_date.setPlaceholderText("AAAA-MM-DD")
+        self.start_date.setPlaceholderText("mm-dd-aaaa")
         self.end_date = QLineEdit()
-        self.end_date.setPlaceholderText("AAAA-MM-DD opcional")
+        self.end_date.setPlaceholderText("mm-dd-aaaa opcional")
         self.objective = QLineEdit()
         self.target_energy = QLineEdit()
         self.target_protein = QLineEdit()
@@ -189,7 +190,7 @@ class MealPlanPage(Page):
         self._reload_plan_table()
 
     def _build_plan(self) -> MealPlan:
-        start_date = date.fromisoformat(self.start_date.text().strip())
+        start_date = parse_date(self.start_date.text())
         end_date = self._optional_date(self.end_date.text())
         totals = self.service.calculate_totals(self.meals)
         self._show_totals(*totals)
@@ -371,7 +372,7 @@ class MealPlanPage(Page):
             if appointment.patient_id != patient_id or appointment.id is None:
                 continue
             self.appointment.addItem(
-                f"{appointment.scheduled_at:%Y-%m-%d %H:%M} - {appointment.kind.value}"
+                f"{format_datetime(appointment.scheduled_at)} - {appointment.kind.value}"
             )
             self.appointment_ids_by_index.append(appointment.id)
 
@@ -394,7 +395,7 @@ class MealPlanPage(Page):
             meals_count = len(full.meals) if full is not None else 0
             self.plan_table.setItem(row, 0, QTableWidgetItem(str(record.id or "")))
             self.plan_table.setItem(row, 1, QTableWidgetItem(record.patient_name))
-            self.plan_table.setItem(row, 2, QTableWidgetItem(record.start_date.isoformat()))
+            self.plan_table.setItem(row, 2, QTableWidgetItem(format_date(record.start_date)))
             self.plan_table.setItem(row, 3, QTableWidgetItem(record.objective))
             self.plan_table.setItem(row, 4, QTableWidgetItem(f"{record.total_energy_kcal:.0f}"))
             self.plan_table.setItem(row, 5, QTableWidgetItem(f"{record.total_protein_g:.1f}"))
@@ -426,8 +427,8 @@ class MealPlanPage(Page):
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
             self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
-        self.start_date.setText(record.start_date.isoformat())
-        self.end_date.setText("" if record.end_date is None else record.end_date.isoformat())
+        self.start_date.setText(format_date(record.start_date))
+        self.end_date.setText(format_date(record.end_date))
         self.objective.setText(record.objective)
         self.target_energy.setText(self._format_optional(record.target_energy_kcal))
         self.target_protein.setText(self._format_optional(record.target_protein_g))
@@ -463,9 +464,7 @@ class MealPlanPage(Page):
         return parsed
 
     def _optional_date(self, value: str) -> date | None:
-        if not value.strip():
-            return None
-        return date.fromisoformat(value.strip())
+        return parse_optional_date(value)
 
     def _format_optional(self, value: float | None) -> str:
         return "" if value is None else f"{value:g}"

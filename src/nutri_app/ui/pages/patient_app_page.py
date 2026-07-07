@@ -29,6 +29,7 @@ from nutri_app.repositories.patient_app_repository import PatientAppRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.patient_app import PatientAppService
+from nutri_app.ui.date_format import format_date, parse_date, parse_optional_date, today_text
 from nutri_app.ui.pages.base import Page
 
 
@@ -72,10 +73,10 @@ class PatientAppPage(Page):
         self.content = QTextEdit()
         self.content.setFixedHeight(90)
         self.expiration_date = QLineEdit()
-        self.expiration_date.setPlaceholderText("AAAA-MM-DD opcional")
+        self.expiration_date.setPlaceholderText("mm-dd-aaaa opcional")
 
         self.publication = QComboBox()
-        self.record_date = QLineEdit(date.today().isoformat())
+        self.record_date = QLineEdit(today_text())
         self.adherence = QLineEdit()
         self.mood = QLineEdit()
         self.difficulties = QLineEdit()
@@ -227,7 +228,7 @@ class PatientAppPage(Page):
         adherence = PatientAppAdherence(
             patient_id=self.patient_ids_by_index[self.patient.currentIndex()],
             publication_id=self.publication_ids_by_index[self.publication.currentIndex()],
-            record_date=date.fromisoformat(self.record_date.text().strip()),
+            record_date=parse_date(self.record_date.text()),
             adherence_percent=self._required_float(self.adherence.text(), "Adesao"),
             mood=self.mood.text().strip(),
             difficulties=self.difficulties.text().strip(),
@@ -284,7 +285,7 @@ class PatientAppPage(Page):
             return
         for plan in self.meal_plan_repository.list_active():
             if plan.patient_id == patient_id and plan.id is not None:
-                self.meal_plan.addItem(f"{plan.start_date.isoformat()} - {plan.objective}")
+                self.meal_plan.addItem(f"{format_date(plan.start_date)} - {plan.objective}")
                 self.meal_plan_ids_by_index.append(plan.id)
         for publication in self.repository.list_publications():
             if publication.patient_id == patient_id and publication.id is not None:
@@ -314,7 +315,7 @@ class PatientAppPage(Page):
             self.publication_table.setItem(
                 row,
                 5,
-                QTableWidgetItem(publication.publication_date.isoformat()),
+                QTableWidgetItem(format_date(publication.publication_date)),
             )
 
         adherences = self.repository.list_adherences(query)
@@ -324,7 +325,7 @@ class PatientAppPage(Page):
             self.adherence_table.setItem(row, 0, QTableWidgetItem(str(adherence.id or "")))
             self.adherence_table.setItem(row, 1, QTableWidgetItem(adherence.patient_name))
             self.adherence_table.setItem(row, 2, QTableWidgetItem(adherence.publication_title))
-            record_date = adherence.record_date.isoformat()
+            record_date = format_date(adherence.record_date)
             adherence_label = f"{adherence.adherence_percent:.0f}%"
             self.adherence_table.setItem(row, 3, QTableWidgetItem(record_date))
             self.adherence_table.setItem(row, 4, QTableWidgetItem(adherence_label))
@@ -339,8 +340,7 @@ class PatientAppPage(Page):
         )
 
     def _optional_date(self, value: str) -> date | None:
-        value = value.strip()
-        return date.fromisoformat(value) if value else None
+        return parse_optional_date(value)
 
     def _required_float(self, value: str, field: str) -> float:
         try:

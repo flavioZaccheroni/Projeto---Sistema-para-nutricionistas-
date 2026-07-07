@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -22,6 +20,7 @@ from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.anthropometry import AnthropometryService
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date
 from nutri_app.ui.pages.base import Page
 
 
@@ -50,7 +49,7 @@ class AnthropometryPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.assessment_date = QLineEdit()
-        self.assessment_date.setPlaceholderText("AAAA-MM-DD")
+        self.assessment_date.setPlaceholderText("mm-dd-aaaa")
         self.weight = QLineEdit()
         self.height = QLineEdit()
         self.waist = QLineEdit()
@@ -138,7 +137,7 @@ class AnthropometryPage(Page):
         self._reload_table()
 
     def _build_anthropometry(self) -> Anthropometry:
-        assessment_date = date.fromisoformat(self.assessment_date.text().strip())
+        assessment_date = parse_date(self.assessment_date.text())
         weight = self._required_float(self.weight.text(), "Peso")
         height = self._required_float(self.height.text(), "Altura")
         waist = self._optional_float(self.waist.text(), "Cintura")
@@ -243,7 +242,7 @@ class AnthropometryPage(Page):
             if appointment.patient_id != patient_id or appointment.id is None:
                 continue
             self.appointment.addItem(
-                f"{appointment.scheduled_at:%Y-%m-%d %H:%M} - {appointment.kind.value}"
+                f"{format_datetime(appointment.scheduled_at)} - {appointment.kind.value}"
             )
             self.appointment_ids_by_index.append(appointment.id)
 
@@ -253,7 +252,7 @@ class AnthropometryPage(Page):
         for row, record in enumerate(records):
             self.table.setItem(row, 0, QTableWidgetItem(str(record.id or "")))
             self.table.setItem(row, 1, QTableWidgetItem(record.patient_name))
-            self.table.setItem(row, 2, QTableWidgetItem(record.assessment_date.isoformat()))
+            self.table.setItem(row, 2, QTableWidgetItem(format_date(record.assessment_date)))
             self.table.setItem(row, 3, QTableWidgetItem(f"{record.weight_kg:.2f}"))
             self.table.setItem(row, 4, QTableWidgetItem(f"{record.height_m:.2f}"))
             self.table.setItem(row, 5, QTableWidgetItem(f"{record.bmi:.1f}"))
@@ -278,7 +277,7 @@ class AnthropometryPage(Page):
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
             self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
-        self.assessment_date.setText(record.assessment_date.isoformat())
+        self.assessment_date.setText(format_date(record.assessment_date))
         self.weight.setText(str(record.weight_kg))
         self.height.setText(str(record.height_m))
         self.waist.setText("" if record.waist_cm is None else str(record.waist_cm))

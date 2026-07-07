@@ -22,6 +22,7 @@ from nutri_app.repositories.finance_repository import FinanceRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.finance import FinanceService
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date, parse_optional_date
 from nutri_app.ui.pages.base import Page
 
 
@@ -58,9 +59,9 @@ class FinancePage(Page):
         self.description = QLineEdit()
         self.amount = QLineEdit()
         self.due_date = QLineEdit()
-        self.due_date.setPlaceholderText("AAAA-MM-DD")
+        self.due_date.setPlaceholderText("mm-dd-aaaa")
         self.payment_date = QLineEdit()
-        self.payment_date.setPlaceholderText("AAAA-MM-DD opcional")
+        self.payment_date.setPlaceholderText("mm-dd-aaaa opcional")
         self.payment_method = QLineEdit()
         self.status = QComboBox()
         self.status.addItems([item.value for item in FinancialStatus])
@@ -99,9 +100,9 @@ class FinancePage(Page):
         actions.addStretch()
 
         self.start_filter = QLineEdit()
-        self.start_filter.setPlaceholderText("Inicio AAAA-MM-DD")
+        self.start_filter.setPlaceholderText("Inicio mm-dd-aaaa")
         self.end_filter = QLineEdit()
-        self.end_filter.setPlaceholderText("Fim AAAA-MM-DD")
+        self.end_filter.setPlaceholderText("Fim mm-dd-aaaa")
         self.status_filter = QComboBox()
         self.status_filter.addItem("Todos")
         self.status_filter.addItems([item.value for item in FinancialStatus])
@@ -175,7 +176,7 @@ class FinancePage(Page):
             category=self.category.text().strip(),
             description=self.description.text().strip(),
             amount=self._required_float(self.amount.text(), "Valor"),
-            due_date=date.fromisoformat(self.due_date.text().strip()),
+            due_date=parse_date(self.due_date.text()),
             payment_date=payment_date,
             payment_method=self.payment_method.text().strip(),
             status=FinancialStatus(self.status.currentText()),
@@ -187,7 +188,7 @@ class FinancePage(Page):
             QMessageBox.warning(self, "Financeiro", "Selecione um lancamento.")
             return
         if not self.payment_date.text().strip():
-            self.payment_date.setText(date.today().isoformat())
+            self.payment_date.setText(format_date(date.today()))
         self.status.setCurrentText(FinancialStatus.PAID.value)
         self._save_entry()
 
@@ -265,7 +266,7 @@ class FinancePage(Page):
         if patient_id is not None:
             for appointment in self.appointment_repository.list_by_period():
                 if appointment.patient_id == patient_id and appointment.id is not None:
-                    label = appointment.scheduled_at.strftime("%Y-%m-%d %H:%M")
+                    label = format_datetime(appointment.scheduled_at)
                     self.appointment.addItem(f"{label} - {appointment.kind.value}")
                     self.appointment_ids_by_index.append(appointment.id)
         if current_id in self.appointment_ids_by_index:
@@ -286,7 +287,7 @@ class FinancePage(Page):
             self.table.setItem(row, 3, QTableWidgetItem(record.category))
             self.table.setItem(row, 4, QTableWidgetItem(record.description))
             self.table.setItem(row, 5, QTableWidgetItem(f"R$ {record.amount:.2f}"))
-            self.table.setItem(row, 6, QTableWidgetItem(record.due_date.isoformat()))
+            self.table.setItem(row, 6, QTableWidgetItem(format_date(record.due_date)))
             self.table.setItem(row, 7, QTableWidgetItem(record.status.value))
 
     def _select_entry_from_table(self, row: int, _column: int) -> None:
@@ -310,8 +311,8 @@ class FinancePage(Page):
         self.category.setText(entry.category)
         self.description.setText(entry.description)
         self.amount.setText(f"{entry.amount:.2f}")
-        self.due_date.setText(entry.due_date.isoformat())
-        self.payment_date.setText(entry.payment_date.isoformat() if entry.payment_date else "")
+        self.due_date.setText(format_date(entry.due_date))
+        self.payment_date.setText(format_date(entry.payment_date))
         self.payment_method.setText(entry.payment_method)
         self.status.setCurrentText(entry.status.value)
         self.notes.setPlainText(entry.notes)
@@ -334,8 +335,7 @@ class FinancePage(Page):
         return FinancialStatus(self.status_filter.currentText())
 
     def _optional_date(self, value: str) -> date | None:
-        value = value.strip()
-        return date.fromisoformat(value) if value else None
+        return parse_optional_date(value)
 
     def _required_float(self, value: str, field: str) -> float:
         try:

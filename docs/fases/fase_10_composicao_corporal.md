@@ -19,7 +19,7 @@ Implementar o modulo de composicao corporal do Nutri Clinic Pro, permitindo regi
 
 - Peso deve ser maior que zero.
 - Percentual de gordura deve estar entre 0 e 100.
-- Data da avaliacao deve seguir o formato ISO `AAAA-MM-DD`.
+- Data da avaliacao deve usar o formato visual `mm-dd-aaaa`.
 - Registro exige paciente selecionado.
 
 ## Testes

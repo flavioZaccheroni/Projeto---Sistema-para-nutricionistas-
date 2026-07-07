@@ -21,6 +21,7 @@ from nutri_app.repositories.backup_repository import BackupRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.repositories.user_repository import UserRepository
 from nutri_app.services.backup import BackupService
+from nutri_app.ui.date_format import format_datetime
 from nutri_app.ui.pages.base import Page
 
 
@@ -154,7 +155,7 @@ class SettingsPage(Page):
             self.table.setItem(row, 2, QTableWidgetItem(str(record.size_bytes)))
             self.table.setItem(row, 3, QTableWidgetItem(record.checksum_sha256[:16]))
             self.table.setItem(row, 4, QTableWidgetItem(record.status.value))
-            created_at = record.created_at.isoformat() if record.created_at else ""
+            created_at = format_datetime(record.created_at)
             self.table.setItem(row, 5, QTableWidgetItem(created_at))
 
     def _select_backup_from_table(self, row: int, _column: int) -> None:

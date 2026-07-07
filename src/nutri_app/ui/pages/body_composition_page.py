@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -22,6 +20,7 @@ from nutri_app.repositories.body_composition_repository import BodyCompositionRe
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.body_composition import BodyCompositionService
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date
 from nutri_app.ui.pages.base import Page
 
 
@@ -50,7 +49,7 @@ class BodyCompositionPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.assessment_date = QLineEdit()
-        self.assessment_date.setPlaceholderText("AAAA-MM-DD")
+        self.assessment_date.setPlaceholderText("mm-dd-aaaa")
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in BodyCompositionProtocol])
         self.weight = QLineEdit()
@@ -145,7 +144,7 @@ class BodyCompositionPage(Page):
         self._reload_table()
 
     def _build_composition(self) -> BodyComposition:
-        assessment_date = date.fromisoformat(self.assessment_date.text().strip())
+        assessment_date = parse_date(self.assessment_date.text())
         weight = self._required_float(self.weight.text(), "Peso")
         body_fat = self._required_float(self.body_fat_percentage.text(), "Percentual de gordura")
         fat_mass = self.service.calculate_fat_mass(weight, body_fat)
@@ -252,7 +251,7 @@ class BodyCompositionPage(Page):
             if appointment.patient_id != patient_id or appointment.id is None:
                 continue
             self.appointment.addItem(
-                f"{appointment.scheduled_at:%Y-%m-%d %H:%M} - {appointment.kind.value}"
+                f"{format_datetime(appointment.scheduled_at)} - {appointment.kind.value}"
             )
             self.appointment_ids_by_index.append(appointment.id)
 
@@ -262,7 +261,7 @@ class BodyCompositionPage(Page):
         for row, record in enumerate(records):
             self.table.setItem(row, 0, QTableWidgetItem(str(record.id or "")))
             self.table.setItem(row, 1, QTableWidgetItem(record.patient_name))
-            self.table.setItem(row, 2, QTableWidgetItem(record.assessment_date.isoformat()))
+            self.table.setItem(row, 2, QTableWidgetItem(format_date(record.assessment_date)))
             self.table.setItem(row, 3, QTableWidgetItem(record.protocol.value))
             self.table.setItem(row, 4, QTableWidgetItem(f"{record.weight_kg:.2f}"))
             self.table.setItem(row, 5, QTableWidgetItem(f"{record.body_fat_percentage:.2f}"))
@@ -286,7 +285,7 @@ class BodyCompositionPage(Page):
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
             self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
-        self.assessment_date.setText(record.assessment_date.isoformat())
+        self.assessment_date.setText(format_date(record.assessment_date))
         self.protocol.setCurrentText(record.protocol.value)
         self.weight.setText(str(record.weight_kg))
         self.body_fat_percentage.setText(str(record.body_fat_percentage))

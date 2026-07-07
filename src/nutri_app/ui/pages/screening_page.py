@@ -20,6 +20,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.screening_repository import ScreeningRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.screening import ScreeningService
+from nutri_app.ui.date_format import format_datetime
 from nutri_app.ui.pages.base import Page
 
 
@@ -201,7 +202,7 @@ class ScreeningPage(Page):
             if appointment.patient_id != patient_id or appointment.id is None:
                 continue
             self.appointment.addItem(
-                f"{appointment.scheduled_at:%Y-%m-%d %H:%M} - {appointment.kind.value}"
+                f"{format_datetime(appointment.scheduled_at)} - {appointment.kind.value}"
             )
             self.appointment_ids_by_index.append(appointment.id)
 

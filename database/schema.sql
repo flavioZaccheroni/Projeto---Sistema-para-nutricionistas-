@@ -511,6 +511,21 @@ CREATE TABLE IF NOT EXISTS implantacao_checks (
     deleted_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS registros_clinicos_avancados (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    modulo TEXT NOT NULL,
+    paciente_id INTEGER,
+    data_registro TEXT NOT NULL,
+    perfil TEXT NOT NULL,
+    entradas_json TEXT NOT NULL,
+    resultado TEXT NOT NULL,
+    observacoes TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT,
+    FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
+);
+
 CREATE TABLE IF NOT EXISTS configuracoes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     chave TEXT NOT NULL UNIQUE,
