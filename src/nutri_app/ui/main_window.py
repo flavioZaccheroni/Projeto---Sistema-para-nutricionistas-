@@ -318,16 +318,6 @@ class MainWindow(QMainWindow):
                 ),
             ),
             NavigationItem(
-                "Antropometria Avancada",
-                "Antropometria Avancada",
-                AdvancedModulePage(
-                    advanced_definitions["Antropometria Avancada"],
-                    self.context.connection_factory,
-                    self.context.audit_repository,
-                    self.current_user.id,
-                ),
-            ),
-            NavigationItem(
                 "Terapia Nutricional",
                 "Terapia Nutricional",
                 AdvancedModulePage(

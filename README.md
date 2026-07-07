@@ -76,7 +76,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 28: protocolos clinicos BRASPEN/ASPEN/ESPEN e NFPE.
 - Fase 29: pediatria.
 - Fase 30: nefrologia e hemodialise.
-- Fase 31: antropometria avancada.
+- Fase 31: antropometria avancada integrada ao modulo Antropometria.
 - Fase 32: terapia nutricional enteral/parenteral.
 - Fase 33: plano alimentar inteligente.
 

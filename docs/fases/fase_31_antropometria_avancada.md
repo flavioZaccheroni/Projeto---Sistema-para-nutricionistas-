@@ -6,6 +6,6 @@ Adicionar indices antropometricos avancados solicitados no documento clinico.
 
 ## Entregas
 
-- Modulo `Antropometria Avancada`.
+- Aba `Avancada` dentro do modulo `Antropometria`, reduzindo duplicidade no menu lateral.
 - Calculo inicial de IMC, indice de conicidade, IAC, FMI, FFMI, CMB e AMB.
 - Entrada de circunferencias e dobra tricipital.
