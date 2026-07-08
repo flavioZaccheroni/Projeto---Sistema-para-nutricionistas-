@@ -13,6 +13,7 @@ Implementar o modulo de planejamento alimentar do Nutri Clinic Pro, permitindo c
 - Tela Desktop substituindo o placeholder de Plano Alimentar.
 - Cadastro de cabecalho do plano com metas energeticas e de macronutrientes.
 - Cadastro de refeicoes, alimentos, quantidades, macros, substituicoes e observacoes.
+- Aba `Plano inteligente` com distribuicao automatica de metas e refeicoes.
 - Auditoria para criacao, atualizacao e exclusao logica.
 
 ## Validacoes

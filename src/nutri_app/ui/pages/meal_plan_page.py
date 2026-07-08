@@ -11,18 +11,29 @@ from PySide6.QtWidgets import (
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
+from nutri_app.domain.advanced_clinical import AdvancedClinicalRecord
 from nutri_app.domain.meal_plan import Meal, MealPlan, MealPlanItem
+from nutri_app.repositories.advanced_clinical_repository import AdvancedClinicalRepository
 from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.meal_plan_repository import MealPlanRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.services.advanced_clinical import AdvancedClinicalService
 from nutri_app.services.meal_plan import MealPlanService
-from nutri_app.ui.date_format import format_date, format_datetime, parse_date, parse_optional_date
+from nutri_app.ui.date_format import (
+    format_date,
+    format_datetime,
+    parse_date,
+    parse_optional_date,
+    today_text,
+)
 from nutri_app.ui.pages.base import Page
 
 
@@ -35,15 +46,19 @@ class MealPlanPage(Page):
     ) -> None:
         super().__init__("Planejamento Alimentar", "Plano por refeicoes, itens e lista de compras.")
         self.repository = MealPlanRepository(connection_factory)
+        self.smart_repository = AdvancedClinicalRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
         self.appointment_repository = AppointmentRepository(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.service = MealPlanService()
+        self.smart_definition = AdvancedClinicalService().by_module("Plano Inteligente")
         self.selected_plan_id: int | None = None
         self.selected_meal_index: int | None = None
         self.patient_ids_by_index: list[int] = []
         self.appointment_ids_by_index: list[int | None] = []
+        self.smart_patient_ids_by_index: list[int | None] = []
+        self.smart_inputs: dict[str, QLineEdit] = {}
         self.meals: list[Meal] = []
 
         self.search = QLineEdit()
@@ -158,13 +173,75 @@ class MealPlanPage(Page):
         wrapper_layout.addRow(actions)
         wrapper_layout.addRow(self.meal_table)
 
-        self.layout.addWidget(wrapper)
-        self.layout.addWidget(self.plan_table)
+        plan_tab = QWidget()
+        plan_layout = QVBoxLayout(plan_tab)
+        plan_layout.addWidget(wrapper)
+        plan_layout.addWidget(self.plan_table)
+
+        tabs = QTabWidget()
+        tabs.addTab(plan_tab, "Plano alimentar")
+        tabs.addTab(self._build_smart_plan_tab(), "Plano inteligente")
+
+        self.layout.addWidget(tabs)
         self.refresh()
 
     def refresh(self) -> None:
         self._reload_patients()
         self._reload_plan_table()
+        self._reload_smart_patients()
+        self._reload_smart_table()
+
+    def _build_smart_plan_tab(self) -> QWidget:
+        self.smart_patient = QComboBox()
+        self.smart_record_date = QLineEdit(today_text())
+        self.smart_record_date.setPlaceholderText("mm-dd-aaaa")
+        self.smart_profile = QComboBox()
+        self.smart_profile.addItems(self.smart_definition.profiles)
+        self.smart_notes = QTextEdit()
+        self.smart_notes.setFixedHeight(70)
+        self.smart_result = QTextEdit()
+        self.smart_result.setReadOnly(True)
+        self.smart_result.setFixedHeight(110)
+
+        form = QFormLayout()
+        form.addRow("Paciente", self.smart_patient)
+        form.addRow("Data", self.smart_record_date)
+        form.addRow("Perfil", self.smart_profile)
+        for key, label in self.smart_definition.fields:
+            field = QLineEdit()
+            self.smart_inputs[key] = field
+            form.addRow(label, field)
+        form.addRow("Observacoes", self.smart_notes)
+        form.addRow("Resultado", self.smart_result)
+
+        calculate = QPushButton("Calcular / salvar")
+        calculate.setObjectName("primaryButton")
+        calculate.clicked.connect(self._save_smart_plan)
+        clear = QPushButton("Limpar")
+        clear.clicked.connect(self._clear_smart_plan)
+        refresh = QPushButton("Atualizar")
+        refresh.clicked.connect(self._reload_smart_table)
+
+        actions = QHBoxLayout()
+        for button in [calculate, clear, refresh]:
+            actions.addWidget(button)
+        actions.addStretch()
+
+        self.smart_table = QTableWidget(0, 6)
+        self.smart_table.setHorizontalHeaderLabels(
+            ["ID", "Data", "Paciente", "Perfil", "Resultado", "Observacoes"]
+        )
+
+        wrapper = QWidget()
+        wrapper_layout = QFormLayout(wrapper)
+        wrapper_layout.addRow(form)
+        wrapper_layout.addRow(actions)
+
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.addWidget(wrapper)
+        layout.addWidget(self.smart_table)
+        return tab
 
     def _save_plan(self) -> None:
         if self.patient.currentIndex() < 0 or not self.patient_ids_by_index:
@@ -400,6 +477,90 @@ class MealPlanPage(Page):
             self.plan_table.setItem(row, 4, QTableWidgetItem(f"{record.total_energy_kcal:.0f}"))
             self.plan_table.setItem(row, 5, QTableWidgetItem(f"{record.total_protein_g:.1f}"))
             self.plan_table.setItem(row, 6, QTableWidgetItem(str(meals_count)))
+
+    def _save_smart_plan(self) -> None:
+        if self.smart_patient.currentIndex() < 0:
+            QMessageBox.warning(self, "Plano inteligente", "Cadastre um paciente antes do plano.")
+            return
+
+        try:
+            values = {
+                key: field.text().strip()
+                for key, field in self.smart_inputs.items()
+            }
+            notes = self.smart_notes.toPlainText().strip()
+            result = self.smart_definition.evaluator(
+                self.smart_profile.currentText(),
+                values,
+                notes,
+            )
+            record = AdvancedClinicalRecord(
+                module=self.smart_definition.module,
+                patient_id=self.smart_patient_ids_by_index[self.smart_patient.currentIndex()],
+                record_date=parse_date(self.smart_record_date.text()),
+                profile=self.smart_profile.currentText(),
+                inputs=values,
+                result=result,
+                notes=notes,
+            )
+        except (ValueError, IndexError) as exc:
+            QMessageBox.warning(self, "Validacao", str(exc) or "Valores invalidos.")
+            return
+
+        record_id = self.smart_repository.add(record)
+        self.audit_repository.log(
+            user_id=self.current_user_id,
+            action="registrou_plano_inteligente",
+            entity="registros_clinicos_avancados",
+            entity_id=record_id,
+            details=f"Plano inteligente: {result}",
+        )
+        self.smart_result.setPlainText(result)
+        self._reload_smart_table()
+        QMessageBox.information(self, "Plano inteligente", "Plano inteligente registrado.")
+
+    def _reload_smart_patients(self) -> None:
+        current_patient_id = None
+        if self.smart_patient.currentIndex() >= 0 and self.smart_patient_ids_by_index:
+            current_patient_id = self.smart_patient_ids_by_index[
+                self.smart_patient.currentIndex()
+            ]
+
+        self.smart_patient.blockSignals(True)
+        self.smart_patient.clear()
+        self.smart_patient_ids_by_index = []
+        for patient in self.patient_repository.list_active():
+            if patient.id is None:
+                continue
+            self.smart_patient.addItem(patient.name)
+            self.smart_patient_ids_by_index.append(patient.id)
+        if current_patient_id in self.smart_patient_ids_by_index:
+            self.smart_patient.setCurrentIndex(
+                self.smart_patient_ids_by_index.index(current_patient_id)
+            )
+        self.smart_patient.blockSignals(False)
+
+    def _reload_smart_table(self) -> None:
+        records = self.smart_repository.list_by_module(self.smart_definition.module)
+        self.smart_table.setRowCount(len(records))
+        for row, record in enumerate(records):
+            self.smart_table.setItem(row, 0, QTableWidgetItem(str(record.id or "")))
+            self.smart_table.setItem(row, 1, QTableWidgetItem(format_date(record.record_date)))
+            self.smart_table.setItem(row, 2, QTableWidgetItem(record.patient_name))
+            self.smart_table.setItem(row, 3, QTableWidgetItem(record.profile))
+            self.smart_table.setItem(row, 4, QTableWidgetItem(record.result))
+            self.smart_table.setItem(row, 5, QTableWidgetItem(record.notes))
+
+    def _clear_smart_plan(self) -> None:
+        if self.smart_patient.count() > 0:
+            self.smart_patient.setCurrentIndex(0)
+        if self.smart_profile.count() > 0:
+            self.smart_profile.setCurrentIndex(0)
+        self.smart_record_date.setText(today_text())
+        for field in self.smart_inputs.values():
+            field.clear()
+        self.smart_notes.clear()
+        self.smart_result.clear()
 
     def _select_meal_from_table(self, row: int, _column: int) -> None:
         if row < 0 or row >= len(self.meals):

@@ -78,7 +78,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 30: nefrologia e hemodialise.
 - Fase 31: antropometria avancada integrada ao modulo Antropometria.
 - Fase 32: terapia nutricional enteral/parenteral.
-- Fase 33: plano alimentar inteligente.
+- Fase 33: plano alimentar inteligente integrado ao modulo Plano Alimentar.
 
 ## Versao atual
 

@@ -328,16 +328,6 @@ class MainWindow(QMainWindow):
                 ),
             ),
             NavigationItem(
-                "Plano Inteligente",
-                "Plano Inteligente",
-                AdvancedModulePage(
-                    advanced_definitions["Plano Inteligente"],
-                    self.context.connection_factory,
-                    self.context.audit_repository,
-                    self.current_user.id,
-                ),
-            ),
-            NavigationItem(
                 "Integracoes",
                 "Integracoes",
                 IntegrationsPage(
@@ -368,11 +358,12 @@ class MainWindow(QMainWindow):
                 ),
             ),
         ]
-        return [
+        visible_items = [
             item
             for item in items
             if self.context.user_repository.can_view_module(self.current_user.role, item.module)
         ]
+        return sorted(visible_items, key=lambda item: item.title.lower())
 
     def _sidebar(self) -> QWidget:
         sidebar = QWidget()
