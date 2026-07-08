@@ -9,7 +9,7 @@ Concluida em nivel de MVP funcional.
 - Tela de anamnese substituindo o placeholder.
 - Criacao de anamnese vinculada a paciente.
 - Vinculo opcional com consulta da agenda.
-- Campos clinicos: queixa principal, HDA, historico patologico, historico familiar, rotina alimentar, comportamento alimentar, sintomas gastrointestinais e observacoes.
+- Campos clinicos estruturados com selecao por checkbox: queixa principal, HDA, historico patologico, historico familiar, rotina alimentar, comportamento alimentar, sintomas gastrointestinais, observacoes clinicas, habitos de vida, medicamentos, suplementacao, alergias e intolerancias.
 - Pesquisa de anamneses pelo nome do paciente.
 - Listagem de anamneses ativas.
 - Selecao de registro para edicao.
@@ -29,7 +29,6 @@ Concluida em nivel de MVP funcional.
 ## Pendencias para fases futuras
 
 - Formularios especializados por publico clinico.
-- Campos estruturados para alergias, aversoes e habitos.
 - Questionarios alimentares padronizados.
 - Impressao/exportacao da anamnese.
 - Historico detalhado de alteracoes por campo.

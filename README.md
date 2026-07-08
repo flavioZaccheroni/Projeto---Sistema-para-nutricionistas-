@@ -52,7 +52,7 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Fase 4: dashboard inicial.
 - Fase 5: cadastro de pacientes.
 - Fase 6: agenda.
-- Fase 7: anamnese.
+- Fase 7: anamnese estruturada com parametros selecionaveis.
 - Fase 8: triagem nutricional.
 - Fase 9: antropometria.
 - Fase 10: composicao corporal.

@@ -7,9 +7,11 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
-    QTextEdit,
+    QTabWidget,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -19,6 +21,23 @@ from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.ui.anamnesis_form import (
+    ALERGIAS_INTOLERANCIAS,
+    COMPORTAMENTO_ALIMENTAR,
+    HABITOS_VIDA,
+    HISTORIA_DOENCA_ATUAL,
+    HISTORICO_FAMILIAR,
+    HISTORICO_PATOLOGICO,
+    MEDICAMENTOS_SUPLEMENTOS,
+    OBSERVACOES_CLINICAS,
+    QUEIXA_PRINCIPAL,
+    ROTINA_ALIMENTAR,
+    SINTOMAS_GASTROINTESTINAIS,
+    SelectableSection,
+    load_sections,
+    serialize_sections,
+    summarize_anamnesis_text,
+)
 from nutri_app.ui.date_format import format_datetime
 from nutri_app.ui.pages.base import Page
 
@@ -47,29 +66,28 @@ class AnamnesisPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
 
-        self.chief_complaint = QTextEdit()
-        self.current_disease_history = QTextEdit()
-        self.pathological_history = QTextEdit()
-        self.family_history = QTextEdit()
-        self.food_routine = QTextEdit()
-        self.eating_behavior = QTextEdit()
-        self.gastrointestinal_symptoms = QTextEdit()
-        self.notes = QTextEdit()
-        for field in self._text_fields():
-            field.setFixedHeight(62)
+        self.chief_complaint = SelectableSection(QUEIXA_PRINCIPAL)
+        self.current_disease_history = SelectableSection(HISTORIA_DOENCA_ATUAL)
+        self.pathological_history = SelectableSection(HISTORICO_PATOLOGICO)
+        self.family_history = SelectableSection(HISTORICO_FAMILIAR)
+        self.food_routine = SelectableSection(ROTINA_ALIMENTAR)
+        self.eating_behavior = SelectableSection(COMPORTAMENTO_ALIMENTAR)
+        self.gastrointestinal_symptoms = SelectableSection(SINTOMAS_GASTROINTESTINAIS)
+        self.observations_section = SelectableSection(OBSERVACOES_CLINICAS)
+        self.habits_sections = [SelectableSection(definition) for definition in HABITOS_VIDA]
+        self.medication_sections = [
+            SelectableSection(definition)
+            for definition in MEDICAMENTOS_SUPLEMENTOS
+        ]
+        self.allergy_sections = [
+            SelectableSection(definition)
+            for definition in ALERGIAS_INTOLERANCIAS
+        ]
 
         form = QFormLayout()
         form.addRow("Pesquisar", self.search)
         form.addRow("Paciente", self.patient)
         form.addRow("Consulta vinculada", self.appointment)
-        form.addRow("Queixa principal", self.chief_complaint)
-        form.addRow("Historia da doenca atual", self.current_disease_history)
-        form.addRow("Historico patologico", self.pathological_history)
-        form.addRow("Historico familiar", self.family_history)
-        form.addRow("Rotina alimentar", self.food_routine)
-        form.addRow("Comportamento alimentar", self.eating_behavior)
-        form.addRow("Sintomas gastrointestinais", self.gastrointestinal_symptoms)
-        form.addRow("Observacoes clinicas", self.notes)
 
         save = QPushButton("Salvar")
         save.setObjectName("primaryButton")
@@ -86,7 +104,9 @@ class AnamnesisPage(Page):
         actions.addStretch()
 
         self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["ID", "Paciente", "Consulta", "Queixa", "Atualizado em"])
+        self.table.setHorizontalHeaderLabels(
+            ["ID", "Paciente", "Consulta", "Queixa", "Atualizado em"]
+        )
         self.table.cellClicked.connect(self._select_anamnesis_from_table)
 
         wrapper = QWidget()
@@ -94,7 +114,35 @@ class AnamnesisPage(Page):
         wrapper_layout.addRow(form)
         wrapper_layout.addRow(actions)
 
+        tabs = QTabWidget()
+        tabs.addTab(
+            self._scroll_tab([
+                self.chief_complaint,
+                self.current_disease_history,
+                self.pathological_history,
+                self.family_history,
+            ]),
+            "Clinica",
+        )
+        tabs.addTab(
+            self._scroll_tab([
+                self.food_routine,
+                self.eating_behavior,
+                self.gastrointestinal_symptoms,
+            ]),
+            "Alimentacao e GI",
+        )
+        tabs.addTab(
+            self._scroll_tab([self.observations_section, *self.habits_sections]),
+            "Habitos e observacoes",
+        )
+        tabs.addTab(
+            self._scroll_tab([*self.medication_sections, *self.allergy_sections]),
+            "Medicamentos e alergias",
+        )
+
         self.layout.addWidget(wrapper)
+        self.layout.addWidget(tabs)
         self.layout.addWidget(self.table)
         self.refresh()
 
@@ -111,17 +159,17 @@ class AnamnesisPage(Page):
             id=self.selected_anamnesis_id,
             patient_id=self.patient_ids_by_index[self.patient.currentIndex()],
             appointment_id=self.appointment_ids_by_index[self.appointment.currentIndex()],
-            chief_complaint=self.chief_complaint.toPlainText().strip(),
-            current_disease_history=self.current_disease_history.toPlainText().strip(),
-            pathological_history=self.pathological_history.toPlainText().strip(),
-            family_history=self.family_history.toPlainText().strip(),
-            food_routine=self.food_routine.toPlainText().strip(),
-            eating_behavior=self.eating_behavior.toPlainText().strip(),
-            gastrointestinal_symptoms=self.gastrointestinal_symptoms.toPlainText().strip(),
-            notes=self.notes.toPlainText().strip(),
+            chief_complaint=self.chief_complaint.to_text(),
+            current_disease_history=self.current_disease_history.to_text(),
+            pathological_history=self.pathological_history.to_text(),
+            family_history=self.family_history.to_text(),
+            food_routine=self.food_routine.to_text(),
+            eating_behavior=self.eating_behavior.to_text(),
+            gastrointestinal_symptoms=self.gastrointestinal_symptoms.to_text(),
+            notes=self._notes_text(),
         )
 
-        if not anamnesis.chief_complaint:
+        if not self.chief_complaint.has_content():
             QMessageBox.warning(self, "Validacao", "Queixa principal e obrigatoria.")
             return
 
@@ -159,8 +207,8 @@ class AnamnesisPage(Page):
         self.selected_anamnesis_id = None
         if self.patient.count() > 0:
             self.patient.setCurrentIndex(0)
-        for field in self._text_fields():
-            field.clear()
+        for section in self._section_widgets():
+            section.clear()
 
     def _reload_patients(self) -> None:
         current_patient_id = None
@@ -204,7 +252,9 @@ class AnamnesisPage(Page):
             self.table.setItem(row, 0, QTableWidgetItem(str(record.id or "")))
             self.table.setItem(row, 1, QTableWidgetItem(record.patient_name))
             self.table.setItem(row, 2, QTableWidgetItem(record.appointment_label))
-            self.table.setItem(row, 3, QTableWidgetItem(record.chief_complaint))
+            self.table.setItem(row, 3, QTableWidgetItem(
+                summarize_anamnesis_text(record.chief_complaint)
+            ))
             self.table.setItem(row, 4, QTableWidgetItem(format_datetime(record.updated_at)))
 
     def _select_anamnesis_from_table(self, row: int, _column: int) -> None:
@@ -224,16 +274,16 @@ class AnamnesisPage(Page):
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
             self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
-        self.chief_complaint.setPlainText(record.chief_complaint)
-        self.current_disease_history.setPlainText(record.current_disease_history)
-        self.pathological_history.setPlainText(record.pathological_history)
-        self.family_history.setPlainText(record.family_history)
-        self.food_routine.setPlainText(record.food_routine)
-        self.eating_behavior.setPlainText(record.eating_behavior)
-        self.gastrointestinal_symptoms.setPlainText(record.gastrointestinal_symptoms)
-        self.notes.setPlainText(record.notes)
+        self.chief_complaint.set_text(record.chief_complaint)
+        self.current_disease_history.set_text(record.current_disease_history)
+        self.pathological_history.set_text(record.pathological_history)
+        self.family_history.set_text(record.family_history)
+        self.food_routine.set_text(record.food_routine)
+        self.eating_behavior.set_text(record.eating_behavior)
+        self.gastrointestinal_symptoms.set_text(record.gastrointestinal_symptoms)
+        self._load_notes(record.notes)
 
-    def _text_fields(self) -> list[QTextEdit]:
+    def _section_widgets(self) -> list[SelectableSection]:
         return [
             self.chief_complaint,
             self.current_disease_history,
@@ -242,8 +292,39 @@ class AnamnesisPage(Page):
             self.food_routine,
             self.eating_behavior,
             self.gastrointestinal_symptoms,
-            self.notes,
+            self.observations_section,
+            *self.habits_sections,
+            *self.medication_sections,
+            *self.allergy_sections,
         ]
+
+    def _notes_text(self) -> str:
+        return serialize_sections([
+            self.observations_section,
+            *self.habits_sections,
+            *self.medication_sections,
+            *self.allergy_sections,
+        ])
+
+    def _load_notes(self, text: str) -> None:
+        load_sections([
+            self.observations_section,
+            *self.habits_sections,
+            *self.medication_sections,
+            *self.allergy_sections,
+        ], text)
+
+    def _scroll_tab(self, sections: list[SelectableSection]) -> QScrollArea:
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        for section in sections:
+            layout.addWidget(section)
+        layout.addStretch()
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(content)
+        return scroll
 
     def _audit(self, action: str, anamnesis_id: int, details: str) -> None:
         self.audit_repository.log(
