@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
     QSizePolicy,
     QStackedWidget,
+    QStyle,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -63,10 +64,13 @@ class MainWindow(QMainWindow):
         self.resize(1200, 760)
 
         self.menu = QTreeWidget()
-        self.menu.setFixedWidth(280)
+        self.menu.setFixedWidth(174)
         self.menu.setHeaderHidden(True)
-        self.menu.setIndentation(18)
+        self.menu.setIndentation(14)
         self.menu.setAnimated(True)
+        self.menu.setIconSize(QSize(14, 14))
+        self.menu.setRootIsDecorated(True)
+        self.menu.setUniformRowHeights(True)
         self.menu.itemClicked.connect(self._change_page)
 
         self.pages = QStackedWidget()
@@ -370,61 +374,74 @@ class MainWindow(QMainWindow):
     def _populate_menu(self, navigation_items: list[NavigationItem]) -> None:
         items_by_module = {item.module: item for item in navigation_items}
 
-        self._add_leaf(self.menu, "🏠 Dashboard", "Dashboard", items_by_module)
-        self._add_leaf(self.menu, "👥 Pacientes", "Pacientes", items_by_module)
+        self._add_leaf(
+            self.menu,
+            "Dashboard",
+            "Dashboard",
+            items_by_module,
+            primary=True,
+            icon="dashboard",
+        )
 
-        clinical = self._add_group("🩺 Atendimento Clinico")
+        clinical = self._add_group("Atendimento Clinico", expanded=True, icon="clinical")
         self._add_leaf(clinical, "Agenda", "Agenda", items_by_module)
         self._add_leaf(clinical, "Anamnese", "Anamnese", items_by_module)
         self._add_leaf(clinical, "Anamnese Avancada", "Anamnese Avancada", items_by_module)
+        self._add_leaf(clinical, "Antropometria", "Antropometria", items_by_module)
+        self._add_leaf(clinical, "Composicao Corporal", "Composicao Corporal", items_by_module)
 
-        body = self._add_group("Avaliacao Corporal", clinical)
-        self._add_leaf(body, "Antropometria", "Antropometria", items_by_module)
-        self._add_leaf(body, "Composicao Corporal", "Composicao Corporal", items_by_module)
-        self._add_leaf(body, "Gasto Energetico", "Gasto Energetico", items_by_module)
-        self._remove_empty_group(body)
-
-        protocols = self._add_group("Diagnostico & Protocolos", clinical)
-        self._add_leaf(protocols, "Diagnostico", "Diagnostico", items_by_module)
-        self._add_leaf(protocols, "Protocolos Clinicos", "Protocolos Clinicos", items_by_module)
-        self._add_leaf(protocols, "Triagem Nutricional", "Triagem Nutricional", items_by_module)
-        self._remove_empty_group(protocols)
-
-        exams = self._add_group("Exames", clinical)
+        exams = self._add_group("Exames", clinical, expanded=True)
         self._add_leaf(exams, "Exames", "Exames", items_by_module)
         self._add_leaf(exams, "Exames Avancados", "Exames Avancados", items_by_module)
         self._remove_empty_group(exams)
 
-        specialties = self._add_group("Especialidades", clinical)
-        self._add_leaf(specialties, "Nefrologia", "Nefrologia", items_by_module)
-        self._add_leaf(specialties, "Pediatria", "Pediatria", items_by_module)
-        self._add_leaf(specialties, "Terapia Nutricional", "Terapia Nutricional", items_by_module)
-        self._remove_empty_group(specialties)
-
-        self._add_leaf(clinical, "IA Assistiva", "IA Assistiva", items_by_module)
+        self._add_leaf(clinical, "Gasto Energetico", "Gasto Energetico", items_by_module)
         self._add_leaf(clinical, "Plano Alimentar", "Plano Alimentar", items_by_module)
-        self._add_leaf(clinical, "Relatorios", "Relatorios", items_by_module)
+
+        protocols = self._add_group("Protocolos Clinicos", clinical, expanded=True)
+        self._add_leaf(protocols, "Diagnostico", "Diagnostico", items_by_module)
+        self._add_leaf(protocols, "Protocolos Clinicos", "Protocolos Clinicos", items_by_module)
+        self._add_leaf(protocols, "Triagem Nutricional", "Triagem Nutricional", items_by_module)
+        self._remove_empty_group(protocols)
         self._remove_empty_group(clinical)
 
-        foods = self._add_group("🍎 Banco de Alimentos")
-        self._add_leaf(foods, "Banco de Alimentos", "Banco de Alimentos", items_by_module)
-        self._add_leaf(foods, "Receitas", "Receitas", items_by_module)
-        self._add_leaf(foods, "Suplementos", "Suplementos", items_by_module)
-        self._remove_empty_group(foods)
+        self._add_leaf(
+            self.menu,
+            "Pacientes",
+            "Pacientes",
+            items_by_module,
+            primary=True,
+            icon="patients",
+        )
 
-        channels = self._add_group("📱 Canais do Paciente")
+        self._add_leaf(
+            self.menu,
+            "Banco de Alimentos",
+            "Banco de Alimentos",
+            items_by_module,
+            primary=True,
+            icon="foods",
+        )
+
+        channels = self._add_group("Canais do Paciente", expanded=True, icon="channels")
         self._add_leaf(channels, "Aplicativo Paciente", "Aplicativo Paciente", items_by_module)
         self._add_leaf(channels, "Portal Web", "Portal Web", items_by_module)
         self._remove_empty_group(channels)
 
-        self._add_leaf(self.menu, "💰 Financeiro", "Financeiro", items_by_module)
-
-        settings = self._add_group("⚙️ Configuracoes")
-        self._add_leaf(settings, "Configuracoes", "Configuracoes", items_by_module)
-        self._add_leaf(settings, "Implantacao", "Implantacao", items_by_module)
-        self._add_leaf(settings, "Integracoes", "Integracoes", items_by_module)
-        self._add_leaf(settings, "Usuarios", "Usuarios", items_by_module)
-        self._remove_empty_group(settings)
+        management = self._add_group("Gestao & Especialidades", expanded=True, icon="management")
+        self._add_leaf(management, "Configuracoes", "Configuracoes", items_by_module)
+        self._add_leaf(management, "Financeiro", "Financeiro", items_by_module)
+        self._add_leaf(management, "IA Assistiva", "IA Assistiva", items_by_module)
+        self._add_leaf(management, "Implantacao", "Implantacao", items_by_module)
+        self._add_leaf(management, "Integracoes", "Integracoes", items_by_module)
+        self._add_leaf(management, "Nefrologia", "Nefrologia", items_by_module)
+        self._add_leaf(management, "Pediatria", "Pediatria", items_by_module)
+        self._add_leaf(management, "Receitas", "Receitas", items_by_module)
+        self._add_leaf(management, "Relatorios", "Relatorios", items_by_module)
+        self._add_leaf(management, "Suplementos", "Suplementos", items_by_module)
+        self._add_leaf(management, "Terapia Nutricional", "Terapia Nutricional", items_by_module)
+        self._add_leaf(management, "Usuarios", "Usuarios", items_by_module)
+        self._remove_empty_group(management)
 
         dashboard = self._find_item_by_module("Dashboard")
         if dashboard is not None:
@@ -435,12 +452,17 @@ class MainWindow(QMainWindow):
         self,
         title: str,
         parent: QTreeWidget | QTreeWidgetItem | None = None,
+        expanded: bool = False,
+        icon: str = "",
     ) -> QTreeWidgetItem:
         group = QTreeWidgetItem([title])
+        if icon:
+            group.setIcon(0, self._menu_icon(icon))
+        group.setFont(0, self._menu_font(bold=True))
         group.setToolTip(0, title)
         group.setTextAlignment(0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         group.setData(0, Qt.ItemDataRole.UserRole, None)
-        group.setExpanded(False)
+        group.setExpanded(expanded)
         if parent is None:
             self.menu.addTopLevelItem(group)
         else:
@@ -453,11 +475,16 @@ class MainWindow(QMainWindow):
         title: str,
         module: str,
         items_by_module: dict[str, NavigationItem],
+        primary: bool = False,
+        icon: str = "",
     ) -> QTreeWidgetItem | None:
         if module not in items_by_module:
             return None
 
         leaf = QTreeWidgetItem([title])
+        if icon:
+            leaf.setIcon(0, self._menu_icon(icon))
+        leaf.setFont(0, self._menu_font(bold=primary))
         leaf.setToolTip(0, title)
         leaf.setTextAlignment(0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         leaf.setData(0, Qt.ItemDataRole.UserRole, self.page_indexes_by_module[module])
@@ -478,6 +505,23 @@ class MainWindow(QMainWindow):
                 self.menu.takeTopLevelItem(index)
             return
         parent.removeChild(group)
+
+    def _menu_font(self, bold: bool = False) -> QFont:
+        font = QFont()
+        font.setPointSize(8)
+        font.setBold(bold)
+        return font
+
+    def _menu_icon(self, name: str) -> QIcon:
+        icons = {
+            "dashboard": QStyle.StandardPixmap.SP_ComputerIcon,
+            "clinical": QStyle.StandardPixmap.SP_FileDialogDetailedView,
+            "patients": QStyle.StandardPixmap.SP_DirIcon,
+            "foods": QStyle.StandardPixmap.SP_DriveHDIcon,
+            "channels": QStyle.StandardPixmap.SP_FileDialogInfoView,
+            "management": QStyle.StandardPixmap.SP_FileDialogContentsView,
+        }
+        return self.style().standardIcon(icons.get(name, QStyle.StandardPixmap.SP_FileIcon))
 
     def _find_item_by_module(self, module: str) -> QTreeWidgetItem | None:
         items = self.menu.findItems("", Qt.MatchFlag.MatchContains | Qt.MatchFlag.MatchRecursive)

@@ -3,13 +3,13 @@ QMainWindow {
 }
 
 QWidget#sidebar {
-    background: #ffffff;
+    background: #fbfcfb;
     border-right: 1px solid #dfe5ea;
 }
 
 QLabel#appTitle {
     color: #167a6b;
-    font-size: 20px;
+    font-size: 15px;
     font-weight: 700;
 }
 
@@ -26,7 +26,7 @@ QLabel#pageSubtitle {
 
 QLabel#currentUser {
     color: #536471;
-    font-size: 12px;
+    font-size: 11px;
     border-top: 1px solid #edf1f4;
     border-bottom: 1px solid #edf1f4;
 }
@@ -47,21 +47,28 @@ QListWidget,
 QTreeWidget {
     border: none;
     background: transparent;
-    padding: 8px;
+    padding: 6px;
+    outline: 0;
+    color: #111827;
 }
 
 QListWidget::item,
 QTreeWidget::item {
-    min-height: 38px;
-    border-radius: 6px;
-    padding-left: 12px;
+    min-height: 25px;
+    border-radius: 4px;
+    padding-left: 6px;
+    padding-right: 4px;
 }
 
 QListWidget::item:selected,
 QTreeWidget::item:selected {
-    background: #e1f2ef;
-    color: #167a6b;
+    background: #eef1f4;
+    color: #111827;
     font-weight: 700;
+}
+
+QTreeWidget::item:hover {
+    background: #f3f6f7;
 }
 
 QTreeWidget::branch {
