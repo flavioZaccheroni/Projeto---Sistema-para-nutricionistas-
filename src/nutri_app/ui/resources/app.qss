@@ -43,22 +43,29 @@ QWidget#card {
     border-radius: 8px;
 }
 
-QListWidget {
+QListWidget,
+QTreeWidget {
     border: none;
     background: transparent;
     padding: 8px;
 }
 
-QListWidget::item {
+QListWidget::item,
+QTreeWidget::item {
     min-height: 38px;
     border-radius: 6px;
     padding-left: 12px;
 }
 
-QListWidget::item:selected {
+QListWidget::item:selected,
+QTreeWidget::item:selected {
     background: #e1f2ef;
     color: #167a6b;
     font-weight: 700;
+}
+
+QTreeWidget::branch {
+    background: transparent;
 }
 
 QPushButton {

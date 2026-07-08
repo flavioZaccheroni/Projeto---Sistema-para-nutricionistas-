@@ -7,11 +7,11 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
-    QListWidget,
-    QListWidgetItem,
     QMainWindow,
     QSizePolicy,
     QStackedWidget,
+    QTreeWidget,
+    QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -62,20 +62,22 @@ class MainWindow(QMainWindow):
             self.setWindowIcon(QIcon(str(context.settings.icon_path)))
         self.resize(1200, 760)
 
-        self.menu = QListWidget()
-        self.menu.setFixedWidth(240)
-        self.menu.setSpacing(4)
-        self.menu.currentRowChanged.connect(self._change_page)
+        self.menu = QTreeWidget()
+        self.menu.setFixedWidth(280)
+        self.menu.setHeaderHidden(True)
+        self.menu.setIndentation(18)
+        self.menu.setAnimated(True)
+        self.menu.itemClicked.connect(self._change_page)
 
         self.pages = QStackedWidget()
-        for item in self._navigation_items():
+        navigation_items = self._navigation_items()
+        self.page_indexes_by_module: dict[str, int] = {}
+        for item in navigation_items:
+            page_index = self.pages.count()
             self.pages.addWidget(item.page)
-            menu_item = QListWidgetItem(item.title)
-            menu_item.setToolTip(item.title)
-            menu_item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-            self.menu.addItem(menu_item)
+            self.page_indexes_by_module[item.module] = page_index
 
-        self.menu.setCurrentRow(0)
+        self._populate_menu(navigation_items)
 
         root = QWidget()
         layout = QHBoxLayout(root)
@@ -363,7 +365,126 @@ class MainWindow(QMainWindow):
             for item in items
             if self.context.user_repository.can_view_module(self.current_user.role, item.module)
         ]
-        return sorted(visible_items, key=lambda item: item.title.lower())
+        return visible_items
+
+    def _populate_menu(self, navigation_items: list[NavigationItem]) -> None:
+        items_by_module = {item.module: item for item in navigation_items}
+
+        self._add_leaf(self.menu, "🏠 Dashboard", "Dashboard", items_by_module)
+        self._add_leaf(self.menu, "👥 Pacientes", "Pacientes", items_by_module)
+
+        clinical = self._add_group("🩺 Atendimento Clinico")
+        self._add_leaf(clinical, "Agenda", "Agenda", items_by_module)
+        self._add_leaf(clinical, "Anamnese", "Anamnese", items_by_module)
+        self._add_leaf(clinical, "Anamnese Avancada", "Anamnese Avancada", items_by_module)
+
+        body = self._add_group("Avaliacao Corporal", clinical)
+        self._add_leaf(body, "Antropometria", "Antropometria", items_by_module)
+        self._add_leaf(body, "Composicao Corporal", "Composicao Corporal", items_by_module)
+        self._add_leaf(body, "Gasto Energetico", "Gasto Energetico", items_by_module)
+        self._remove_empty_group(body)
+
+        protocols = self._add_group("Diagnostico & Protocolos", clinical)
+        self._add_leaf(protocols, "Diagnostico", "Diagnostico", items_by_module)
+        self._add_leaf(protocols, "Protocolos Clinicos", "Protocolos Clinicos", items_by_module)
+        self._add_leaf(protocols, "Triagem Nutricional", "Triagem Nutricional", items_by_module)
+        self._remove_empty_group(protocols)
+
+        exams = self._add_group("Exames", clinical)
+        self._add_leaf(exams, "Exames", "Exames", items_by_module)
+        self._add_leaf(exams, "Exames Avancados", "Exames Avancados", items_by_module)
+        self._remove_empty_group(exams)
+
+        specialties = self._add_group("Especialidades", clinical)
+        self._add_leaf(specialties, "Nefrologia", "Nefrologia", items_by_module)
+        self._add_leaf(specialties, "Pediatria", "Pediatria", items_by_module)
+        self._add_leaf(specialties, "Terapia Nutricional", "Terapia Nutricional", items_by_module)
+        self._remove_empty_group(specialties)
+
+        self._add_leaf(clinical, "IA Assistiva", "IA Assistiva", items_by_module)
+        self._add_leaf(clinical, "Plano Alimentar", "Plano Alimentar", items_by_module)
+        self._add_leaf(clinical, "Relatorios", "Relatorios", items_by_module)
+        self._remove_empty_group(clinical)
+
+        foods = self._add_group("🍎 Banco de Alimentos")
+        self._add_leaf(foods, "Banco de Alimentos", "Banco de Alimentos", items_by_module)
+        self._add_leaf(foods, "Receitas", "Receitas", items_by_module)
+        self._add_leaf(foods, "Suplementos", "Suplementos", items_by_module)
+        self._remove_empty_group(foods)
+
+        channels = self._add_group("📱 Canais do Paciente")
+        self._add_leaf(channels, "Aplicativo Paciente", "Aplicativo Paciente", items_by_module)
+        self._add_leaf(channels, "Portal Web", "Portal Web", items_by_module)
+        self._remove_empty_group(channels)
+
+        self._add_leaf(self.menu, "💰 Financeiro", "Financeiro", items_by_module)
+
+        settings = self._add_group("⚙️ Configuracoes")
+        self._add_leaf(settings, "Configuracoes", "Configuracoes", items_by_module)
+        self._add_leaf(settings, "Implantacao", "Implantacao", items_by_module)
+        self._add_leaf(settings, "Integracoes", "Integracoes", items_by_module)
+        self._add_leaf(settings, "Usuarios", "Usuarios", items_by_module)
+        self._remove_empty_group(settings)
+
+        dashboard = self._find_item_by_module("Dashboard")
+        if dashboard is not None:
+            self.menu.setCurrentItem(dashboard)
+            self._show_page(dashboard)
+
+    def _add_group(
+        self,
+        title: str,
+        parent: QTreeWidget | QTreeWidgetItem | None = None,
+    ) -> QTreeWidgetItem:
+        group = QTreeWidgetItem([title])
+        group.setToolTip(0, title)
+        group.setTextAlignment(0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        group.setData(0, Qt.ItemDataRole.UserRole, None)
+        group.setExpanded(False)
+        if parent is None:
+            self.menu.addTopLevelItem(group)
+        else:
+            parent.addChild(group)
+        return group
+
+    def _add_leaf(
+        self,
+        parent: QTreeWidget | QTreeWidgetItem,
+        title: str,
+        module: str,
+        items_by_module: dict[str, NavigationItem],
+    ) -> QTreeWidgetItem | None:
+        if module not in items_by_module:
+            return None
+
+        leaf = QTreeWidgetItem([title])
+        leaf.setToolTip(0, title)
+        leaf.setTextAlignment(0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        leaf.setData(0, Qt.ItemDataRole.UserRole, self.page_indexes_by_module[module])
+        leaf.setData(0, Qt.ItemDataRole.UserRole + 1, module)
+        if isinstance(parent, QTreeWidget):
+            parent.addTopLevelItem(leaf)
+        else:
+            parent.addChild(leaf)
+        return leaf
+
+    def _remove_empty_group(self, group: QTreeWidgetItem) -> None:
+        if group.childCount() > 0:
+            return
+        parent = group.parent()
+        if parent is None:
+            index = self.menu.indexOfTopLevelItem(group)
+            if index >= 0:
+                self.menu.takeTopLevelItem(index)
+            return
+        parent.removeChild(group)
+
+    def _find_item_by_module(self, module: str) -> QTreeWidgetItem | None:
+        items = self.menu.findItems("", Qt.MatchFlag.MatchContains | Qt.MatchFlag.MatchRecursive)
+        for item in items:
+            if item.data(0, Qt.ItemDataRole.UserRole + 1) == module:
+                return item
+        return None
 
     def _sidebar(self) -> QWidget:
         sidebar = QWidget()
@@ -384,10 +505,19 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.menu)
         return sidebar
 
-    def _change_page(self, index: int) -> None:
-        if index >= 0:
-            self.pages.setCurrentIndex(index)
-            page = self.pages.currentWidget()
-            refresh = getattr(page, "refresh", None)
-            if callable(refresh):
-                refresh()
+    def _change_page(self, item: QTreeWidgetItem, _column: int) -> None:
+        page_index = item.data(0, Qt.ItemDataRole.UserRole)
+        if page_index is None:
+            item.setExpanded(not item.isExpanded())
+            return
+        self._show_page(item)
+
+    def _show_page(self, item: QTreeWidgetItem) -> None:
+        page_index = item.data(0, Qt.ItemDataRole.UserRole)
+        if page_index is None:
+            return
+        self.pages.setCurrentIndex(int(page_index))
+        page = self.pages.currentWidget()
+        refresh = getattr(page, "refresh", None)
+        if callable(refresh):
+            refresh()
