@@ -2,15 +2,18 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
-    QWidget,
+    QVBoxLayout,
 )
 
 from nutri_app.domain.laboratory_exam import LaboratoryExam, LaboratoryExamItem
@@ -31,7 +34,10 @@ class LaboratoryExamsPage(Page):
         audit_repository: AuditRepository,
         current_user_id: int,
     ) -> None:
-        super().__init__("Exames Laboratoriais", "Cadastro de exames, itens e alertas clinicos.")
+        super().__init__(
+            "Gerenciador de Exames Laboratoriais",
+            "Cadastro de exames, itens e alertas clinicos.",
+        )
         self.repository = LaboratoryExamRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
         self.appointment_repository = AppointmentRepository(connection_factory)
@@ -64,23 +70,8 @@ class LaboratoryExamsPage(Page):
         self.item_alert = QLineEdit()
         self.item_alert.setReadOnly(True)
 
-        exam_form = QFormLayout()
-        exam_form.addRow("Pesquisar", self.search)
-        exam_form.addRow("Paciente", self.patient)
-        exam_form.addRow("Consulta vinculada", self.appointment)
-        exam_form.addRow("Data do exame", self.exam_date)
-        exam_form.addRow("Laboratorio", self.laboratory)
-        exam_form.addRow("Observacoes", self.notes)
-
-        item_form = QFormLayout()
-        item_form.addRow("Exame/item", self.item_name)
-        item_form.addRow("Valor", self.item_value)
-        item_form.addRow("Unidade", self.item_unit)
-        item_form.addRow("Referencia minima", self.item_min)
-        item_form.addRow("Referencia maxima", self.item_max)
-        item_form.addRow("Alerta", self.item_alert)
-
         add_item = QPushButton("Adicionar item")
+        add_item.setObjectName("primaryButton")
         add_item.clicked.connect(self._add_or_update_item)
         clear_item = QPushButton("Limpar item")
         clear_item.clicked.connect(self._clear_item_form)
@@ -110,24 +101,64 @@ class LaboratoryExamsPage(Page):
             ["Item", "Valor", "Unidade", "Referencia", "Alerta", "Status"]
         )
         self.item_table.cellClicked.connect(self._select_item_from_table)
+        self._configure_table(self.item_table)
 
         self.exam_table = QTableWidget(0, 6)
         self.exam_table.setHorizontalHeaderLabels(
             ["ID", "Paciente", "Data", "Laboratorio", "Itens", "Alertas"]
         )
         self.exam_table.cellClicked.connect(self._select_exam_from_table)
+        self._configure_table(self.exam_table)
 
-        wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(exam_form)
-        wrapper_layout.addRow(item_form)
-        wrapper_layout.addRow(item_actions)
-        wrapper_layout.addRow(self.item_table)
-        wrapper_layout.addRow(exam_actions)
-
-        self.layout.addWidget(wrapper)
+        self.layout.addWidget(self._general_card())
+        self.layout.addWidget(self._items_card(item_actions))
         self.layout.addWidget(self.exam_table)
+        self.layout.addLayout(exam_actions)
         self.refresh()
+
+    def _general_card(self) -> QGroupBox:
+        card = QGroupBox("Informacoes Gerais")
+        layout = QGridLayout(card)
+        layout.addWidget(QLabel("Pesquisar"), 0, 0)
+        layout.addWidget(self.search, 0, 1, 1, 7)
+        layout.addWidget(QLabel("Paciente"), 1, 0)
+        layout.addWidget(self.patient, 2, 0, 1, 2)
+        layout.addWidget(QLabel("Consulta vinculada"), 1, 2)
+        layout.addWidget(self.appointment, 2, 2, 1, 2)
+        layout.addWidget(QLabel("Data do exame"), 1, 4)
+        layout.addWidget(self.exam_date, 2, 4, 1, 2)
+        layout.addWidget(QLabel("Laboratorio"), 1, 6)
+        layout.addWidget(self.laboratory, 2, 6, 1, 2)
+        layout.addWidget(QLabel("Observacoes"), 3, 0)
+        layout.addWidget(self.notes, 4, 0, 1, 8)
+        return card
+
+    def _items_card(self, item_actions: QHBoxLayout) -> QGroupBox:
+        card = QGroupBox("Cadastro de Itens de Exame")
+        layout = QVBoxLayout(card)
+
+        form = QGridLayout()
+        form.addWidget(QLabel("Exame/item"), 0, 0)
+        form.addWidget(self.item_name, 1, 0, 1, 2)
+        form.addWidget(QLabel("Valor"), 0, 2)
+        form.addWidget(self.item_value, 1, 2)
+        form.addWidget(QLabel("Unidade"), 0, 3)
+        form.addWidget(self.item_unit, 1, 3)
+        form.addWidget(QLabel("Referencia minima"), 0, 4)
+        form.addWidget(self.item_min, 1, 4)
+        form.addWidget(QLabel("Referencia maxima"), 0, 5)
+        form.addWidget(self.item_max, 1, 5)
+        form.addWidget(QLabel("Alerta"), 0, 6)
+        form.addWidget(self.item_alert, 1, 6)
+        layout.addLayout(form)
+        layout.addLayout(item_actions)
+        layout.addWidget(self.item_table)
+        return card
+
+    def _configure_table(self, table: QTableWidget) -> None:
+        table.setWordWrap(True)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
     def refresh(self) -> None:
         self._reload_patients()

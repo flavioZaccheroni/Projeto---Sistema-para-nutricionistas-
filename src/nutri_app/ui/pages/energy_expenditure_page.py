@@ -4,15 +4,17 @@ from datetime import date
 
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
-    QWidget,
 )
 
 from nutri_app.domain.energy_expenditure import (
@@ -84,29 +86,6 @@ class EnergyExpenditurePage(Page):
         self.notes = QTextEdit()
         self.notes.setFixedHeight(70)
 
-        form = QFormLayout()
-        form.addRow("Pesquisar", self.search)
-        form.addRow("Paciente", self.patient)
-        form.addRow("Consulta vinculada", self.appointment)
-        form.addRow("Data da avaliacao", self.assessment_date)
-        form.addRow("Sexo", self.sex)
-        form.addRow("Idade (anos)", self.age)
-        form.addRow("Peso (kg)", self.weight)
-        form.addRow("Altura (cm)", self.height)
-        form.addRow("Massa magra (kg)", self.lean_mass)
-        form.addRow("Equacao", self.equation)
-        form.addRow("Fator atividade", self.activity_factor)
-        form.addRow("Fator estresse", self.stress_factor)
-        form.addRow("Ajuste objetivo (kcal)", self.goal_adjustment)
-        form.addRow("Proteina (g/kg)", self.protein_per_kg)
-        form.addRow("Lipidios (%)", self.fat_percentage)
-        form.addRow("TMB/EER (kcal)", self.basal_energy)
-        form.addRow("GET (kcal)", self.total_energy)
-        form.addRow("Proteina (g)", self.protein)
-        form.addRow("Carboidrato (g)", self.carbohydrate)
-        form.addRow("Lipidios (g)", self.fat)
-        form.addRow("Observacoes", self.notes)
-
         calculate = QPushButton("Calcular")
         calculate.clicked.connect(self._calculate)
         save = QPushButton("Salvar")
@@ -127,15 +106,80 @@ class EnergyExpenditurePage(Page):
             ["ID", "Paciente", "Data", "Equacao", "Peso", "TMB/EER", "GET", "Proteina"]
         )
         self.table.cellClicked.connect(self._select_expenditure_from_table)
+        self._configure_table()
 
-        wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
-
-        self.layout.addWidget(wrapper)
+        search_layout = QGridLayout()
+        search_layout.addWidget(QLabel("Pesquisar"), 0, 0)
+        search_layout.addWidget(self.search, 0, 1)
+        self.layout.addLayout(search_layout)
+        self.layout.addWidget(self._patient_card())
+        self.layout.addWidget(self._parameters_card())
+        self.layout.addWidget(self._results_card())
+        self.layout.addLayout(actions)
         self.layout.addWidget(self.table)
         self.refresh()
+
+    def _patient_card(self) -> QGroupBox:
+        card = QGroupBox("Dados do Paciente")
+        layout = QGridLayout(card)
+        fields = [
+            ("Paciente", self.patient),
+            ("Consulta vinculada", self.appointment),
+            ("Sexo", self.sex),
+            ("Idade (anos)", self.age),
+            ("Data da avaliacao", self.assessment_date),
+            ("Peso (kg)", self.weight),
+            ("Altura (cm)", self.height),
+            ("Massa magra (kg)", self.lean_mass),
+        ]
+        for index, (label, widget) in enumerate(fields):
+            row = index // 2
+            column = (index % 2) * 2
+            layout.addWidget(QLabel(label), row, column)
+            layout.addWidget(widget, row, column + 1)
+        return card
+
+    def _parameters_card(self) -> QGroupBox:
+        card = QGroupBox("Parametros de Calculo")
+        layout = QGridLayout(card)
+        fields = [
+            ("Equacao", self.equation),
+            ("Ajuste objetivo (kcal)", self.goal_adjustment),
+            ("Fator atividade", self.activity_factor),
+            ("Proteina (g/kg)", self.protein_per_kg),
+            ("Fator estresse", self.stress_factor),
+            ("Lipidios (%)", self.fat_percentage),
+        ]
+        for index, (label, widget) in enumerate(fields):
+            row = index // 2
+            column = (index % 2) * 2
+            layout.addWidget(QLabel(label), row, column)
+            layout.addWidget(widget, row, column + 1)
+        return card
+
+    def _results_card(self) -> QGroupBox:
+        card = QGroupBox("Resultados Nutricionais")
+        layout = QGridLayout(card)
+        fields = [
+            ("TMB/EER (kcal)", self.basal_energy),
+            ("Proteina (g)", self.protein),
+            ("GET (kcal)", self.total_energy),
+            ("Carboidrato (g)", self.carbohydrate),
+            ("Lipidios (g)", self.fat),
+        ]
+        for index, (label, widget) in enumerate(fields):
+            row = index // 2
+            column = (index % 2) * 2
+            layout.addWidget(QLabel(label), row, column)
+            layout.addWidget(widget, row, column + 1)
+        layout.addWidget(QLabel("Observacoes"), 3, 0)
+        layout.addWidget(self.notes, 3, 1, 1, 3)
+        return card
+
+    def _configure_table(self) -> None:
+        self.table.setWordWrap(True)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
     def refresh(self) -> None:
         self._reload_patients()

@@ -43,6 +43,42 @@ QWidget#card {
     border-radius: 8px;
 }
 
+QGroupBox {
+    background: #ffffff;
+    border: 1px solid #cfd8e3;
+    border-radius: 8px;
+    margin-top: 16px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    top: 2px;
+    color: #111827;
+}
+
+QTabWidget::pane {
+    border: none;
+    background: transparent;
+}
+
+QTabBar::tab {
+    min-height: 28px;
+    padding: 5px 14px;
+    border: 1px solid #d6dde5;
+    border-bottom: none;
+    background: #f3f5f7;
+}
+
+QTabBar::tab:selected {
+    background: #ffffff;
+    color: #167a6b;
+    font-weight: 700;
+}
+
 QListWidget,
 QTreeWidget {
     border: none;
@@ -75,6 +111,14 @@ QTreeWidget::branch {
     background: transparent;
 }
 
+QLabel#statusPanel {
+    color: #167a6b;
+    font-size: 16px;
+    font-weight: 700;
+    padding-left: 24px;
+    border-left: 1px solid #d6dde5;
+}
+
 QPushButton {
     min-height: 32px;
     padding: 4px 14px;
@@ -96,8 +140,15 @@ QPushButton#primaryButton {
 
 QLineEdit,
 QTextEdit,
-QTableWidget {
+QTableWidget,
+QComboBox {
     background: #ffffff;
     border: 1px solid #cdd6df;
     border-radius: 6px;
+    min-height: 28px;
+    font-weight: 400;
+}
+
+QTextEdit {
+    min-height: 56px;
 }

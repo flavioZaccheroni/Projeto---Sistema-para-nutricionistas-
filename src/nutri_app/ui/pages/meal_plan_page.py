@@ -5,7 +5,11 @@ from datetime import date
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
@@ -159,19 +163,21 @@ class MealPlanPage(Page):
             ["Refeicao", "Horario", "Itens", "Kcal", "Proteina", "Carboidrato"]
         )
         self.meal_table.cellClicked.connect(self._select_meal_from_table)
+        self._configure_table(self.meal_table)
 
         self.plan_table = QTableWidget(0, 7)
         self.plan_table.setHorizontalHeaderLabels(
             ["ID", "Paciente", "Inicio", "Objetivo", "Kcal", "Proteina", "Refeicoes"]
         )
         self.plan_table.cellClicked.connect(self._select_plan_from_table)
+        self._configure_table(self.plan_table)
 
         wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(plan_form)
-        wrapper_layout.addRow(meal_form)
-        wrapper_layout.addRow(actions)
-        wrapper_layout.addRow(self.meal_table)
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.addWidget(self._form_card("Dados do Plano", plan_form))
+        wrapper_layout.addWidget(self._form_card("Cadastro de Refeicao e Itens", meal_form))
+        wrapper_layout.addLayout(actions)
+        wrapper_layout.addWidget(self.meal_table)
 
         plan_tab = QWidget()
         plan_layout = QVBoxLayout(plan_tab)
@@ -203,16 +209,8 @@ class MealPlanPage(Page):
         self.smart_result.setReadOnly(True)
         self.smart_result.setFixedHeight(110)
 
-        form = QFormLayout()
-        form.addRow("Paciente", self.smart_patient)
-        form.addRow("Data", self.smart_record_date)
-        form.addRow("Perfil", self.smart_profile)
-        for key, label in self.smart_definition.fields:
-            field = QLineEdit()
-            self.smart_inputs[key] = field
-            form.addRow(label, field)
-        form.addRow("Observacoes", self.smart_notes)
-        form.addRow("Resultado", self.smart_result)
+        for key, _label in self.smart_definition.fields:
+            self.smart_inputs[key] = QLineEdit()
 
         calculate = QPushButton("Calcular / salvar")
         calculate.setObjectName("primaryButton")
@@ -231,17 +229,66 @@ class MealPlanPage(Page):
         self.smart_table.setHorizontalHeaderLabels(
             ["ID", "Data", "Paciente", "Perfil", "Resultado", "Observacoes"]
         )
-
-        wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
+        self._configure_table(self.smart_table)
 
         tab = QWidget()
-        layout = QVBoxLayout(tab)
-        layout.addWidget(wrapper)
-        layout.addWidget(self.smart_table)
+        layout = QGridLayout(tab)
+        layout.addWidget(self._smart_profile_card(), 0, 0)
+        layout.addWidget(self._smart_macros_card(), 1, 0)
+        layout.addWidget(self._smart_result_card(), 0, 1, 2, 1)
+        layout.addLayout(actions, 2, 0, 1, 2)
+        layout.addWidget(self.smart_table, 3, 0, 1, 2)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
         return tab
+
+    def _form_card(self, title: str, form: QFormLayout) -> QGroupBox:
+        card = QGroupBox(title)
+        layout = QVBoxLayout(card)
+        layout.addLayout(form)
+        return card
+
+    def _smart_profile_card(self) -> QGroupBox:
+        card = QGroupBox("Paciente e Perfil")
+        layout = QGridLayout(card)
+        layout.addWidget(QLabel("Paciente"), 0, 0)
+        layout.addWidget(self.smart_patient, 1, 0)
+        layout.addWidget(QLabel("Data"), 0, 1)
+        layout.addWidget(self.smart_record_date, 1, 1)
+        layout.addWidget(QLabel("Perfil"), 0, 2)
+        layout.addWidget(self.smart_profile, 1, 2)
+        return card
+
+    def _smart_macros_card(self) -> QGroupBox:
+        card = QGroupBox("Macronutrientes e Restricoes")
+        layout = QGridLayout(card)
+        fields = [
+            ("energy", "Energia (kcal)"),
+            ("protein", "Proteina (g)"),
+            ("carbohydrate", "Carboidrato (g)"),
+            ("fat", "Lipidios (g)"),
+            ("meals", "Numero de refeicoes"),
+            ("restrictions", "Restricoes/Preferencias"),
+        ]
+        for index, (key, label) in enumerate(fields):
+            row = (index // 2) * 2
+            column = index % 2
+            layout.addWidget(QLabel(label), row, column)
+            layout.addWidget(self.smart_inputs[key], row + 1, column)
+        layout.addWidget(QLabel("Observacoes"), 6, 0)
+        layout.addWidget(self.smart_notes, 7, 0, 1, 2)
+        return card
+
+    def _smart_result_card(self) -> QGroupBox:
+        card = QGroupBox("Resultados Gerados")
+        layout = QVBoxLayout(card)
+        layout.addWidget(self.smart_result)
+        return card
+
+    def _configure_table(self, table: QTableWidget) -> None:
+        table.setWordWrap(True)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
     def _save_plan(self) -> None:
         if self.patient.currentIndex() < 0 or not self.patient_ids_by_index:

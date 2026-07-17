@@ -3,7 +3,11 @@ from __future__ import annotations
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
@@ -80,15 +84,61 @@ class AdvancedModulePage(Page):
         self.table.setHorizontalHeaderLabels(
             ["ID", "Data", "Paciente", "Perfil", "Resultado", "Obs."]
         )
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
-        wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
-
-        self.layout.addWidget(wrapper)
+        if definition.module == "Exames Avancados":
+            self._build_advanced_labs_layout(actions)
+        else:
+            wrapper = QWidget()
+            wrapper_layout = QFormLayout(wrapper)
+            wrapper_layout.addRow(form)
+            wrapper_layout.addRow(actions)
+            self.layout.addWidget(wrapper)
         self.layout.addWidget(self.table)
         self.refresh()
+
+    def _build_advanced_labs_layout(self, actions: QHBoxLayout) -> None:
+        header = QGroupBox("Informacoes do Paciente & Avaliacao")
+        header_layout = QGridLayout(header)
+        header_layout.addWidget(QLabel("Paciente"), 0, 0)
+        header_layout.addWidget(self.patient, 1, 0)
+        header_layout.addWidget(QLabel("Perfil"), 0, 1)
+        header_layout.addWidget(self.profile, 1, 1)
+        header_layout.addWidget(QLabel("Data"), 2, 0)
+        header_layout.addWidget(self.record_date, 3, 0)
+        status = QLabel("Avaliacao Laboratorial\nIniciado")
+        status.setObjectName("statusPanel")
+        header_layout.addWidget(status, 0, 2, 4, 1)
+
+        markers = QGroupBox("Marcadores Laboratoriais")
+        marker_layout = QGridLayout(markers)
+        left_keys = ["albumin", "crp", "potassium", "phosphorus"]
+        right_keys = ["hemoglobin", "hba1c"]
+        for row, key in enumerate(left_keys):
+            marker_layout.addWidget(QLabel(self._field_label(key)), row, 0)
+            marker_layout.addWidget(self.inputs[key], row, 1)
+        for row, key in enumerate(right_keys):
+            marker_layout.addWidget(QLabel(self._field_label(key)), row, 2)
+            marker_layout.addWidget(self.inputs[key], row, 3)
+
+        output = QGroupBox("Observacoes & Resultado")
+        output_layout = QGridLayout(output)
+        output_layout.addWidget(QLabel("Observacoes"), 0, 0)
+        output_layout.addWidget(QLabel("Resultado"), 0, 1)
+        output_layout.addWidget(self.notes, 1, 0)
+        output_layout.addWidget(self.result, 1, 1)
+
+        self.layout.addWidget(header)
+        self.layout.addWidget(markers)
+        self.layout.addWidget(output)
+        self.layout.addLayout(actions)
+
+    def _field_label(self, key: str) -> str:
+        for field_key, label in self.definition.fields:
+            if field_key == key:
+                return label
+        return key
 
     def refresh(self) -> None:
         self._load_patients()
