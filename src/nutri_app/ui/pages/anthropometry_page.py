@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -59,6 +58,9 @@ class AnthropometryPage(Page):
         self.appointment_ids_by_index: list[int | None] = []
         self.advanced_patient_ids_by_index: list[int | None] = []
         self.advanced_inputs: dict[str, QLineEdit] = {}
+        self.advanced_bmi = QLineEdit()
+        self.advanced_bmi.setReadOnly(True)
+        self.advanced_bmi.setPlaceholderText("Pendente")
 
         self.search = QLineEdit()
         self.search.setPlaceholderText("Pesquisar pelo nome do paciente")
@@ -198,11 +200,12 @@ class AnthropometryPage(Page):
         row: int,
         label: str,
         widget: QWidget,
+        column: int = 0,
     ) -> None:
         title = QLabel(label)
         title.setObjectName("miniHeader")
-        layout.addWidget(title, row, 0, 1, 2)
-        layout.addWidget(widget, row + 1, 0, 1, 2)
+        layout.addWidget(title, row, column, 1, 2)
+        layout.addWidget(widget, row + 1, column, 1, 2)
 
     def refresh(self) -> None:
         self._reload_patients()
@@ -217,21 +220,18 @@ class AnthropometryPage(Page):
         self.advanced_profile = QComboBox()
         self.advanced_profile.addItems(self.advanced_definition.profiles)
         self.advanced_notes = QTextEdit()
-        self.advanced_notes.setFixedHeight(70)
+        self.advanced_notes.setFixedHeight(55)
         self.advanced_result = QTextEdit()
         self.advanced_result.setReadOnly(True)
-        self.advanced_result.setFixedHeight(90)
+        self.advanced_result.setFixedHeight(120)
 
-        form = QFormLayout()
-        form.addRow("Paciente", self.advanced_patient)
-        form.addRow("Data da avaliacao", self.advanced_record_date)
-        form.addRow("Perfil", self.advanced_profile)
-        for key, label in self.advanced_definition.fields:
+        for key, _label in self.advanced_definition.fields:
             field = QLineEdit()
+            if key == "height_cm":
+                field.setPlaceholderText("Ex.: 175")
+            if key in {"weight", "height_cm"}:
+                field.textChanged.connect(self._update_advanced_bmi)
             self.advanced_inputs[key] = field
-            form.addRow(label, field)
-        form.addRow("Observacoes", self.advanced_notes)
-        form.addRow("Resultado", self.advanced_result)
 
         calculate = QPushButton("Calcular / salvar")
         calculate.setObjectName("primaryButton")
@@ -250,17 +250,88 @@ class AnthropometryPage(Page):
         self.advanced_table.setHorizontalHeaderLabels(
             ["ID", "Data", "Paciente", "Perfil", "Resultado", "Observacoes"]
         )
-
-        wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
+        self.advanced_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.advanced_table.verticalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.ResizeToContents
+        )
 
         tab = QWidget()
         layout = QVBoxLayout(tab)
-        layout.addWidget(wrapper)
+        cards = QWidget()
+        cards_layout = QGridLayout(cards)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
+        cards_layout.setHorizontalSpacing(14)
+        cards_layout.setVerticalSpacing(10)
+        cards_layout.addWidget(self._advanced_patient_card(), 0, 0)
+        cards_layout.addWidget(self._advanced_key_measurements_card(), 0, 1)
+        cards_layout.addWidget(self._advanced_body_measurements_card(), 1, 0)
+        cards_layout.addWidget(self._advanced_output_card(), 1, 1)
+        cards_layout.setColumnStretch(0, 1)
+        cards_layout.setColumnStretch(1, 1)
+        layout.addWidget(cards)
+        layout.addLayout(actions)
         layout.addWidget(self.advanced_table)
         return tab
+
+    def _advanced_patient_card(self) -> QGroupBox:
+        card = QGroupBox("Dados do Paciente")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Paciente", self.advanced_patient)
+        self._add_stacked_field(layout, 0, "Perfil", self.advanced_profile, column=2)
+        self._add_stacked_field(layout, 2, "Data da avaliacao", self.advanced_record_date)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(3, 1)
+        return card
+
+    def _advanced_key_measurements_card(self) -> QGroupBox:
+        card = QGroupBox("Medidas Corporais")
+        layout = QGridLayout(card)
+        waist_hint = QLineEdit()
+        waist_hint.setReadOnly(True)
+        waist_hint.setPlaceholderText("Informar no bloco abaixo")
+        self._add_stacked_field(layout, 0, "Peso kg", self.advanced_inputs["weight"])
+        self._add_stacked_field(layout, 0, "Altura cm", self.advanced_inputs["height_cm"], column=2)
+        self._add_stacked_field(layout, 2, "Cintura cm", waist_hint)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(3, 1)
+        return card
+
+    def _advanced_body_measurements_card(self) -> QGroupBox:
+        card = QGroupBox("Medidas Corporais")
+        layout = QGridLayout(card)
+        fields = [
+            ("Cintura cm", self.advanced_inputs["waist"]),
+            ("Quadril cm", self.advanced_inputs["hip"]),
+            ("Braco cm", self.advanced_inputs["arm"]),
+            ("Dobra tricipital mm", self.advanced_inputs["triceps"]),
+            ("Gordura corporal %", self.advanced_inputs["body_fat"]),
+            ("Calculated IMC", self.advanced_bmi),
+        ]
+        for index, (label, widget) in enumerate(fields):
+            row = (index // 2) * 2
+            column = 0 if index % 2 == 0 else 2
+            self._add_stacked_field(layout, row, label, widget, column=column)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(3, 1)
+        return card
+
+    def _advanced_output_card(self) -> QGroupBox:
+        card = QGroupBox("")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Observacoes", self.advanced_notes)
+        self._add_stacked_field(layout, 2, "Resultado", self.advanced_result)
+        layout.setRowStretch(3, 1)
+        return card
+
+    def _update_advanced_bmi(self, *_args: object) -> None:
+        try:
+            weight = self._required_float(self.advanced_inputs["weight"].text(), "Peso")
+            height_cm = self._required_float(self.advanced_inputs["height_cm"].text(), "Altura")
+        except ValueError:
+            self.advanced_bmi.clear()
+            return
+        bmi = self.service.calculate_bmi(weight, height_cm / 100)
+        self.advanced_bmi.setText(f"{bmi:.1f}")
 
     def _save_anthropometry(self) -> None:
         if self.patient.currentIndex() < 0 or not self.patient_ids_by_index:
@@ -440,6 +511,7 @@ class AnthropometryPage(Page):
             key: field.text().strip()
             for key, field in self.advanced_inputs.items()
         }
+        self._update_advanced_bmi()
         notes = self.advanced_notes.toPlainText().strip()
         result = self.advanced_definition.evaluator(profile, inputs, notes)
         self.advanced_result.setPlainText(result)
@@ -502,6 +574,7 @@ class AnthropometryPage(Page):
             self.advanced_profile.setCurrentIndex(0)
         for field in self.advanced_inputs.values():
             field.clear()
+        self.advanced_bmi.clear()
         self.advanced_notes.clear()
         self.advanced_result.clear()
 
