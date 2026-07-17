@@ -24,6 +24,23 @@ QLabel#pageSubtitle {
     font-size: 14px;
 }
 
+QLabel#sectionTitle {
+    color: #111827;
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+QLabel#miniHeader {
+    color: #111827;
+    font-weight: 700;
+}
+
+QLabel#mutedText {
+    color: #6b7280;
+    font-style: italic;
+}
+
 QLabel#currentUser {
     color: #536471;
     font-size: 11px;
@@ -135,6 +152,16 @@ QPushButton#primaryButton {
     background: #167a6b;
     border-color: #167a6b;
     color: #ffffff;
+    font-weight: 700;
+}
+
+QPushButton#addMealPanel {
+    min-height: 62px;
+    background: #f8fbfc;
+    border: 1px solid #b8c4ce;
+    border-radius: 7px;
+    color: #111827;
+    font-size: 14px;
     font-weight: 700;
 }
 

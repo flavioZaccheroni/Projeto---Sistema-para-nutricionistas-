@@ -106,23 +106,6 @@ class MealPlanPage(Page):
         self.shopping_list.setReadOnly(True)
         self.shopping_list.setFixedHeight(75)
 
-        plan_form = QFormLayout()
-        plan_form.addRow("Pesquisar", self.search)
-        plan_form.addRow("Paciente", self.patient)
-        plan_form.addRow("Consulta vinculada", self.appointment)
-        plan_form.addRow("Data inicio", self.start_date)
-        plan_form.addRow("Data fim", self.end_date)
-        plan_form.addRow("Objetivo", self.objective)
-        plan_form.addRow("Meta kcal", self.target_energy)
-        plan_form.addRow("Meta proteina (g)", self.target_protein)
-        plan_form.addRow("Meta carboidrato (g)", self.target_carbohydrate)
-        plan_form.addRow("Meta lipidios (g)", self.target_fat)
-        plan_form.addRow("Total kcal", self.total_energy)
-        plan_form.addRow("Total proteina (g)", self.total_protein)
-        plan_form.addRow("Total carboidrato (g)", self.total_carbohydrate)
-        plan_form.addRow("Total lipidios (g)", self.total_fat)
-        plan_form.addRow("Observacoes", self.notes)
-
         meal_form = QFormLayout()
         meal_form.addRow("Refeicao", self.meal_name)
         meal_form.addRow("Horario", self.meal_time)
@@ -172,16 +155,24 @@ class MealPlanPage(Page):
         self.plan_table.cellClicked.connect(self._select_plan_from_table)
         self._configure_table(self.plan_table)
 
-        wrapper = QWidget()
-        wrapper_layout = QVBoxLayout(wrapper)
-        wrapper_layout.addWidget(self._form_card("Dados do Plano", plan_form))
-        wrapper_layout.addWidget(self._form_card("Cadastro de Refeicao e Itens", meal_form))
-        wrapper_layout.addLayout(actions)
-        wrapper_layout.addWidget(self.meal_table)
-
         plan_tab = QWidget()
         plan_layout = QVBoxLayout(plan_tab)
-        plan_layout.addWidget(wrapper)
+        plan_layout.addWidget(self._plan_header_card())
+        section_title = QLabel("Resumo do Plano")
+        section_title.setObjectName("sectionTitle")
+        plan_layout.addWidget(section_title)
+        self.meal_cards = QWidget()
+        self.meal_cards_layout = QGridLayout(self.meal_cards)
+        self.meal_cards_layout.setContentsMargins(0, 0, 0, 0)
+        self.meal_cards_layout.setHorizontalSpacing(14)
+        plan_layout.addWidget(self.meal_cards)
+        add_meal_panel = QPushButton("+\nAdicionar nova refeicao")
+        add_meal_panel.setObjectName("addMealPanel")
+        add_meal_panel.clicked.connect(self._add_meal)
+        plan_layout.addWidget(add_meal_panel)
+        plan_layout.addWidget(self._form_card("Cadastro de Refeicao e Itens", meal_form))
+        plan_layout.addLayout(actions)
+        plan_layout.addWidget(self.meal_table)
         plan_layout.addWidget(self.plan_table)
 
         tabs = QTabWidget()
@@ -248,6 +239,39 @@ class MealPlanPage(Page):
         layout.addLayout(form)
         return card
 
+    def _plan_header_card(self) -> QGroupBox:
+        card = QGroupBox("")
+        layout = QGridLayout(card)
+        left_fields = [
+            ("Pesquisar", self.search),
+            ("Paciente", self.patient),
+            ("Consulta vinculada", self.appointment),
+            ("Data inicio", self.start_date),
+            ("Data fim", self.end_date),
+            ("Objetivo", self.objective),
+        ]
+        right_fields = [
+            ("Meta kcal", self.target_energy),
+            ("Meta proteina (g)", self.target_protein),
+            ("Meta carboidrato (g)", self.target_carbohydrate),
+            ("Meta lipidios (g)", self.target_fat),
+            ("Total kcal", self.total_energy),
+            ("Total proteina (g)", self.total_protein),
+            ("Total carboidrato (g)", self.total_carbohydrate),
+            ("Total lipidios (g)", self.total_fat),
+        ]
+        for row, (label, widget) in enumerate(left_fields):
+            layout.addWidget(QLabel(label), row, 0)
+            layout.addWidget(widget, row, 1)
+        for row, (label, widget) in enumerate(right_fields):
+            layout.addWidget(QLabel(label), row, 2)
+            layout.addWidget(widget, row, 3)
+        layout.addWidget(QLabel("Observacoes"), 6, 0)
+        layout.addWidget(self.notes, 6, 1, 1, 3)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(3, 1)
+        return card
+
     def _smart_profile_card(self) -> QGroupBox:
         card = QGroupBox("Paciente e Perfil")
         layout = QGridLayout(card)
@@ -289,6 +313,62 @@ class MealPlanPage(Page):
         table.setWordWrap(True)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+
+    def _meal_summary_card(self, meal: Meal, index: int) -> QGroupBox:
+        energy, protein, carbohydrate, fat = self.service.calculate_totals([meal])
+        card = QGroupBox(meal.name or f"Refeicao {index + 1}")
+        layout = QGridLayout(card)
+        layout.addWidget(QLabel("Horario"), 0, 0)
+        layout.addWidget(QLabel(meal.time or "-"), 0, 1)
+        layout.addWidget(QLabel("Obs. Refeicao"), 1, 0)
+        notes = QLineEdit(meal.notes)
+        notes.setReadOnly(True)
+        layout.addWidget(notes, 1, 1, 1, 3)
+        headers = ["Quantidade", "Unidade", "Kcal", "P/C/L"]
+        for column, header in enumerate(headers):
+            label = QLabel(header)
+            label.setObjectName("miniHeader")
+            layout.addWidget(label, 2, column)
+        if meal.items:
+            first_item = meal.items[0]
+            values = [
+                f"{first_item.quantity:g}",
+                first_item.unit or "-",
+                f"{first_item.energy_kcal:.0f}",
+                f"{first_item.protein_g:.1f}/{first_item.carbohydrate_g:.1f}/{first_item.fat_g:.1f}",
+            ]
+        else:
+            values = ["-", "-", f"{energy:.0f}", f"{protein:.1f}/{carbohydrate:.1f}/{fat:.1f}"]
+        for column, value in enumerate(values):
+            layout.addWidget(QLabel(value), 3, column)
+        select = QPushButton("Selecionar")
+        select.clicked.connect(
+            lambda _checked=False, row=index: self._select_meal_from_table(row, 0)
+        )
+        layout.addWidget(select, 4, 0, 1, 4)
+        return card
+
+    def _refresh_meal_cards(self) -> None:
+        if not hasattr(self, "meal_cards_layout"):
+            return
+        while self.meal_cards_layout.count():
+            item = self.meal_cards_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        if not self.meals:
+            empty = QLabel("Nenhuma refeicao adicionada.")
+            empty.setObjectName("mutedText")
+            self.meal_cards_layout.addWidget(empty, 0, 0)
+            self.meal_cards_layout.setColumnStretch(0, 1)
+            return
+        for index, meal in enumerate(self.meals[:4]):
+            self.meal_cards_layout.addWidget(self._meal_summary_card(meal, index), 0, index)
+            self.meal_cards_layout.setColumnStretch(index, 1)
+        if len(self.meals) > 4:
+            more = QLabel(f"+ {len(self.meals) - 4} refeicao(oes) na tabela abaixo")
+            more.setObjectName("mutedText")
+            self.meal_cards_layout.addWidget(more, 1, 0, 1, 4)
 
     def _save_plan(self) -> None:
         if self.patient.currentIndex() < 0 or not self.patient_ids_by_index:
@@ -510,6 +590,7 @@ class MealPlanPage(Page):
             self.meal_table.setItem(row, 3, QTableWidgetItem(f"{energy:.0f}"))
             self.meal_table.setItem(row, 4, QTableWidgetItem(f"{protein:.1f}"))
             self.meal_table.setItem(row, 5, QTableWidgetItem(f"{carbohydrate:.1f}"))
+        self._refresh_meal_cards()
 
     def _reload_plan_table(self) -> None:
         records = self.repository.list_active(self.search.text())
