@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QGridLayout,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
     QPushButton,
@@ -23,24 +25,29 @@ class DashboardPage(Page):
         self.repository = DashboardRepository(connection_factory)
 
         refresh = QPushButton("Atualizar")
-        refresh.setObjectName("primaryButton")
         refresh.clicked.connect(self.refresh)
-        self.layout.addWidget(refresh)
+        refresh_row = QHBoxLayout()
+        refresh_row.addStretch()
+        refresh_row.addWidget(refresh)
+        self.layout.addLayout(refresh_row)
 
         self.indicators: dict[str, QLabel] = {}
 
         grid = QGridLayout()
-        for index, label in enumerate(
-            [
-                "Pacientes ativos",
-                "Consultas hoje",
-                "Alertas criticos",
-                "Pendencias",
-            ]
-        ):
-            card, value = self._indicator(label)
+        grid.setHorizontalSpacing(14)
+        indicators = [
+            (
+                "Pacientes Ativos",
+                "Pacientes ativos cadastrados com alertas e pendencias clinicas.",
+            ),
+            ("Consultas Hoje", ""),
+            ("Alertas Criticos", "Ver Detalhes"),
+            ("Pendencias Clinicas", ""),
+        ]
+        for index, (label, description) in enumerate(indicators):
+            card, value = self._indicator(label, description)
             self.indicators[label] = value
-            grid.addWidget(card, index // 2, index % 2)
+            grid.addWidget(card, 0, index)
 
         self.layout.addLayout(grid)
 
@@ -49,9 +56,9 @@ class DashboardPage(Page):
         self._configure_alerts_table()
         self.layout.addWidget(self._table_card("Alertas clinicos recentes", self.alerts_table))
 
-        self.appointments_table = QTableWidget(0, 5)
+        self.appointments_table = QTableWidget(0, 6)
         self.appointments_table.setHorizontalHeaderLabels(
-            ["Paciente", "Data", "Hora", "Tipo", "Status"]
+            ["Paciente", "ID", "Data", "Hora", "Tipo", "Status"]
         )
         self._configure_appointments_table()
         self.layout.addWidget(
@@ -63,10 +70,10 @@ class DashboardPage(Page):
 
     def refresh(self) -> None:
         summary = self.repository.summary()
-        self.indicators["Pacientes ativos"].setText(str(summary.active_patients))
-        self.indicators["Consultas hoje"].setText(str(summary.today_appointments))
-        self.indicators["Alertas criticos"].setText(str(summary.critical_alerts))
-        self.indicators["Pendencias"].setText(str(summary.pending_items))
+        self.indicators["Pacientes Ativos"].setText(str(summary.active_patients))
+        self.indicators["Consultas Hoje"].setText(str(summary.today_appointments))
+        self.indicators["Alertas Criticos"].setText(str(summary.critical_alerts))
+        self.indicators["Pendencias Clinicas"].setText(str(summary.pending_items))
 
         alerts = self.repository.recent_alerts()
         self.alerts_table.setRowCount(len(alerts))
@@ -82,29 +89,58 @@ class DashboardPage(Page):
         for row, appointment in enumerate(appointments):
             date_text, time_text = self._split_schedule(appointment.scheduled_at)
             self.appointments_table.setItem(row, 0, QTableWidgetItem(appointment.patient_name))
-            self.appointments_table.setItem(row, 1, QTableWidgetItem(date_text))
-            self.appointments_table.setItem(row, 2, QTableWidgetItem(time_text))
-            self.appointments_table.setItem(row, 3, QTableWidgetItem(appointment.kind))
-            self.appointments_table.setItem(row, 4, QTableWidgetItem(appointment.status))
+            self.appointments_table.setItem(row, 1, QTableWidgetItem(str(appointment.id)))
+            self.appointments_table.setItem(row, 2, QTableWidgetItem(date_text))
+            self.appointments_table.setItem(row, 3, QTableWidgetItem(time_text))
+            self.appointments_table.setItem(row, 4, QTableWidgetItem(appointment.kind))
+            self.appointments_table.setItem(row, 5, QTableWidgetItem(appointment.status))
         self.appointments_table.resizeRowsToContents()
 
-    def _indicator(self, label: str) -> tuple[QWidget, QLabel]:
+    def _indicator(self, label: str, description: str) -> tuple[QWidget, QLabel]:
         card = QWidget()
         card.setObjectName("card")
         layout = QGridLayout(card)
-        layout.addWidget(QLabel(label), 0, 0)
+        title = QLabel(label)
+        title.setObjectName("dashboardCardTitle")
+        layout.addWidget(title, 0, 0)
         number = QLabel("0")
         number.setObjectName("indicatorValue")
         layout.addWidget(number, 1, 0)
+        icon = QLabel(self._indicator_icon(label))
+        icon.setObjectName("dashboardIcon")
+        icon.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        layout.addWidget(icon, 0, 1, 2, 1)
+        if description:
+            description_label = QLabel(description)
+            description_label.setObjectName("mutedText")
+            description_label.setWordWrap(True)
+            layout.addWidget(description_label, 2, 0, 1, 2)
+        if label == "Alertas Criticos":
+            card.setObjectName("dangerCard")
         return card, number
 
     def _table_card(self, title: str, table: QTableWidget) -> QWidget:
         card = QWidget()
         card.setObjectName("card")
         layout = QVBoxLayout(card)
-        layout.addWidget(QLabel(title))
+        header = QHBoxLayout()
+        label = QLabel(title)
+        label.setObjectName("dashboardSectionTitle")
+        header.addWidget(label)
+        header.addStretch()
+        header.addWidget(QLabel("^"))
+        layout.addLayout(header)
         layout.addWidget(table)
         return card
+
+    def _indicator_icon(self, label: str) -> str:
+        icons = {
+            "Pacientes Ativos": "P+",
+            "Consultas Hoje": "OK",
+            "Alertas Criticos": "!",
+            "Pendencias Clinicas": "->",
+        }
+        return icons.get(label, "")
 
     def _configure_alerts_table(self) -> None:
         self.alerts_table.setWordWrap(True)
@@ -123,8 +159,9 @@ class DashboardPage(Page):
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
         self.appointments_table.verticalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.ResizeToContents
         )

@@ -21,6 +21,7 @@ class DashboardAlert:
 
 @dataclass(frozen=True)
 class DashboardAppointment:
+    id: int
     patient_name: str
     scheduled_at: str
     kind: str

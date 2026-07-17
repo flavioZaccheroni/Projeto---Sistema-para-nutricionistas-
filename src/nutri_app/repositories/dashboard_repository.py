@@ -124,7 +124,7 @@ class DashboardRepository:
         with self.connection_factory.connect() as connection:
             rows = connection.execute(
                 """
-                SELECT p.nome AS paciente, c.data_hora, c.tipo, c.status
+                SELECT c.id, p.nome AS paciente, c.data_hora, c.tipo, c.status
                 FROM consultas c
                 JOIN pacientes p ON p.id = c.paciente_id
                 WHERE c.deleted_at IS NULL
@@ -138,6 +138,7 @@ class DashboardRepository:
 
         return [
             DashboardAppointment(
+                id=row["id"],
                 patient_name=row["paciente"],
                 scheduled_at=row["data_hora"],
                 kind=row["tipo"],
