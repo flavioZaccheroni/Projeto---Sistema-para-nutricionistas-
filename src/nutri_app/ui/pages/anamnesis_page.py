@@ -62,6 +62,7 @@ class AnamnesisPage(Page):
             connection_factory,
             audit_repository,
             current_user_id,
+            show_header=False,
         )
         self.selected_anamnesis_id: int | None = None
         self.patient_ids_by_index: list[int] = []

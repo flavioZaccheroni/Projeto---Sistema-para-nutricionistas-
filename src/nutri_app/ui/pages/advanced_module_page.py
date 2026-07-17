@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QSlider,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
@@ -36,8 +37,16 @@ class AdvancedModulePage(Page):
         connection_factory: SQLiteConnectionFactory,
         audit_repository: AuditRepository,
         current_user_id: int,
+        show_header: bool = True,
     ) -> None:
         super().__init__(definition.title, f"Fase {definition.phase}: {definition.subtitle}")
+        if not show_header:
+            for _index in range(2):
+                item = self.layout.takeAt(0)
+                widget = item.widget() if item is not None else None
+                if widget is not None:
+                    widget.deleteLater()
+            self.layout.setContentsMargins(0, 0, 0, 0)
         self.definition = definition
         self.repository = AdvancedClinicalRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
@@ -47,6 +56,7 @@ class AdvancedModulePage(Page):
         self.inputs: dict[str, QLineEdit] = {}
         self.lab_indicator_labels: dict[str, QLabel] = {}
         self.lab_status = QLabel()
+        self.motivation_slider: QSlider | None = None
 
         self.patient = QComboBox()
         self.record_date = QLineEdit(today_text())
@@ -55,9 +65,11 @@ class AdvancedModulePage(Page):
         self.profile.addItems(definition.profiles)
         self.notes = QTextEdit()
         self.notes.setFixedHeight(70)
+        self.notes.setPlaceholderText("Observacoes")
         self.result = QTextEdit()
         self.result.setReadOnly(True)
         self.result.setFixedHeight(90)
+        self.result.setPlaceholderText("Aguardando avaliacao...")
 
         form = QFormLayout()
         form.addRow("Paciente", self.patient)
@@ -93,7 +105,9 @@ class AdvancedModulePage(Page):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
-        if definition.module == "Exames Avancados":
+        if definition.module == "Anamnese Avancada":
+            self._build_advanced_anamnesis_layout(actions)
+        elif definition.module == "Exames Avancados":
             self._build_advanced_labs_layout(actions)
         else:
             wrapper = QWidget()
@@ -101,8 +115,110 @@ class AdvancedModulePage(Page):
             wrapper_layout.addRow(form)
             wrapper_layout.addRow(actions)
             self.layout.addWidget(wrapper)
-        self.layout.addWidget(self.table)
+        if definition.module != "Anamnese Avancada":
+            self.layout.addWidget(self.table)
         self.refresh()
+
+    def _build_advanced_anamnesis_layout(self, actions: QHBoxLayout) -> None:
+        self.inputs["motivation"].setText("0")
+
+        cards = QWidget()
+        cards_layout = QGridLayout(cards)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
+        cards_layout.setHorizontalSpacing(14)
+        cards_layout.setVerticalSpacing(10)
+        cards_layout.addWidget(self._anamnesis_identity_card(), 0, 0)
+        cards_layout.addWidget(self._anamnesis_habits_card(), 0, 1)
+        cards_layout.addWidget(self._anamnesis_symptoms_card(), 1, 0)
+        cards_layout.addWidget(self._anamnesis_motivation_card(), 1, 1)
+        cards_layout.setColumnStretch(0, 1)
+        cards_layout.setColumnStretch(1, 1)
+
+        result_card = QGroupBox("Resultados e Historico")
+        result_layout = QGridLayout(result_card)
+        self.result.setFixedHeight(36)
+        result_layout.addWidget(QLabel("Resultado"), 0, 0)
+        result_layout.addWidget(self.result, 1, 0)
+        result_layout.addWidget(self.table, 0, 1, 2, 1)
+        result_layout.setColumnStretch(0, 1)
+        result_layout.setColumnStretch(1, 2)
+
+        self.layout.addWidget(cards)
+        self.layout.addLayout(actions)
+        self.layout.addWidget(result_card)
+
+    def _anamnesis_identity_card(self) -> QGroupBox:
+        card = QGroupBox("Identificacao e Perfil")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Paciente", self.patient)
+        self._add_stacked_field(layout, 2, "Data", self.record_date, column_span=1)
+        self._add_stacked_field(layout, 2, "Perfil", self.profile, column=1, column_span=1)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 2)
+        return card
+
+    def _anamnesis_habits_card(self) -> QGroupBox:
+        card = QGroupBox("Habitos e Gatilhos")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, self._field_label("pattern"), self.inputs["pattern"])
+        self._add_stacked_field(
+            layout,
+            2,
+            self._field_label("emotional_triggers"),
+            self.inputs["emotional_triggers"],
+        )
+        return card
+
+    def _anamnesis_symptoms_card(self) -> QGroupBox:
+        card = QGroupBox("Sintomas e Barreiras")
+        layout = QGridLayout(card)
+        self._add_stacked_field(
+            layout,
+            0,
+            self._field_label("gi_symptoms"),
+            self.inputs["gi_symptoms"],
+        )
+        self._add_stacked_field(layout, 2, self._field_label("barriers"), self.inputs["barriers"])
+        return card
+
+    def _anamnesis_motivation_card(self) -> QGroupBox:
+        card = QGroupBox("Motivacao e Observacoes")
+        layout = QGridLayout(card)
+        layout.addWidget(QLabel(self._field_label("motivation")), 0, 0)
+        self.motivation_slider = QSlider(Qt.Orientation.Horizontal)
+        self.motivation_slider.setRange(0, 10)
+        self.motivation_slider.setTickInterval(1)
+        self.motivation_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        self.motivation_slider.valueChanged.connect(self._sync_motivation_input)
+        layout.addWidget(self.motivation_slider, 1, 0)
+        scale = QHBoxLayout()
+        for value in range(11):
+            label = QLabel(str(value))
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            scale.addWidget(label)
+        layout.addLayout(scale, 2, 0)
+        layout.addWidget(QLabel("Observacoes"), 3, 0)
+        self.notes.setFixedHeight(52)
+        layout.addWidget(self.notes, 4, 0)
+        return card
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 0,
+        column_span: int = 2,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, column, 1, column_span)
+        layout.addWidget(widget, row + 1, column, 1, column_span)
+
+    def _sync_motivation_input(self, value: int) -> None:
+        if "motivation" in self.inputs:
+            self.inputs["motivation"].setText(str(value))
 
     def _build_advanced_labs_layout(self, actions: QHBoxLayout) -> None:
         header = QGroupBox("Informacoes do Paciente & Avaliacao")
@@ -251,6 +367,8 @@ class AdvancedModulePage(Page):
     def _clear(self) -> None:
         for field in self.inputs.values():
             field.clear()
+        if self.motivation_slider is not None:
+            self.motivation_slider.setValue(0)
         self.notes.clear()
         self.result.clear()
         self.record_date.setText(today_text())
