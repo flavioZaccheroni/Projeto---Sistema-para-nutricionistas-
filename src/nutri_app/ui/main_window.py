@@ -274,16 +274,6 @@ class MainWindow(QMainWindow):
                 ),
             ),
             NavigationItem(
-                "Anamnese Avancada",
-                "Anamnese Avancada",
-                AdvancedModulePage(
-                    advanced_definitions["Anamnese Avancada"],
-                    self.context.connection_factory,
-                    self.context.audit_repository,
-                    self.current_user.id,
-                ),
-            ),
-            NavigationItem(
                 "Exames Avancados",
                 "Exames Avancados",
                 AdvancedModulePage(
@@ -386,7 +376,6 @@ class MainWindow(QMainWindow):
         clinical = self._add_group("Atendimento Clinico", expanded=True, icon="clinical")
         self._add_leaf(clinical, "Agenda", "Agenda", items_by_module)
         self._add_leaf(clinical, "Anamnese", "Anamnese", items_by_module)
-        self._add_leaf(clinical, "Anamnese Avancada", "Anamnese Avancada", items_by_module)
         self._add_leaf(clinical, "Antropometria", "Antropometria", items_by_module)
         self._add_leaf(clinical, "Composicao Corporal", "Composicao Corporal", items_by_module)
 

@@ -21,6 +21,7 @@ from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.services.advanced_clinical import AdvancedClinicalService
 from nutri_app.ui.anamnesis_form import (
     ALERGIAS_INTOLERANCIAS,
     COMPORTAMENTO_ALIMENTAR,
@@ -39,6 +40,7 @@ from nutri_app.ui.anamnesis_form import (
     summarize_anamnesis_text,
 )
 from nutri_app.ui.date_format import format_datetime
+from nutri_app.ui.pages.advanced_module_page import AdvancedModulePage
 from nutri_app.ui.pages.base import Page
 
 
@@ -55,6 +57,12 @@ class AnamnesisPage(Page):
         self.appointment_repository = AppointmentRepository(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
+        self.advanced_page = AdvancedModulePage(
+            AdvancedClinicalService().by_module("Anamnese Avancada"),
+            connection_factory,
+            audit_repository,
+            current_user_id,
+        )
         self.selected_anamnesis_id: int | None = None
         self.patient_ids_by_index: list[int] = []
         self.appointment_ids_by_index: list[int | None] = []
@@ -114,8 +122,8 @@ class AnamnesisPage(Page):
         wrapper_layout.addRow(form)
         wrapper_layout.addRow(actions)
 
-        tabs = QTabWidget()
-        tabs.addTab(
+        section_tabs = QTabWidget()
+        section_tabs.addTab(
             self._scroll_tab([
                 self.chief_complaint,
                 self.current_disease_history,
@@ -124,7 +132,7 @@ class AnamnesisPage(Page):
             ]),
             "Clinica",
         )
-        tabs.addTab(
+        section_tabs.addTab(
             self._scroll_tab([
                 self.food_routine,
                 self.eating_behavior,
@@ -132,23 +140,32 @@ class AnamnesisPage(Page):
             ]),
             "Alimentacao e GI",
         )
-        tabs.addTab(
+        section_tabs.addTab(
             self._scroll_tab([self.observations_section, *self.habits_sections]),
             "Habitos e observacoes",
         )
-        tabs.addTab(
+        section_tabs.addTab(
             self._scroll_tab([*self.medication_sections, *self.allergy_sections]),
             "Medicamentos e alergias",
         )
 
-        self.layout.addWidget(wrapper)
+        basic_tab = QWidget()
+        basic_layout = QVBoxLayout(basic_tab)
+        basic_layout.addWidget(wrapper)
+        basic_layout.addWidget(section_tabs)
+        basic_layout.addWidget(self.table)
+
+        tabs = QTabWidget()
+        tabs.addTab(basic_tab, "Basica")
+        tabs.addTab(self.advanced_page, "Avancada")
+
         self.layout.addWidget(tabs)
-        self.layout.addWidget(self.table)
         self.refresh()
 
     def refresh(self) -> None:
         self._reload_patients()
         self._reload_table()
+        self.advanced_page.refresh()
 
     def _save_anamnesis(self) -> None:
         if self.patient.currentIndex() < 0 or not self.patient_ids_by_index:
