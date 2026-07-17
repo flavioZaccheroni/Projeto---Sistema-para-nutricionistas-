@@ -3,7 +3,11 @@ from __future__ import annotations
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
@@ -66,6 +70,7 @@ class AnthropometryPage(Page):
         self.assessment_date.setPlaceholderText("mm-dd-aaaa")
         self.weight = QLineEdit()
         self.height = QLineEdit()
+        self.height.setPlaceholderText("Ex.: 175")
         self.waist = QLineEdit()
         self.hip = QLineEdit()
         self.bmi = QLineEdit()
@@ -77,22 +82,7 @@ class AnthropometryPage(Page):
         self.waist_height_ratio = QLineEdit()
         self.waist_height_ratio.setReadOnly(True)
         self.notes = QTextEdit()
-        self.notes.setFixedHeight(70)
-
-        form = QFormLayout()
-        form.addRow("Pesquisar", self.search)
-        form.addRow("Paciente", self.patient)
-        form.addRow("Consulta vinculada", self.appointment)
-        form.addRow("Data da avaliacao", self.assessment_date)
-        form.addRow("Peso (kg)", self.weight)
-        form.addRow("Altura (m)", self.height)
-        form.addRow("Cintura (cm)", self.waist)
-        form.addRow("Quadril (cm)", self.hip)
-        form.addRow("IMC", self.bmi)
-        form.addRow("Classificacao IMC", self.bmi_classification)
-        form.addRow("RCQ", self.waist_hip_ratio)
-        form.addRow("RCEst", self.waist_height_ratio)
-        form.addRow("Observacoes", self.notes)
+        self.notes.setFixedHeight(180)
 
         calculate = QPushButton("Calcular")
         calculate.clicked.connect(self._calculate_indicators)
@@ -114,16 +104,10 @@ class AnthropometryPage(Page):
             ["ID", "Paciente", "Data", "Peso", "Altura", "IMC", "Classificacao", "RCQ", "RCEst"]
         )
         self.table.cellClicked.connect(self._select_anthropometry_from_table)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
-        wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
-
-        basic_tab = QWidget()
-        basic_layout = QVBoxLayout(basic_tab)
-        basic_layout.addWidget(wrapper)
-        basic_layout.addWidget(self.table)
+        basic_tab = self._build_basic_tab(actions)
 
         tabs = QTabWidget()
         tabs.addTab(basic_tab, "Basica")
@@ -131,6 +115,94 @@ class AnthropometryPage(Page):
 
         self.layout.addWidget(tabs)
         self.refresh()
+
+    def _build_basic_tab(self, actions: QHBoxLayout) -> QWidget:
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+
+        cards = QWidget()
+        cards_layout = QGridLayout(cards)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
+        cards_layout.setHorizontalSpacing(14)
+        cards_layout.addWidget(self._patient_card(), 0, 0)
+        cards_layout.addWidget(self._measurements_card(), 0, 1)
+        cards_layout.addWidget(self._indicators_card(), 0, 2)
+        cards_layout.addWidget(self._notes_card(), 0, 3)
+        for column in range(4):
+            cards_layout.setColumnStretch(column, 1)
+
+        layout.addWidget(cards)
+        layout.addLayout(actions)
+        layout.addWidget(self.table)
+        return tab
+
+    def _patient_card(self) -> QGroupBox:
+        card = QGroupBox("Informacoes do Paciente")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Paciente:", self.patient)
+        layout.addWidget(QLabel("Pesquisar"), 2, 0)
+        layout.addWidget(self.search, 2, 1)
+        self._add_stacked_field(layout, 3, "Consulta Vinculada:", self.appointment)
+        self._add_stacked_field(layout, 5, "Data da Avaliacao:", self.assessment_date)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _measurements_card(self) -> QGroupBox:
+        card = QGroupBox("Medidas Corporais Basicas")
+        layout = QGridLayout(card)
+        fields = [
+            ("Peso (kg):", self.weight),
+            ("Altura (cm):", self.height),
+            ("Cintura (cm):", self.waist),
+            ("Quadril (cm):", self.hip),
+        ]
+        for index, (label, widget) in enumerate(fields):
+            self._add_stacked_field(layout, index * 2, label, widget)
+        return card
+
+    def _indicators_card(self) -> QGroupBox:
+        card = QGroupBox("Indicadores e Resultados (Visuais)")
+        layout = QGridLayout(card)
+
+        imc_title = QLabel("IMC")
+        imc_title.setObjectName("metricTitle")
+        imc_value = QLabel("Resultado automatico")
+        imc_value.setObjectName("mutedText")
+        layout.addWidget(imc_title, 0, 0, 1, 2)
+        layout.addWidget(self.bmi, 1, 0)
+        layout.addWidget(imc_value, 1, 1)
+
+        class_title = QLabel("Classificacao IMC")
+        class_title.setObjectName("metricTitle")
+        layout.addWidget(class_title, 2, 0, 1, 2)
+        layout.addWidget(self.bmi_classification, 3, 0, 1, 2)
+
+        layout.addWidget(QLabel("RCQ"), 4, 0)
+        layout.addWidget(QLabel("RCEst"), 4, 1)
+        layout.addWidget(self.waist_hip_ratio, 5, 0)
+        layout.addWidget(self.waist_height_ratio, 5, 1)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _notes_card(self) -> QGroupBox:
+        card = QGroupBox("Observacoes:")
+        layout = QVBoxLayout(card)
+        self.notes.setPlaceholderText("Observacoes:")
+        layout.addWidget(self.notes)
+        return card
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, 0, 1, 2)
+        layout.addWidget(widget, row + 1, 0, 1, 2)
 
     def refresh(self) -> None:
         self._reload_patients()
@@ -219,7 +291,7 @@ class AnthropometryPage(Page):
     def _build_anthropometry(self) -> Anthropometry:
         assessment_date = parse_date(self.assessment_date.text())
         weight = self._required_float(self.weight.text(), "Peso")
-        height = self._required_float(self.height.text(), "Altura")
+        height = self._height_meters_from_input()
         waist = self._optional_float(self.waist.text(), "Cintura")
         hip = self._optional_float(self.hip.text(), "Quadril")
 
@@ -338,7 +410,7 @@ class AnthropometryPage(Page):
             self.table.setItem(row, 1, QTableWidgetItem(record.patient_name))
             self.table.setItem(row, 2, QTableWidgetItem(format_date(record.assessment_date)))
             self.table.setItem(row, 3, QTableWidgetItem(f"{record.weight_kg:.2f}"))
-            self.table.setItem(row, 4, QTableWidgetItem(f"{record.height_m:.2f}"))
+            self.table.setItem(row, 4, QTableWidgetItem(f"{record.height_m * 100:.0f}"))
             self.table.setItem(row, 5, QTableWidgetItem(f"{record.bmi:.1f}"))
             self.table.setItem(row, 6, QTableWidgetItem(record.bmi_classification))
             self.table.setItem(
@@ -452,7 +524,7 @@ class AnthropometryPage(Page):
             self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
         self.assessment_date.setText(format_date(record.assessment_date))
         self.weight.setText(str(record.weight_kg))
-        self.height.setText(str(record.height_m))
+        self.height.setText(f"{record.height_m * 100:g}")
         self.waist.setText("" if record.waist_cm is None else str(record.waist_cm))
         self.hip.setText("" if record.hip_cm is None else str(record.hip_cm))
         self._show_results(
@@ -488,6 +560,10 @@ class AnthropometryPage(Page):
         if not value.strip():
             return None
         return self._required_float(value, label)
+
+    def _height_meters_from_input(self) -> float:
+        parsed = self._required_float(self.height.text(), "Altura")
+        return parsed / 100 if parsed > 3 else parsed
 
     def _format_optional(self, value: float | None) -> str:
         return "" if value is None else f"{value:.2f}"

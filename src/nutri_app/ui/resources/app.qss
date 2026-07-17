@@ -36,6 +36,12 @@ QLabel#miniHeader {
     font-weight: 700;
 }
 
+QLabel#metricTitle {
+    color: #111827;
+    font-size: 13px;
+    font-weight: 700;
+}
+
 QLabel#mutedText {
     color: #6b7280;
     font-style: italic;
