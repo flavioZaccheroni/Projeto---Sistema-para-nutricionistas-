@@ -2,16 +2,21 @@ from __future__ import annotations
 
 from datetime import date
 
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -31,7 +36,10 @@ class AppointmentsPage(Page):
         audit_repository: AuditRepository,
         current_user_id: int,
     ) -> None:
-        super().__init__("Agenda e Consultas", "Marcacao, retorno, status e historico de atendimento.")
+        super().__init__(
+            "Agenda e Consultas",
+            "Marcacao, retorno, status e historico de atendimento.",
+        )
         self.repository = AppointmentRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
         self.audit_repository = audit_repository
@@ -47,14 +55,8 @@ class AppointmentsPage(Page):
         self.status = QComboBox()
         self.status.addItems([status.value for status in AppointmentStatus])
         self.notes = QTextEdit()
-        self.notes.setFixedHeight(70)
-
-        form = QFormLayout()
-        form.addRow("Paciente", self.patient)
-        form.addRow("Data/hora", self.scheduled_at)
-        form.addRow("Tipo", self.kind)
-        form.addRow("Status", self.status)
-        form.addRow("Observacoes", self.notes)
+        self.notes.setFixedHeight(72)
+        self.notes.setPlaceholderText("Observacoes")
 
         save = QPushButton("Salvar")
         save.setObjectName("primaryButton")
@@ -92,18 +94,60 @@ class AppointmentsPage(Page):
         filters.addWidget(filter_button)
 
         self.table = QTableWidget(0, 6)
-        self.table.setHorizontalHeaderLabels(["ID", "Paciente", "Data/hora", "Tipo", "Status", "Observacoes"])
+        self.table.setHorizontalHeaderLabels(
+            ["ID", "Paciente", "Data/hora", "Tipo", "Status", "Observacoes"]
+        )
         self.table.cellClicked.connect(self._select_appointment_from_table)
+        self.table.setWordWrap(True)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.table.verticalHeader().setVisible(False)
 
-        wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
-        wrapper_layout.addRow("Filtros", filters)
-
-        self.layout.addWidget(wrapper)
-        self.layout.addWidget(self.table)
+        self.layout.addWidget(self._management_card(actions))
+        self.layout.addWidget(self._filters_card(filters))
+        self.layout.addWidget(self._history_card())
         self.refresh()
+
+    def _management_card(self, actions: QHBoxLayout) -> QGroupBox:
+        card = QGroupBox("Gerenciamento de Consultas")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Paciente", self.patient)
+        self._add_stacked_field(layout, 0, "Data/hora", self.scheduled_at, column=2)
+        self._add_stacked_field(layout, 0, "Tipo", self.kind, column=4)
+        self._add_stacked_field(layout, 0, "Status", self.status, column=6)
+        layout.addWidget(QLabel("Observacoes"), 2, 0, 1, 8)
+        layout.addWidget(self.notes, 3, 0, 1, 8)
+        layout.addLayout(actions, 4, 0, 1, 8)
+        for column in [1, 3, 5, 7]:
+            layout.setColumnStretch(column, 1)
+        return card
+
+    def _filters_card(self, filters: QHBoxLayout) -> QGroupBox:
+        card = QGroupBox("Filtros e Visualizacao")
+        layout = QGridLayout(card)
+        layout.addWidget(QLabel("Filtros"), 0, 0)
+        layout.addLayout(filters, 0, 1)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _history_card(self) -> QGroupBox:
+        card = QGroupBox("Historico de Atendimento")
+        layout = QVBoxLayout(card)
+        layout.addWidget(self.table)
+        return card
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 0,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, column, 1, 2)
+        layout.addWidget(widget, row + 1, column, 1, 2)
 
     def refresh(self) -> None:
         self._reload_patients()
@@ -144,7 +188,11 @@ class AppointmentsPage(Page):
             return
 
         self.repository.set_status(self.selected_appointment_id, status)
-        self._audit("alterou_status_consulta", self.selected_appointment_id, f"Status: {status.value}")
+        self._audit(
+            "alterou_status_consulta",
+            self.selected_appointment_id,
+            f"Status: {status.value}",
+        )
         self._clear_form()
         self._reload_table()
 
@@ -205,8 +253,11 @@ class AppointmentsPage(Page):
             self.table.setItem(row, 1, QTableWidgetItem(appointment.patient_name))
             self.table.setItem(row, 2, QTableWidgetItem(format_datetime(appointment.scheduled_at)))
             self.table.setItem(row, 3, QTableWidgetItem(appointment.kind.value))
-            self.table.setItem(row, 4, QTableWidgetItem(appointment.status.value))
+            status_item = QTableWidgetItem(appointment.status.value)
+            status_item.setBackground(self._status_color(appointment.status))
+            self.table.setItem(row, 4, status_item)
             self.table.setItem(row, 5, QTableWidgetItem(appointment.notes))
+        self.table.resizeRowsToContents()
 
     def _select_appointment_from_table(self, row: int, _column: int) -> None:
         item = self.table.item(row, 0)
@@ -241,6 +292,16 @@ class AppointmentsPage(Page):
         if self.status_filter.currentText() == "Todos":
             return None
         return AppointmentStatus(self.status_filter.currentText())
+
+    def _status_color(self, status: AppointmentStatus) -> QColor:
+        colors = {
+            AppointmentStatus.SCHEDULED: QColor("#d9f0df"),
+            AppointmentStatus.CONFIRMED: QColor("#dbeafe"),
+            AppointmentStatus.COMPLETED: QColor("#dcfce7"),
+            AppointmentStatus.CANCELED: QColor("#fee2e2"),
+            AppointmentStatus.PENDING: QColor("#fef3c7"),
+        }
+        return colors.get(status, QColor("#eef1f4"))
 
     def _audit(self, action: str, appointment_id: int, details: str) -> None:
         self.audit_repository.log(
