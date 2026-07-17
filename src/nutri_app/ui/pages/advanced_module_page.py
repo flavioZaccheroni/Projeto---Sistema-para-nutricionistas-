@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -14,6 +15,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -43,6 +45,8 @@ class AdvancedModulePage(Page):
         self.current_user_id = current_user_id
         self.patient_ids: list[int | None] = []
         self.inputs: dict[str, QLineEdit] = {}
+        self.lab_indicator_labels: dict[str, QLabel] = {}
+        self.lab_status = QLabel()
 
         self.patient = QComboBox()
         self.record_date = QLineEdit(today_text())
@@ -62,6 +66,8 @@ class AdvancedModulePage(Page):
         for key, label in definition.fields:
             field = QLineEdit()
             self.inputs[key] = field
+            if definition.module == "Exames Avancados":
+                field.textChanged.connect(self._refresh_advanced_labs_indicators)
             form.addRow(label, field)
         form.addRow("Observacoes", self.notes)
         form.addRow("Resultado", self.result)
@@ -107,32 +113,92 @@ class AdvancedModulePage(Page):
         header_layout.addWidget(self.profile, 1, 1)
         header_layout.addWidget(QLabel("Data"), 2, 0)
         header_layout.addWidget(self.record_date, 3, 0)
-        status = QLabel("Avaliacao Laboratorial\nIniciado")
-        status.setObjectName("statusPanel")
-        header_layout.addWidget(status, 0, 2, 4, 1)
+        self.lab_status = QLabel("Avaliacao Laboratorial\nIniciado")
+        self.lab_status.setObjectName("statusPanel")
+        header_layout.addWidget(self.lab_status, 0, 2, 4, 1)
+        header_layout.setColumnStretch(0, 1)
+        header_layout.setColumnStretch(1, 1)
+        header_layout.setColumnStretch(2, 1)
 
-        markers = QGroupBox("Marcadores Laboratoriais")
+        markers = QGroupBox("Marcadores Laboratoriais (Painel de Dados)")
         marker_layout = QGridLayout(markers)
+        marker_layout.addWidget(QLabel("Secao 1 (Valores Criticos)"), 0, 0, 1, 3)
+        marker_layout.addWidget(QLabel("Secao 2 (Glicemia e Outros)"), 0, 4, 1, 3)
         left_keys = ["albumin", "crp", "potassium", "phosphorus"]
         right_keys = ["hemoglobin", "hba1c"]
         for row, key in enumerate(left_keys):
-            marker_layout.addWidget(QLabel(self._field_label(key)), row, 0)
-            marker_layout.addWidget(self.inputs[key], row, 1)
+            self._add_lab_marker(marker_layout, row + 1, 0, key)
         for row, key in enumerate(right_keys):
-            marker_layout.addWidget(QLabel(self._field_label(key)), row, 2)
-            marker_layout.addWidget(self.inputs[key], row, 3)
+            self._add_lab_marker(marker_layout, row + 1, 4, key)
+        marker_layout.setColumnStretch(1, 1)
+        marker_layout.setColumnStretch(5, 1)
 
-        output = QGroupBox("Observacoes & Resultado")
+        output = QGroupBox("Observacoes & Resultado (Painel de Saida)")
         output_layout = QGridLayout(output)
         output_layout.addWidget(QLabel("Observacoes"), 0, 0)
         output_layout.addWidget(QLabel("Resultado"), 0, 1)
         output_layout.addWidget(self.notes, 1, 0)
-        output_layout.addWidget(self.result, 1, 1)
+        result_card = QGroupBox("Resumo de Resultados e Alertas")
+        result_layout = QVBoxLayout(result_card)
+        result_layout.addWidget(self.result)
+        output_layout.addWidget(result_card, 1, 1)
+        output_layout.setColumnStretch(0, 1)
+        output_layout.setColumnStretch(1, 1)
 
         self.layout.addWidget(header)
         self.layout.addWidget(markers)
         self.layout.addWidget(output)
         self.layout.addLayout(actions)
+        self._refresh_advanced_labs_indicators()
+
+    def _add_lab_marker(self, layout: QGridLayout, row: int, column: int, key: str) -> None:
+        layout.addWidget(QLabel(self._field_label(key)), row, column)
+        layout.addWidget(self.inputs[key], row, column + 1)
+        indicator = QLabel("Normal")
+        indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        indicator.setObjectName("labStateNormal")
+        self.lab_indicator_labels[key] = indicator
+        layout.addWidget(indicator, row, column + 2)
+
+    def _refresh_advanced_labs_indicators(self, *_args: object) -> None:
+        if self.definition.module != "Exames Avancados" or not self.lab_indicator_labels:
+            return
+        critical_count = 0
+        filled_count = 0
+        for key, label in self.lab_indicator_labels.items():
+            text = self.inputs[key].text().strip()
+            status = self._lab_marker_status(key, text)
+            if text:
+                filled_count += 1
+            if status == "Critico":
+                critical_count += 1
+            label.setText(status)
+            label.setObjectName("labStateCritical" if status == "Critico" else "labStateNormal")
+            label.style().unpolish(label)
+            label.style().polish(label)
+        if critical_count:
+            self.lab_status.setText(f"Avaliacao Laboratorial\n{critical_count} alerta(s)")
+        elif filled_count:
+            self.lab_status.setText("Avaliacao Laboratorial\nSem alertas")
+        else:
+            self.lab_status.setText("Avaliacao Laboratorial\nIniciado")
+
+    def _lab_marker_status(self, key: str, value: str) -> str:
+        try:
+            parsed = float(value.replace(",", ".")) if value else 0
+        except ValueError:
+            return "Critico"
+        if not value:
+            return "Normal"
+        critical = {
+            "albumin": parsed < 3.5,
+            "crp": parsed > 10,
+            "potassium": parsed > 5.5,
+            "phosphorus": parsed > 4.5,
+            "hemoglobin": parsed < 12,
+            "hba1c": parsed >= 6.5,
+        }
+        return "Critico" if critical.get(key, False) else "Normal"
 
     def _field_label(self, key: str) -> str:
         for field_key, label in self.definition.fields:
@@ -178,6 +244,7 @@ class AdvancedModulePage(Page):
             QMessageBox.warning(self, "Validacao", str(exc))
             return
         self.result.setPlainText(result)
+        self._refresh_advanced_labs_indicators()
         self.refresh()
         QMessageBox.information(self, self.definition.title, "Registro avancado salvo.")
 

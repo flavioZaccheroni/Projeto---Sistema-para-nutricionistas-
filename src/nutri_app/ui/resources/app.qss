@@ -136,6 +136,24 @@ QLabel#statusPanel {
     border-left: 1px solid #d6dde5;
 }
 
+QLabel#labStateNormal {
+    min-height: 18px;
+    border-radius: 9px;
+    background: #d9f0df;
+    color: #14532d;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+QLabel#labStateCritical {
+    min-height: 18px;
+    border-radius: 9px;
+    background: #f7c5c8;
+    color: #7f1d1d;
+    font-size: 11px;
+    font-weight: 700;
+}
+
 QPushButton {
     min-height: 32px;
     padding: 4px 14px;
