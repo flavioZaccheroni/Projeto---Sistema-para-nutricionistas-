@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFormLayout,
     QGridLayout,
@@ -57,6 +58,8 @@ class AdvancedModulePage(Page):
         self.lab_indicator_labels: dict[str, QLabel] = {}
         self.lab_status = QLabel()
         self.motivation_slider: QSlider | None = None
+        self.protocol_risk_checks: dict[str, QCheckBox] = {}
+        self.protocol_score_sliders: dict[str, QSlider] = {}
 
         self.patient = QComboBox()
         self.record_date = QLineEdit(today_text())
@@ -107,6 +110,8 @@ class AdvancedModulePage(Page):
 
         if definition.module == "Anamnese Avancada":
             self._build_advanced_anamnesis_layout(actions)
+        elif definition.module == "Protocolos Clinicos":
+            self._build_clinical_protocols_layout(actions)
         elif definition.module == "Exames Avancados":
             self._build_advanced_labs_layout(actions)
         else:
@@ -219,6 +224,94 @@ class AdvancedModulePage(Page):
     def _sync_motivation_input(self, value: int) -> None:
         if "motivation" in self.inputs:
             self.inputs["motivation"].setText(str(value))
+
+    def _build_clinical_protocols_layout(self, actions: QHBoxLayout) -> None:
+        for key in ["phenotypic", "etiologic", "muscle_loss", "fat_loss", "edema"]:
+            self.inputs[key].setText("0")
+
+        header = QGroupBox("Gerenciamento de Paciente e Avaliacao")
+        header_layout = QGridLayout(header)
+        self._add_stacked_field(header_layout, 0, "Paciente", self.patient)
+        self._add_stacked_field(header_layout, 0, "Data", self.record_date, column=2)
+        self._add_stacked_field(header_layout, 0, "Perfil", self.profile, column=4)
+        for column in [1, 3, 5]:
+            header_layout.setColumnStretch(column, 1)
+
+        evaluation = QGroupBox("Avaliacao Clinica e Checklists")
+        evaluation_layout = QGridLayout(evaluation)
+        evaluation_layout.addWidget(self._protocol_risk_card(), 0, 0)
+        evaluation_layout.addWidget(self._protocol_scores_card(), 0, 1)
+        evaluation_layout.setColumnStretch(0, 1)
+        evaluation_layout.setColumnStretch(1, 1)
+
+        output = QGroupBox("Resultados e Notas")
+        output_layout = QGridLayout(output)
+        output_layout.addWidget(QLabel("Observacoes"), 0, 0)
+        self.notes.setFixedHeight(86)
+        output_layout.addWidget(self.notes, 1, 0)
+        output_layout.addWidget(QLabel("Resultado"), 2, 0)
+        self.result.setFixedHeight(86)
+        output_layout.addWidget(self.result, 3, 0)
+
+        row = QWidget()
+        row_layout = QGridLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setHorizontalSpacing(14)
+        row_layout.addWidget(evaluation, 0, 0)
+        row_layout.addWidget(output, 0, 1)
+        row_layout.setColumnStretch(0, 2)
+        row_layout.setColumnStretch(1, 1)
+
+        self.layout.addWidget(header)
+        self.layout.addWidget(row)
+        self.layout.addLayout(actions)
+
+    def _protocol_risk_card(self) -> QGroupBox:
+        card = QGroupBox("Criterios de Risco")
+        layout = QVBoxLayout(card)
+        self._add_protocol_check(layout, "phenotypic", "Criterios fenotipicos")
+        self._add_protocol_check(layout, "etiologic", "Criterios etiologicos")
+        layout.addStretch()
+        return card
+
+    def _add_protocol_check(self, layout: QVBoxLayout, key: str, label: str) -> None:
+        checkbox = QCheckBox(label)
+        checkbox.toggled.connect(
+            lambda checked, field_key=key: self._sync_protocol_check(field_key, checked)
+        )
+        self.protocol_risk_checks[key] = checkbox
+        layout.addWidget(checkbox)
+
+    def _protocol_scores_card(self) -> QGroupBox:
+        card = QGroupBox("Avaliacao de Composicao Corporal (Scores)")
+        layout = QGridLayout(card)
+        scores = [
+            ("muscle_loss", "Perda muscular"),
+            ("fat_loss", "Perda de gordura"),
+            ("edema", "Edema/ascite"),
+        ]
+        for row, (key, label) in enumerate(scores):
+            layout.addWidget(QLabel(label), row, 0)
+            slider = QSlider(Qt.Orientation.Horizontal)
+            slider.setRange(0, 3)
+            slider.setTickInterval(1)
+            slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+            slider.valueChanged.connect(
+                lambda value, field_key=key: self._sync_protocol_score(field_key, value)
+            )
+            self.protocol_score_sliders[key] = slider
+            layout.addWidget(slider, row, 1)
+            layout.addWidget(QLabel("0   1   2   3"), row, 2)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _sync_protocol_check(self, key: str, checked: bool) -> None:
+        if key in self.inputs:
+            self.inputs[key].setText("1" if checked else "0")
+
+    def _sync_protocol_score(self, key: str, value: int) -> None:
+        if key in self.inputs:
+            self.inputs[key].setText(str(value))
 
     def _build_advanced_labs_layout(self, actions: QHBoxLayout) -> None:
         header = QGroupBox("Informacoes do Paciente & Avaliacao")
@@ -369,6 +462,10 @@ class AdvancedModulePage(Page):
             field.clear()
         if self.motivation_slider is not None:
             self.motivation_slider.setValue(0)
+        for checkbox in self.protocol_risk_checks.values():
+            checkbox.setChecked(False)
+        for slider in self.protocol_score_sliders.values():
+            slider.setValue(0)
         self.notes.clear()
         self.result.clear()
         self.record_date.setText(today_text())
