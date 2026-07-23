@@ -3,8 +3,11 @@ from __future__ import annotations
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
-    QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
@@ -66,28 +69,13 @@ class NutritionDiagnosisPage(Page):
         self.criteria = QTextEdit()
         self.criteria.setFixedHeight(55)
         self.criteria.setReadOnly(True)
+        self.criteria.setPlaceholderText("Criterios registrados")
         self.conduct = QTextEdit()
-        self.conduct.setFixedHeight(65)
+        self.conduct.setFixedHeight(82)
+        self.conduct.setPlaceholderText("Conduta")
         self.notes = QTextEdit()
-        self.notes.setFixedHeight(65)
-
-        form = QFormLayout()
-        form.addRow("Pesquisar", self.search)
-        form.addRow("Paciente", self.patient)
-        form.addRow("Consulta vinculada", self.appointment)
-        form.addRow("Data do diagnostico", self.diagnosis_date)
-        form.addRow("Protocolo", self.protocol)
-        form.addRow("Grupo criterio 1", self.primary_label)
-        form.addRow("Quantidade criterio 1", self.primary_count)
-        form.addRow("Grupo criterio 2", self.secondary_label)
-        form.addRow("Quantidade criterio 2", self.secondary_count)
-        form.addRow("Gravidade", self.severe_marker)
-        form.addRow("Confirmacao", self.confirmed)
-        form.addRow("Classificacao", self.classification)
-        form.addRow("Gravidade sugerida", self.severity)
-        form.addRow("Criterios registrados", self.criteria)
-        form.addRow("Conduta", self.conduct)
-        form.addRow("Observacoes", self.notes)
+        self.notes.setFixedHeight(82)
+        self.notes.setPlaceholderText("Observacoes")
 
         calculate = QPushButton("Classificar")
         calculate.clicked.connect(self._calculate)
@@ -106,18 +94,85 @@ class NutritionDiagnosisPage(Page):
 
         self.table = QTableWidget(0, 7)
         self.table.setHorizontalHeaderLabels(
-            ["ID", "Paciente", "Data", "Protocolo", "Classificacao", "Gravidade", "Confirmado"]
+            [
+                "ID",
+                "Paciente",
+                "Data",
+                "Protocolo",
+                "Classificacao",
+                "Gravidade",
+                "Confirmado",
+            ]
         )
         self.table.cellClicked.connect(self._select_diagnosis_from_table)
+        self.table.setWordWrap(True)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.table.verticalHeader().setVisible(False)
 
-        wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
+        cards = QWidget()
+        cards_layout = QGridLayout(cards)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
+        cards_layout.setHorizontalSpacing(14)
+        cards_layout.addWidget(self._patient_card(), 0, 0)
+        cards_layout.addWidget(self._protocol_card(), 0, 1)
+        cards_layout.addWidget(self._results_card(), 0, 2)
+        cards_layout.setColumnStretch(0, 1)
+        cards_layout.setColumnStretch(1, 1)
+        cards_layout.setColumnStretch(2, 1)
 
-        self.layout.addWidget(wrapper)
+        self.layout.addWidget(cards)
+        self.layout.addLayout(actions)
         self.layout.addWidget(self.table)
         self.refresh()
+
+    def _patient_card(self) -> QGroupBox:
+        card = QGroupBox("Informacoes do Paciente")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Pesquisar", self.search)
+        self._add_stacked_field(layout, 2, "Paciente", self.patient)
+        self._add_stacked_field(layout, 4, "Consulta vinculada", self.appointment)
+        self._add_stacked_field(layout, 6, "Data do diagnostico", self.diagnosis_date)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _protocol_card(self) -> QGroupBox:
+        card = QGroupBox("Protocolo e Criterios")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Protocolo", self.protocol)
+        self._add_stacked_field(layout, 2, "Grupo criterio 1", self.primary_label)
+        self._add_stacked_field(layout, 4, "Quantidade criterio 1", self.primary_count)
+        self._add_stacked_field(layout, 6, "Grupo criterio 2", self.secondary_label)
+        self._add_stacked_field(layout, 8, "Quantidade criterio 2", self.secondary_count)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _results_card(self) -> QGroupBox:
+        card = QGroupBox("Resultados e Notas")
+        layout = QGridLayout(card)
+        layout.addWidget(QLabel("Gravidade"), 0, 0)
+        layout.addWidget(self.severe_marker, 0, 1)
+        layout.addWidget(QLabel("Confirmacao"), 1, 0)
+        layout.addWidget(self.confirmed, 1, 1)
+        self._add_stacked_field(layout, 2, "Classificacao", self.classification)
+        self._add_stacked_field(layout, 4, "Gravidade sugerida", self.severity)
+        self._add_stacked_field(layout, 6, "Criterios registrados", self.criteria)
+        self._add_stacked_field(layout, 8, "Conduta", self.conduct)
+        self._add_stacked_field(layout, 10, "Observacoes", self.notes)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, 0, 1, 2)
+        layout.addWidget(widget, row + 1, 0, 1, 2)
 
     def refresh(self) -> None:
         self._reload_patients()
