@@ -213,6 +213,22 @@ QProgressBar::chunk {
     background: #2c7a72;
 }
 
+QTableWidget#patientCardsTable {
+    background: transparent;
+    border: none;
+}
+
+QTableWidget#patientCardsTable::item {
+    background: #ffffff;
+    border-bottom: 1px solid #d6dde5;
+    padding: 8px;
+}
+
+QTableWidget#patientCardsTable::item:selected {
+    background: #e6f1ef;
+    color: #111827;
+}
+
 QPushButton {
     min-height: 32px;
     padding: 4px 14px;

@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -48,16 +53,6 @@ class PatientsPage(Page):
         self.notes = QTextEdit()
         self.notes.setFixedHeight(90)
 
-        form = QFormLayout()
-        form.addRow("Nome completo", self.name)
-        form.addRow("Data de nascimento", self.birth_date)
-        form.addRow("Telefone", self.phone)
-        form.addRow("E-mail", self.email)
-        form.addRow("Convenio", self.health_insurance)
-        form.addRow("Documento", self.document)
-        form.addRow("Responsavel", self.responsible)
-        form.addRow("Observacoes clinicas", self.notes)
-
         save = QPushButton("Salvar")
         save.setObjectName("primaryButton")
         save.clicked.connect(self._save_patient)
@@ -76,17 +71,94 @@ class PatientsPage(Page):
         self.table.setHorizontalHeaderLabels(
             ["ID", "Nome", "Nascimento", "Telefone", "E-mail", "Convenio", "Documento"]
         )
+        self.table.setObjectName("patientCardsTable")
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setShowGrid(False)
+        self.table.setAlternatingRowColors(False)
         self.table.cellClicked.connect(self._select_patient_from_table)
 
         wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow("Pesquisar", self.search)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.setSpacing(12)
+        wrapper_layout.addWidget(self._search_card())
+        wrapper_layout.addWidget(self._personal_data_cards())
+        wrapper_layout.addWidget(self._notes_card())
+        wrapper_layout.addLayout(actions)
 
         self.layout.addWidget(wrapper)
         self.layout.addWidget(self.table)
         self._reload_table()
+
+    def _search_card(self) -> QGroupBox:
+        card = QGroupBox("")
+        layout = QGridLayout(card)
+        self._add_inline_field(layout, 0, "Pesquisar", self.search)
+        return card
+
+    def _personal_data_cards(self) -> QWidget:
+        container = QWidget()
+        layout = QGridLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setHorizontalSpacing(12)
+        layout.addWidget(self._identity_card(), 0, 0)
+        layout.addWidget(self._contact_card(), 0, 1)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
+        return container
+
+    def _identity_card(self) -> QGroupBox:
+        card = QGroupBox("")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Nome completo", self.name, column_span=2)
+        self._add_stacked_field(layout, 2, "Telefone", self.phone, column_span=2)
+        self._add_stacked_field(layout, 4, "Convenio", self.health_insurance)
+        self._add_stacked_field(layout, 4, "Documento", self.document, column=1)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _contact_card(self) -> QGroupBox:
+        card = QGroupBox("")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Data de nascimento", self.birth_date)
+        self._add_stacked_field(layout, 2, "E-mail", self.email)
+        self._add_stacked_field(layout, 4, "Responsavel", self.responsible)
+        return card
+
+    def _notes_card(self) -> QGroupBox:
+        card = QGroupBox("")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Observacoes clinicas", self.notes)
+        return card
+
+    def _add_inline_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, 0)
+        layout.addWidget(widget, row, 1)
+        layout.setColumnStretch(1, 1)
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 0,
+        column_span: int = 1,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, column, 1, column_span)
+        layout.addWidget(widget, row + 1, column, 1, column_span)
 
     def _save_patient(self) -> None:
         try:
@@ -147,13 +219,27 @@ class PatientsPage(Page):
         patients = self.repository.search(self.search.text())
         self.table.setRowCount(len(patients))
         for row, patient in enumerate(patients):
-            self.table.setItem(row, 0, QTableWidgetItem(str(patient.id or "")))
-            self.table.setItem(row, 1, QTableWidgetItem(patient.name))
-            self.table.setItem(row, 2, QTableWidgetItem(format_date(patient.birth_date)))
-            self.table.setItem(row, 3, QTableWidgetItem(patient.phone))
-            self.table.setItem(row, 4, QTableWidgetItem(patient.email))
-            self.table.setItem(row, 5, QTableWidgetItem(patient.health_insurance))
-            self.table.setItem(row, 6, QTableWidgetItem(patient.document))
+            self.table.setRowHeight(row, 58)
+            values = [
+                str(patient.id or ""),
+                patient.name,
+                format_date(patient.birth_date),
+                patient.phone or "-",
+                patient.email or "-",
+                patient.health_insurance or "-",
+                patient.document or "-",
+            ]
+            for column, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                item.setTextAlignment(
+                    Qt.AlignmentFlag.AlignVCenter
+                    | (
+                        Qt.AlignmentFlag.AlignCenter
+                        if column == 0
+                        else Qt.AlignmentFlag.AlignLeft
+                    )
+                )
+                self.table.setItem(row, column, item)
 
     def _select_patient_from_table(self, row: int, _column: int) -> None:
         item = self.table.item(row, 0)
