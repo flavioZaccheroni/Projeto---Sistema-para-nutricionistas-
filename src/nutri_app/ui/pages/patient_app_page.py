@@ -4,8 +4,11 @@ from datetime import date
 
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
@@ -13,6 +16,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QTabWidget,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -57,8 +61,11 @@ class PatientAppPage(Page):
         self.search = QLineEdit()
         self.search.setPlaceholderText("Pesquisar pelo nome do paciente")
         self.search.textChanged.connect(self.refresh)
-        self.summary = QLineEdit()
-        self.summary.setReadOnly(True)
+        self.access_summary = QLabel("Acessos ativos: 0")
+        self.publication_summary = QLabel("Publicacoes: 0")
+        self.adherence_summary = QLabel("Adesao media: 0.0%")
+        for label in [self.access_summary, self.publication_summary, self.adherence_summary]:
+            label.setObjectName("summaryBadge")
 
         self.patient = QComboBox()
         self.patient.currentIndexChanged.connect(self._reload_patient_dependents)
@@ -83,63 +90,61 @@ class PatientAppPage(Page):
         self.adherence_notes = QTextEdit()
         self.adherence_notes.setFixedHeight(70)
 
-        root_form = QFormLayout()
-        root_form.addRow("Pesquisar", self.search)
-        root_form.addRow("Paciente", self.patient)
-        root_form.addRow("Resumo", self.summary)
-
         generate_code = QPushButton("Gerar codigo")
         generate_code.clicked.connect(self._generate_code)
         save_access = QPushButton("Salvar acesso")
         save_access.setObjectName("primaryButton")
         save_access.clicked.connect(self._save_access)
 
-        access_form = QFormLayout()
-        access_form.addRow("E-mail login", self.email)
-        access_form.addRow("Codigo acesso", self.access_code)
-        access_form.addRow("Observacoes", self.access_notes)
         access_actions = QHBoxLayout()
         access_actions.addWidget(generate_code)
         access_actions.addWidget(save_access)
         access_actions.addStretch()
         access_widget = QWidget()
-        access_layout = QFormLayout(access_widget)
-        access_layout.addRow(access_form)
-        access_layout.addRow(access_actions)
+        access_layout = QVBoxLayout(access_widget)
+        access_layout.setContentsMargins(10, 10, 10, 10)
+        access_form = QGridLayout()
+        self._add_stacked_field(access_form, 0, "E-mail login", self.email)
+        self._add_stacked_field(access_form, 2, "Codigo acesso", self.access_code)
+        self._add_stacked_field(access_form, 4, "Observacoes", self.access_notes)
+        access_layout.addLayout(access_form)
+        access_layout.addLayout(access_actions)
 
         publish = QPushButton("Publicar")
         publish.setObjectName("primaryButton")
         publish.clicked.connect(self._publish_content)
-        publication_form = QFormLayout()
-        publication_form.addRow("Tipo", self.publication_type)
-        publication_form.addRow("Plano vinculado", self.meal_plan)
-        publication_form.addRow("Titulo", self.title)
-        publication_form.addRow("Conteudo", self.content)
-        publication_form.addRow("Expira em", self.expiration_date)
         publication_widget = QWidget()
-        publication_layout = QFormLayout(publication_widget)
-        publication_layout.addRow(publication_form)
-        publication_layout.addRow(publish)
+        publication_layout = QVBoxLayout(publication_widget)
+        publication_layout.setContentsMargins(10, 10, 10, 10)
+        publication_form = QGridLayout()
+        self._add_stacked_field(publication_form, 0, "Tipo", self.publication_type)
+        self._add_stacked_field(publication_form, 0, "Plano vinculado", self.meal_plan, column=1)
+        self._add_stacked_field(publication_form, 2, "Titulo", self.title, column_span=2)
+        self._add_stacked_field(publication_form, 4, "Conteudo", self.content, column_span=2)
+        self._add_stacked_field(publication_form, 6, "Expira em", self.expiration_date)
+        publication_layout.addLayout(publication_form)
+        publication_layout.addWidget(publish)
 
         save_adherence = QPushButton("Registrar adesao")
         save_adherence.setObjectName("primaryButton")
         save_adherence.clicked.connect(self._save_adherence)
-        adherence_form = QFormLayout()
-        adherence_form.addRow("Publicacao", self.publication)
-        adherence_form.addRow("Data", self.record_date)
-        adherence_form.addRow("Adesao %", self.adherence)
-        adherence_form.addRow("Humor", self.mood)
-        adherence_form.addRow("Dificuldades", self.difficulties)
-        adherence_form.addRow("Observacoes", self.adherence_notes)
         adherence_widget = QWidget()
-        adherence_layout = QFormLayout(adherence_widget)
-        adherence_layout.addRow(adherence_form)
-        adherence_layout.addRow(save_adherence)
+        adherence_layout = QVBoxLayout(adherence_widget)
+        adherence_layout.setContentsMargins(10, 10, 10, 10)
+        adherence_form = QGridLayout()
+        self._add_stacked_field(adherence_form, 0, "Publicacao", self.publication, column_span=2)
+        self._add_stacked_field(adherence_form, 2, "Data", self.record_date)
+        self._add_stacked_field(adherence_form, 2, "Adesao %", self.adherence, column=1)
+        self._add_stacked_field(adherence_form, 4, "Humor", self.mood)
+        self._add_stacked_field(adherence_form, 4, "Dificuldades", self.difficulties, column=1)
+        self._add_stacked_field(adherence_form, 6, "Observacoes", self.adherence_notes, column_span=2)
+        adherence_layout.addLayout(adherence_form)
+        adherence_layout.addWidget(save_adherence)
 
-        tabs = QTabWidget()
-        tabs.addTab(access_widget, "Acesso")
-        tabs.addTab(publication_widget, "Publicacoes")
-        tabs.addTab(adherence_widget, "Adesao")
+        self.tabs = QTabWidget()
+        self.tabs.addTab(access_widget, "Acesso")
+        self.tabs.addTab(publication_widget, "Publicacoes")
+        self.tabs.addTab(adherence_widget, "Adesao")
 
         self.access_table = QTableWidget(0, 5)
         self.access_table.setHorizontalHeaderLabels(
@@ -153,17 +158,77 @@ class PatientAppPage(Page):
         self.adherence_table.setHorizontalHeaderLabels(
             ["ID", "Paciente", "Publicacao", "Data", "Adesao", "Classificacao"]
         )
+        for table in [self.access_table, self.publication_table, self.adherence_table]:
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+            table.verticalHeader().setVisible(False)
+            table.setAlternatingRowColors(True)
 
         wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(root_form)
-        wrapper_layout.addRow(tabs)
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.setSpacing(12)
+        wrapper_layout.addWidget(self._top_card())
+        wrapper_layout.addWidget(self.tabs)
 
         self.layout.addWidget(wrapper)
-        self.layout.addWidget(self.access_table)
-        self.layout.addWidget(self.publication_table)
-        self.layout.addWidget(self.adherence_table)
+        self.layout.addWidget(self._table_card("Lista de Acessos de Pacientes", self.access_table))
+        self.layout.addWidget(self._history_card())
         self.refresh()
+
+    def _top_card(self) -> QGroupBox:
+        card = QGroupBox("")
+        layout = QGridLayout(card)
+        self._add_inline_field(layout, 0, "Pesquisar", self.search)
+        self._add_inline_field(layout, 1, "Paciente", self.patient)
+        summary = QHBoxLayout()
+        summary.addWidget(QLabel("Resumo"))
+        summary.addWidget(self.access_summary)
+        summary.addWidget(self.publication_summary)
+        summary.addWidget(self.adherence_summary)
+        summary.addStretch()
+        layout.addLayout(summary, 2, 0, 1, 2)
+        return card
+
+    def _table_card(self, title: str, table: QTableWidget) -> QGroupBox:
+        card = QGroupBox(title)
+        layout = QVBoxLayout(card)
+        layout.addWidget(table)
+        return card
+
+    def _history_card(self) -> QGroupBox:
+        card = QGroupBox("Historico de Publicacoes e Adesao")
+        layout = QVBoxLayout(card)
+        layout.addWidget(self.publication_table)
+        layout.addWidget(self.adherence_table)
+        return card
+
+    def _add_inline_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, 0)
+        layout.addWidget(widget, row, 1)
+        layout.setColumnStretch(1, 1)
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 0,
+        column_span: int = 1,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, column, 1, column_span)
+        layout.addWidget(widget, row + 1, column, 1, column_span)
+        layout.setColumnStretch(column, 1)
 
     def refresh(self) -> None:
         self._reload_patients()
@@ -333,11 +398,9 @@ class PatientAppPage(Page):
 
     def _reload_summary(self) -> None:
         summary = self.repository.summary()
-        self.summary.setText(
-            f"Acessos ativos: {summary.total_accesses} | "
-            f"Publicacoes: {summary.total_published} | "
-            f"Adesao media: {summary.average_adherence:.1f}%"
-        )
+        self.access_summary.setText(f"Acessos ativos: {summary.total_accesses}")
+        self.publication_summary.setText(f"Publicacoes: {summary.total_published}")
+        self.adherence_summary.setText(f"Adesao media: {summary.average_adherence:.1f}%")
 
     def _optional_date(self, value: str) -> date | None:
         return parse_optional_date(value)
