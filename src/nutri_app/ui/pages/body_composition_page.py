@@ -88,17 +88,20 @@ class BodyCompositionPage(Page):
         actions.addStretch()
 
         self.metrics_table = QTableWidget(0, 5)
+        self.metrics_table.setObjectName("bodyCompositionTable")
         self.metrics_table.setHorizontalHeaderLabels(["Item", "Valor", "Protocolo", "Data", "Acoes"])
         self.metrics_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.metrics_table.verticalHeader().setVisible(False)
         self.metrics_table.setShowGrid(False)
 
         self.table = QTableWidget(0, 8)
+        self.table.setObjectName("bodyCompositionTable")
         self.table.setHorizontalHeaderLabels(
             ["ID", "Paciente", "Data", "Protocolo", "Peso", "% gordura", "M. gorda", "M. magra"]
         )
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().setVisible(False)
+        self.table.setShowGrid(False)
         self.table.cellClicked.connect(self._select_composition_from_table)
 
         wrapper = QWidget()

@@ -248,6 +248,22 @@ QTableWidget#patientCardsTable::item:selected {
     color: #111827;
 }
 
+QTableWidget#bodyCompositionTable {
+    background: #ffffff;
+    border: 1px solid #d6dde5;
+    border-radius: 6px;
+}
+
+QTableWidget#bodyCompositionTable::item {
+    border-bottom: 1px solid #d6dde5;
+    padding: 7px;
+}
+
+QTableWidget#bodyCompositionTable::item:selected {
+    background: #e6f1ef;
+    color: #111827;
+}
+
 QPushButton {
     min-height: 32px;
     padding: 4px 14px;
