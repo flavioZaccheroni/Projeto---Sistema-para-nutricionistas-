@@ -28,6 +28,17 @@ from nutri_app.ui.date_format import DATE_FORMAT, format_date
 from nutri_app.ui.pages.base import Page
 
 
+class SortableTableItem(QTableWidgetItem):
+    def __init__(self, text: str, sort_value: object | None = None) -> None:
+        super().__init__(text)
+        self.sort_value = text.casefold() if sort_value is None else sort_value
+
+    def __lt__(self, other: QTableWidgetItem) -> bool:
+        if isinstance(other, SortableTableItem):
+            return self.sort_value < other.sort_value
+        return super().__lt__(other)
+
+
 class PatientsPage(Page):
     def __init__(
         self,
@@ -77,6 +88,8 @@ class PatientsPage(Page):
         )
         self.table.setObjectName("patientCardsTable")
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSortIndicatorShown(True)
+        self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         self.table.setAlternatingRowColors(False)
@@ -282,30 +295,27 @@ class PatientsPage(Page):
         return text
 
     def _reload_table(self) -> None:
+        self.table.setSortingEnabled(False)
         patients = self.repository.search(self.search.text())
         self.table.setRowCount(len(patients))
         for row, patient in enumerate(patients):
             self.table.setRowHeight(row, 58)
             values = [
-                str(patient.id or ""),
-                patient.name,
-                format_date(patient.birth_date),
-                patient.phone or "-",
-                patient.email or "-",
-                patient.health_insurance or "-",
-                patient.document or "-",
+                (str(patient.id or ""), patient.id or 0),
+                (patient.name, patient.name.casefold()),
+                (format_date(patient.birth_date), patient.birth_date.toordinal()),
+                (patient.phone or "-", patient.phone.casefold()),
+                (patient.email or "-", patient.email.casefold()),
+                (patient.health_insurance or "-", patient.health_insurance.casefold()),
+                (patient.document or "-", patient.document.casefold()),
             ]
-            for column, value in enumerate(values):
-                item = QTableWidgetItem(value)
+            for column, (value, sort_value) in enumerate(values):
+                item = SortableTableItem(value, sort_value)
                 item.setTextAlignment(
-                    Qt.AlignmentFlag.AlignVCenter
-                    | (
-                        Qt.AlignmentFlag.AlignCenter
-                        if column == 0
-                        else Qt.AlignmentFlag.AlignLeft
-                    )
+                    Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignCenter
                 )
                 self.table.setItem(row, column, item)
+        self.table.setSortingEnabled(True)
 
     def _select_patient_from_table(self, row: int, _column: int) -> None:
         item = self.table.item(row, 0)
