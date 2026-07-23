@@ -1,15 +1,20 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -31,7 +36,10 @@ class BodyCompositionPage(Page):
         audit_repository: AuditRepository,
         current_user_id: int,
     ) -> None:
-        super().__init__("Composicao Corporal", "Bioimpedancia, dobras e protocolos de composicao.")
+        super().__init__(
+            "Gerenciador de Composicao Corporal",
+            "Bioimpedancia, dobras e protocolos de composicao.",
+        )
         self.repository = BodyCompositionRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
         self.appointment_repository = AppointmentRepository(connection_factory)
@@ -64,21 +72,6 @@ class BodyCompositionPage(Page):
         self.notes = QTextEdit()
         self.notes.setFixedHeight(70)
 
-        form = QFormLayout()
-        form.addRow("Pesquisar", self.search)
-        form.addRow("Paciente", self.patient)
-        form.addRow("Consulta vinculada", self.appointment)
-        form.addRow("Data da avaliacao", self.assessment_date)
-        form.addRow("Protocolo", self.protocol)
-        form.addRow("Peso (kg)", self.weight)
-        form.addRow("% gordura", self.body_fat_percentage)
-        form.addRow("Massa gorda (kg)", self.fat_mass)
-        form.addRow("Massa magra (kg)", self.lean_mass)
-        form.addRow("% agua corporal", self.body_water_percentage)
-        form.addRow("Massa muscular (kg)", self.muscle_mass)
-        form.addRow("Gordura visceral", self.visceral_fat)
-        form.addRow("Observacoes", self.notes)
-
         calculate = QPushButton("Calcular")
         calculate.clicked.connect(self._calculate)
         save = QPushButton("Salvar")
@@ -94,20 +87,93 @@ class BodyCompositionPage(Page):
             actions.addWidget(button)
         actions.addStretch()
 
+        self.metrics_table = QTableWidget(0, 5)
+        self.metrics_table.setHorizontalHeaderLabels(["Item", "Valor", "Protocolo", "Data", "Acoes"])
+        self.metrics_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.metrics_table.verticalHeader().setVisible(False)
+        self.metrics_table.setShowGrid(False)
+
         self.table = QTableWidget(0, 8)
         self.table.setHorizontalHeaderLabels(
             ["ID", "Paciente", "Data", "Protocolo", "Peso", "% gordura", "M. gorda", "M. magra"]
         )
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setVisible(False)
         self.table.cellClicked.connect(self._select_composition_from_table)
 
         wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.setSpacing(12)
+        wrapper_layout.addWidget(self._general_card())
+        wrapper_layout.addWidget(self._measurements_card(actions))
 
         self.layout.addWidget(wrapper)
+        self.layout.addWidget(self.metrics_table)
         self.layout.addWidget(self.table)
         self.refresh()
+
+    def _general_card(self) -> QGroupBox:
+        card = QGroupBox("Informacoes Gerais")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Pesquisar", self.search)
+        self._add_stacked_field(layout, 0, "Paciente", self.patient, column=1)
+        self._add_stacked_field(layout, 2, "Consulta", self.appointment)
+        self._add_stacked_field(layout, 2, "Protocolo", self.protocol, column=1)
+        self._add_stacked_field(layout, 4, "Data da avaliacao", self.assessment_date)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _measurements_card(self, actions: QHBoxLayout) -> QGroupBox:
+        card = QGroupBox("Medicoes")
+        layout = QGridLayout(card)
+        left_fields = [
+            ("Peso (kg)", self.weight),
+            ("Massa gorda (kg)", self.fat_mass),
+            ("% agua corporal", self.body_water_percentage),
+            ("Gordura visceral", self.visceral_fat),
+        ]
+        right_fields = [
+            ("% gordura", self.body_fat_percentage),
+            ("Massa magra (kg)", self.lean_mass),
+            ("Massa muscular (kg)", self.muscle_mass),
+            ("Observacoes", self.notes),
+        ]
+        for row, (label, widget) in enumerate(left_fields):
+            self._add_inline_field(layout, row, label, widget)
+        for row, (label, widget) in enumerate(right_fields):
+            self._add_inline_field(layout, row, label, widget, column=2)
+        layout.addLayout(actions, 4, 0, 1, 4)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(3, 1)
+        return card
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 0,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, column)
+        layout.addWidget(widget, row + 1, column)
+
+    def _add_inline_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 0,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, column)
+        layout.addWidget(widget, row, column + 1)
 
     def refresh(self) -> None:
         self._reload_patients()
@@ -220,6 +286,7 @@ class BodyCompositionPage(Page):
         ]:
             field.clear()
         self.notes.clear()
+        self._reload_metrics_preview()
 
     def _reload_patients(self) -> None:
         current_patient_id = None
@@ -259,14 +326,21 @@ class BodyCompositionPage(Page):
         records = self.repository.list_active(self.search.text())
         self.table.setRowCount(len(records))
         for row, record in enumerate(records):
-            self.table.setItem(row, 0, QTableWidgetItem(str(record.id or "")))
-            self.table.setItem(row, 1, QTableWidgetItem(record.patient_name))
-            self.table.setItem(row, 2, QTableWidgetItem(format_date(record.assessment_date)))
-            self.table.setItem(row, 3, QTableWidgetItem(record.protocol.value))
-            self.table.setItem(row, 4, QTableWidgetItem(f"{record.weight_kg:.2f}"))
-            self.table.setItem(row, 5, QTableWidgetItem(f"{record.body_fat_percentage:.2f}"))
-            self.table.setItem(row, 6, QTableWidgetItem(f"{record.fat_mass_kg:.2f}"))
-            self.table.setItem(row, 7, QTableWidgetItem(f"{record.lean_mass_kg:.2f}"))
+            values = [
+                str(record.id or ""),
+                record.patient_name,
+                format_date(record.assessment_date),
+                record.protocol.value,
+                f"{record.weight_kg:.2f}",
+                f"{record.body_fat_percentage:.2f}",
+                f"{record.fat_mass_kg:.2f}",
+                f"{record.lean_mass_kg:.2f}",
+            ]
+            for column, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.table.setItem(row, column, item)
+        self._reload_metrics_preview()
 
     def _select_composition_from_table(self, row: int, _column: int) -> None:
         item = self.table.item(row, 0)
@@ -294,10 +368,37 @@ class BodyCompositionPage(Page):
         self.muscle_mass.setText(self._format_optional(record.muscle_mass_kg))
         self.visceral_fat.setText(self._format_optional(record.visceral_fat))
         self.notes.setPlainText(record.notes)
+        self._reload_metrics_preview()
 
     def _show_results(self, fat_mass: float, lean_mass: float) -> None:
         self.fat_mass.setText(f"{fat_mass:.2f}")
         self.lean_mass.setText(f"{lean_mass:.2f}")
+        self._reload_metrics_preview()
+
+    def _reload_metrics_preview(self) -> None:
+        rows = [
+            ("Peso (kg)", self.weight.text().strip()),
+            ("% gordura", self.body_fat_percentage.text().strip()),
+            ("Massa gorda (kg)", self.fat_mass.text().strip()),
+            ("Massa magra (kg)", self.lean_mass.text().strip()),
+            ("% agua corporal", self.body_water_percentage.text().strip()),
+            ("Massa muscular (kg)", self.muscle_mass.text().strip()),
+            ("Gordura visceral", self.visceral_fat.text().strip()),
+        ]
+        visible_rows = [(label, value) for label, value in rows if value]
+        self.metrics_table.setRowCount(len(visible_rows))
+        for row, (label, value) in enumerate(visible_rows):
+            values = [
+                label,
+                value,
+                self.protocol.currentText(),
+                self.assessment_date.text().strip(),
+                "Editar / excluir",
+            ]
+            for column, text in enumerate(values):
+                item = QTableWidgetItem(text)
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.metrics_table.setItem(row, column, item)
 
     def _required_float(self, value: str, label: str) -> float:
         try:
