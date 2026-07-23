@@ -3,14 +3,21 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtWidgets import (
-    QFormLayout,
+    QButtonGroup,
+    QComboBox,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QRadioButton,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -40,13 +47,20 @@ class WebPortalPage(Page):
 
         root = Path(__file__).resolve().parents[4]
         self.output_dir = QLineEdit(str(root / "exports" / "portal_web"))
+        self.portal_title = QLineEdit("Nutri Clinic Pro")
+        self.portal_subtitle = QLineEdit()
+        self.portal_subtitle.setPlaceholderText("Entre a exploracao subtitulo")
+        self.environment = QComboBox()
+        self.environment.addItems(["Teste", "Producao"])
+        self.publish_mode = QButtonGroup(self)
+        self.manual_mode = QRadioButton("Manual")
+        self.ftp_mode = QRadioButton("Automatica via FTP")
+        self.manual_mode.setChecked(True)
+        self.publish_mode.addButton(self.manual_mode)
+        self.publish_mode.addButton(self.ftp_mode)
         self.status = QTextEdit()
         self.status.setReadOnly(True)
-        self.status.setFixedHeight(90)
-
-        form = QFormLayout()
-        form.addRow("Diretorio de saida", self.output_dir)
-        form.addRow("Status", self.status)
+        self.status.setFixedHeight(112)
 
         publish = QPushButton("Gerar portal")
         publish.setObjectName("primaryButton")
@@ -61,15 +75,75 @@ class WebPortalPage(Page):
 
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["ID", "Titulo", "Saida", "Status", "Paginas"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setVisible(False)
 
         wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.setSpacing(14)
+        wrapper_layout.addWidget(self._output_card())
+        middle = QWidget()
+        middle_layout = QGridLayout(middle)
+        middle_layout.setContentsMargins(0, 0, 0, 0)
+        middle_layout.setHorizontalSpacing(14)
+        middle_layout.addWidget(self._generation_card(), 0, 0)
+        middle_layout.addWidget(self._status_card(), 0, 1)
+        middle_layout.setColumnStretch(0, 1)
+        middle_layout.setColumnStretch(1, 1)
+        wrapper_layout.addWidget(middle)
+        wrapper_layout.addLayout(actions)
 
         self.layout.addWidget(wrapper)
-        self.layout.addWidget(self.table)
+        self.layout.addWidget(self._history_card())
         self.refresh()
+
+    def _output_card(self) -> QGroupBox:
+        card = QGroupBox("")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Diretorio de saida", self.output_dir)
+        return card
+
+    def _generation_card(self) -> QGroupBox:
+        card = QGroupBox("Geracao e Publicacao")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Titulo do Portal", self.portal_title)
+        self._add_stacked_field(layout, 0, "Subtitulo", self.portal_subtitle, column=1)
+        self._add_stacked_field(layout, 2, "Ambiente", self.environment)
+        mode_widget = QWidget()
+        mode_layout = QVBoxLayout(mode_widget)
+        mode_layout.setContentsMargins(0, 0, 0, 0)
+        mode_layout.addWidget(self.manual_mode)
+        mode_layout.addWidget(self.ftp_mode)
+        self._add_stacked_field(layout, 2, "Modo de Publicacao", mode_widget, column=1)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _status_card(self) -> QGroupBox:
+        card = QGroupBox("")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Status", self.status)
+        return card
+
+    def _history_card(self) -> QGroupBox:
+        card = QGroupBox("Geracoes Anteriores")
+        layout = QVBoxLayout(card)
+        layout.addWidget(self.table)
+        return card
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 0,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, column)
+        layout.addWidget(widget, row + 1, column)
 
     def refresh(self) -> None:
         records = self.repository.list_publish_records()
@@ -83,15 +157,18 @@ class WebPortalPage(Page):
 
     def _publish(self) -> None:
         output = Path(self.output_dir.text().strip())
+        mode = "Manual" if self.manual_mode.isChecked() else "Automatica via FTP"
+        title = self.portal_title.text().strip() or "Portal Web Nutri Clinic Pro"
         snapshot = self.repository.build_snapshot()
         total_pages = self.service.publish_static_portal(snapshot, output)
         record_id = self.repository.add_publish_record(
             WebPortalPublishRecord(
-                title="Portal Web Nutri Clinic Pro",
+                title=f"{title} ({mode})",
                 output_path=str(output),
-                status="Gerado",
+                status=f"Gerado - {self.environment.currentText()}",
                 total_pages=total_pages,
-                notes="Portal web estatico gerado pela fase 22.",
+                notes=self.portal_subtitle.text().strip()
+                or "Portal web estatico gerado pela fase 22.",
             )
         )
         self.audit_repository.log(
@@ -102,7 +179,10 @@ class WebPortalPage(Page):
             str(output),
         )
         self.status.setPlainText(
-            f"Portal gerado com {total_pages} paginas.\nArquivo inicial: {output / 'index.html'}"
+            f"Portal gerado com {total_pages} paginas.\n"
+            f"Ambiente: {self.environment.currentText()}\n"
+            f"Modo: {mode}\n"
+            f"Arquivo inicial: {output / 'index.html'}"
         )
         self.refresh()
         QMessageBox.information(self, "Portal Web", "Portal web gerado com sucesso.")
