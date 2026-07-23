@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -58,25 +64,17 @@ class FoodDatabasePage(Page):
         self.micronutrients.setFixedHeight(60)
         self.notes = QTextEdit()
         self.notes.setFixedHeight(60)
-
-        form = QFormLayout()
-        form.addRow("Pesquisar", self.search)
-        form.addRow("Nome", self.name)
-        form.addRow("Categoria", self.category)
-        form.addRow("Fonte", self.source)
-        form.addRow("Porcao base (g)", self.base_portion)
-        form.addRow("Medida caseira", self.household_measure)
-        form.addRow("Energia (kcal)", self.energy)
-        form.addRow("Proteina (g)", self.protein)
-        form.addRow("Carboidrato (g)", self.carbohydrate)
-        form.addRow("Lipidios (g)", self.fat)
-        form.addRow("Fibras (g)", self.fiber)
-        form.addRow("Sodio (mg)", self.sodium)
-        form.addRow("Indice glicemico", self.glycemic_index)
-        form.addRow("Porcao para calculo (g)", self.portion_to_calculate)
-        form.addRow("Resultado por porcao", self.portion_result)
-        form.addRow("Micronutrientes", self.micronutrients)
-        form.addRow("Observacoes", self.notes)
+        self.macro_summary = QLabel("Energia: 0 kcal\nP: 0% | C: 0% | L: 0%")
+        self.macro_summary.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.macro_summary.setObjectName("macroSummary")
+        self.protein_bar = QProgressBar()
+        self.carbohydrate_bar = QProgressBar()
+        self.fat_bar = QProgressBar()
+        for bar in [self.protein_bar, self.carbohydrate_bar, self.fat_bar]:
+            bar.setRange(0, 100)
+            bar.setTextVisible(False)
+        for field in [self.energy, self.protein, self.carbohydrate, self.fat]:
+            field.textChanged.connect(self._refresh_macro_summary)
 
         calculate = QPushButton("Calcular porcao")
         calculate.clicked.connect(self._calculate_portion)
@@ -97,16 +95,116 @@ class FoodDatabasePage(Page):
         self.table.setHorizontalHeaderLabels(
             ["ID", "Nome", "Categoria", "Fonte", "Porcao", "Kcal", "Proteina", "Carboidrato"]
         )
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setVisible(False)
         self.table.cellClicked.connect(self._select_food_from_table)
 
         wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.setSpacing(14)
+        cards = QWidget()
+        cards_layout = QGridLayout(cards)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
+        cards_layout.setHorizontalSpacing(14)
+        cards_layout.addWidget(self._basic_info_card(), 0, 0)
+        cards_layout.addWidget(self._macros_card(), 0, 1)
+        cards_layout.addWidget(self._results_card(), 0, 2)
+        cards_layout.setColumnStretch(0, 1)
+        cards_layout.setColumnStretch(1, 1)
+        cards_layout.setColumnStretch(2, 1)
+        wrapper_layout.addWidget(cards)
+        wrapper_layout.addLayout(actions)
 
         self.layout.addWidget(wrapper)
         self.layout.addWidget(self.table)
         self.refresh()
+
+    def _basic_info_card(self) -> QGroupBox:
+        card = QGroupBox("Informacoes Basicas")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Pesquisar", self.search)
+        self._add_stacked_field(layout, 2, "Nome", self.name)
+        self._add_stacked_field(layout, 4, "Categoria", self.category)
+        self._add_stacked_field(layout, 6, "Fonte", self.source)
+        self._add_stacked_field(layout, 8, "Porcao base (g)", self.base_portion)
+        self._add_stacked_field(layout, 10, "Medida caseira", self.household_measure)
+        return card
+
+    def _macros_card(self) -> QGroupBox:
+        card = QGroupBox("Composicao Nutricional (Macronutrientes)")
+        layout = QGridLayout(card)
+        for row, (label, widget) in enumerate(
+            [
+                ("Energia (kcal)", self.energy),
+                ("Proteina (g)", self.protein),
+                ("Carboidrato (g)", self.carbohydrate),
+                ("Lipidios (g)", self.fat),
+                ("Fibras (g)", self.fiber),
+                ("Sodio (mg)", self.sodium),
+                ("Indice glicemico", self.glycemic_index),
+            ]
+        ):
+            self._add_icon_badge(layout, row, 0, label)
+            self._add_labeled_input(layout, row, label, widget, column=1)
+        summary_box = QGroupBox("")
+        summary_layout = QVBoxLayout(summary_box)
+        summary_layout.addWidget(self.macro_summary)
+        summary_layout.addWidget(QLabel("Proteina"))
+        summary_layout.addWidget(self.protein_bar)
+        summary_layout.addWidget(QLabel("Carboidrato"))
+        summary_layout.addWidget(self.carbohydrate_bar)
+        summary_layout.addWidget(QLabel("Lipidios"))
+        summary_layout.addWidget(self.fat_bar)
+        layout.addWidget(summary_box, 0, 3, 7, 1)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(3, 1)
+        return card
+
+    def _results_card(self) -> QGroupBox:
+        card = QGroupBox("Resultados e Notas (Micro e Macro)")
+        layout = QGridLayout(card)
+        self._add_icon_badge(layout, 0, 0, "Porcao")
+        self._add_labeled_input(layout, 0, "Porcao para calculo (g)", self.portion_to_calculate)
+        self._add_icon_badge(layout, 2, 0, "Resultado")
+        self._add_labeled_input(layout, 2, "Resultado por porcao", self.portion_result)
+        self._add_icon_badge(layout, 4, 0, "Micros")
+        self._add_stacked_field(layout, 4, "Micronutrientes", self.micronutrients, column=1)
+        self._add_icon_badge(layout, 6, 0, "Obs")
+        self._add_stacked_field(layout, 6, "Observacoes", self.notes, column=1)
+        layout.setColumnStretch(1, 1)
+        return card
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 0,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, column)
+        layout.addWidget(widget, row + 1, column)
+
+    def _add_labeled_input(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 1,
+    ) -> None:
+        widget.setPlaceholderText(label)
+        layout.addWidget(widget, row, column)
+
+    def _add_icon_badge(self, layout: QGridLayout, row: int, column: int, label: str) -> None:
+        badge = QLabel(label[:1])
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        badge.setFixedSize(34, 34)
+        badge.setObjectName("softIconBadge")
+        layout.addWidget(badge, row, column)
 
     def refresh(self) -> None:
         self._reload_table()
@@ -164,6 +262,33 @@ class FoodDatabasePage(Page):
             f"C {nutrients.carbohydrate_g:.1f}g | "
             f"L {nutrients.fat_g:.1f}g"
         )
+        self._refresh_macro_summary()
+
+    def _refresh_macro_summary(self) -> None:
+        energy = self._safe_float(self.energy.text())
+        protein = self._safe_float(self.protein.text())
+        carbohydrate = self._safe_float(self.carbohydrate.text())
+        fat = self._safe_float(self.fat.text())
+        macro_calories = (protein * 4) + (carbohydrate * 4) + (fat * 9)
+        if macro_calories <= 0:
+            protein_pct = carbohydrate_pct = fat_pct = 0
+        else:
+            protein_pct = round((protein * 4 / macro_calories) * 100)
+            carbohydrate_pct = round((carbohydrate * 4 / macro_calories) * 100)
+            fat_pct = max(0, 100 - protein_pct - carbohydrate_pct)
+        self.macro_summary.setText(
+            f"Energia: {energy:.0f} kcal\n"
+            f"P: {protein_pct}% | C: {carbohydrate_pct}% | L: {fat_pct}%"
+        )
+        self.protein_bar.setValue(protein_pct)
+        self.carbohydrate_bar.setValue(carbohydrate_pct)
+        self.fat_bar.setValue(fat_pct)
+
+    def _safe_float(self, value: str) -> float:
+        try:
+            return float(value.replace(",", ".")) if value.strip() else 0
+        except ValueError:
+            return 0
 
     def _delete_food(self) -> None:
         if self.selected_food_id is None:
@@ -248,6 +373,7 @@ class FoodDatabasePage(Page):
         self.micronutrients.setPlainText(record.micronutrients)
         self.notes.setPlainText(record.notes)
         self.portion_result.clear()
+        self._refresh_macro_summary()
 
     def _required_float(self, value: str, label: str) -> float:
         parsed = self._optional_float(value, label)
