@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -20,7 +26,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.screening_repository import ScreeningRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.screening import ScreeningService
-from nutri_app.ui.date_format import format_datetime
+from nutri_app.ui.date_format import format_date, format_datetime, today_text
 from nutri_app.ui.pages.base import Page
 
 
@@ -50,10 +56,16 @@ class ScreeningPage(Page):
         self.appointment = QComboBox()
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in ScreeningProtocol])
+        self.assessment_date = QLineEdit(today_text())
+        self.assessment_date.setPlaceholderText("mm-dd-aaaa")
         self.score = QLineEdit()
         self.score.setPlaceholderText("Pontuacao")
         self.classification = QLineEdit()
         self.classification.setReadOnly(True)
+        self.risk_meter = QProgressBar()
+        self.risk_meter.setRange(0, 100)
+        self.risk_meter.setTextVisible(False)
+        self.risk_meter.setValue(0)
         self.notes = QTextEdit()
         self.notes.setFixedHeight(75)
 
@@ -67,15 +79,6 @@ class ScreeningPage(Page):
         delete = QPushButton("Excluir")
         delete.clicked.connect(self._delete_screening)
 
-        form = QFormLayout()
-        form.addRow("Pesquisar", self.search)
-        form.addRow("Paciente", self.patient)
-        form.addRow("Consulta vinculada", self.appointment)
-        form.addRow("Protocolo", self.protocol)
-        form.addRow("Pontuacao", self.score)
-        form.addRow("Classificacao", self.classification)
-        form.addRow("Observacoes", self.notes)
-
         actions = QHBoxLayout()
         for button in [calculate, save, new, delete]:
             actions.addWidget(button)
@@ -83,18 +86,93 @@ class ScreeningPage(Page):
 
         self.table = QTableWidget(0, 7)
         self.table.setHorizontalHeaderLabels(
-            ["ID", "Paciente", "Consulta", "Protocolo", "Pontuacao", "Classificacao", "Observacoes"]
+            [
+                "ID",
+                "Paciente",
+                "Consulta",
+                "Protocolo",
+                "Pontuacao",
+                "Classificacao",
+                "Observacoes",
+            ]
         )
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setVisible(False)
         self.table.cellClicked.connect(self._select_screening_from_table)
 
         wrapper = QWidget()
-        wrapper_layout = QFormLayout(wrapper)
-        wrapper_layout.addRow(form)
-        wrapper_layout.addRow(actions)
+        wrapper_layout = QVBoxLayout(wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.setSpacing(12)
+        wrapper_layout.addWidget(self._build_identity_card())
+        wrapper_layout.addWidget(self._build_assessment_card())
+        wrapper_layout.addWidget(self._build_results_card())
+        wrapper_layout.addLayout(actions)
 
         self.layout.addWidget(wrapper)
         self.layout.addWidget(self.table)
         self.refresh()
+
+    def _build_identity_card(self) -> QGroupBox:
+        card = QGroupBox("Pesquisa e Identificacao")
+        layout = QGridLayout(card)
+        avatar = QLabel("NC")
+        avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        avatar.setFixedSize(44, 44)
+        avatar.setObjectName("avatarBadge")
+        layout.addWidget(avatar, 0, 0, 2, 1)
+        self._add_stacked_field(layout, 0, "Paciente", self.patient, column=1)
+        self._add_stacked_field(layout, 0, "Pesquisar", self.search, column=3)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(3, 1)
+        return card
+
+    def _build_assessment_card(self) -> QGroupBox:
+        card = QGroupBox("Informacoes da Avaliacao")
+        layout = QGridLayout(card)
+        self._add_icon_badge(layout, 0, 0, "Consulta")
+        self._add_stacked_field(layout, 0, "Consulta vinculada", self.appointment, column=1)
+        self._add_icon_badge(layout, 0, 3, "Protocolo")
+        self._add_stacked_field(layout, 0, "Protocolo", self.protocol, column=4)
+        self._add_icon_badge(layout, 0, 6, "Data")
+        self._add_stacked_field(layout, 0, "Data da avaliacao", self.assessment_date, column=7)
+        for column in [1, 4, 7]:
+            layout.setColumnStretch(column, 1)
+        return card
+
+    def _build_results_card(self) -> QGroupBox:
+        card = QGroupBox("Resultados e Notas")
+        layout = QGridLayout(card)
+        self._add_stacked_field(layout, 0, "Pontuacao", self.score)
+        self._add_stacked_field(layout, 0, "Classificacao", self.classification, column=2)
+        layout.addWidget(self.risk_meter, 1, 4)
+        self._add_stacked_field(layout, 0, "Observacoes", self.notes, column=5)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(2, 1)
+        layout.setColumnStretch(4, 1)
+        layout.setColumnStretch(5, 1)
+        return card
+
+    def _add_stacked_field(
+        self,
+        layout: QGridLayout,
+        row: int,
+        label: str,
+        widget: QWidget,
+        column: int = 0,
+        column_span: int = 1,
+    ) -> None:
+        title = QLabel(label)
+        title.setObjectName("miniHeader")
+        layout.addWidget(title, row, column, 1, column_span)
+        layout.addWidget(widget, row + 1, column, 1, column_span)
+
+    def _add_icon_badge(self, layout: QGridLayout, row: int, column: int, label: str) -> None:
+        badge = QLabel(label[:1])
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        badge.setFixedSize(38, 38)
+        badge.setObjectName("softIconBadge")
+        layout.addWidget(badge, row + 1, column)
 
     def refresh(self) -> None:
         self._reload_patients()
@@ -114,6 +192,7 @@ class ScreeningPage(Page):
             return
 
         self.classification.setText(classification)
+        self._refresh_risk_meter(classification)
         screening = Screening(
             id=self.selected_screening_id,
             patient_id=self.patient_ids_by_index[self.patient.currentIndex()],
@@ -138,11 +217,28 @@ class ScreeningPage(Page):
     def _calculate_classification(self) -> None:
         try:
             score = float(self.score.text().replace(",", "."))
-            classification = self.service.classify(ScreeningProtocol(self.protocol.currentText()), score)
+            classification = self.service.classify(
+                ScreeningProtocol(self.protocol.currentText()),
+                score,
+            )
         except ValueError as exc:
             QMessageBox.warning(self, "Validacao", str(exc) or "Pontuacao invalida.")
             return
         self.classification.setText(classification)
+        self._refresh_risk_meter(classification)
+
+    def _refresh_risk_meter(self, classification: str) -> None:
+        normalized = classification.lower()
+        if not normalized:
+            self.risk_meter.setValue(0)
+            return
+        if "grave" in normalized or "alto" in normalized or "desnutricao" in normalized:
+            self.risk_meter.setValue(90)
+            return
+        if "risco" in normalized or "medio" in normalized or "moderada" in normalized:
+            self.risk_meter.setValue(60)
+            return
+        self.risk_meter.setValue(25)
 
     def _delete_screening(self) -> None:
         if self.selected_screening_id is None:
@@ -170,6 +266,8 @@ class ScreeningPage(Page):
         self.protocol.setCurrentIndex(0)
         self.score.clear()
         self.classification.clear()
+        self.assessment_date.setText(today_text())
+        self.risk_meter.setValue(0)
         self.notes.clear()
 
     def _reload_patients(self) -> None:
@@ -238,6 +336,9 @@ class ScreeningPage(Page):
         self.protocol.setCurrentText(record.protocol.value)
         self.score.setText(str(record.score))
         self.classification.setText(record.classification)
+        if record.created_at is not None:
+            self.assessment_date.setText(format_date(record.created_at.date()))
+        self._refresh_risk_meter(record.classification)
         self.notes.setPlainText(record.notes)
 
     def _audit(self, action: str, screening_id: int, details: str) -> None:
