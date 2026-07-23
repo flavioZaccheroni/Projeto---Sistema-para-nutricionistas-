@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QRegularExpression, Qt
+from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
@@ -52,6 +53,7 @@ class PatientsPage(Page):
         self.responsible = QLineEdit()
         self.notes = QTextEdit()
         self.notes.setFixedHeight(90)
+        self._configure_field_formats()
 
         save = QPushButton("Salvar")
         save.setObjectName("primaryButton")
@@ -160,21 +162,53 @@ class PatientsPage(Page):
         layout.addWidget(title, row, column, 1, column_span)
         layout.addWidget(widget, row + 1, column, 1, column_span)
 
+    def _configure_field_formats(self) -> None:
+        self.name.setMaxLength(120)
+        self.name.setPlaceholderText("Nome completo")
+        self.birth_date.setInputMask("00-00-0000;_")
+        self.birth_date.setPlaceholderText("mm-dd-aaaa")
+        self.phone.setInputMask("(00) 00000-0000;_")
+        self.phone.setPlaceholderText("(00) 00000-0000")
+        self.email.setPlaceholderText("nome@email.com")
+        self.email.setValidator(
+            QRegularExpressionValidator(
+                QRegularExpression(r"^$|^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"),
+                self.email,
+            )
+        )
+        self.health_insurance.setMaxLength(80)
+        self.health_insurance.setPlaceholderText("Convenio")
+        self.document.setInputMask("000.000.000-00;_")
+        self.document.setPlaceholderText("CPF")
+        self.responsible.setMaxLength(120)
+        self.responsible.setPlaceholderText("Responsavel")
+
     def _save_patient(self) -> None:
         try:
+            birth_date = self._required_mask_text(
+                self.birth_date,
+                "Data de nascimento",
+                expected_digits=8,
+                expected_format="mm-dd-aaaa",
+            )
+            phone = self._optional_mask_text(self.phone, "Telefone", expected_digits=11)
+            document = self._optional_mask_text(self.document, "Documento", expected_digits=11)
+            email = self.email.text().strip()
+            if email and not self.email.hasAcceptableInput():
+                raise ValueError("E-mail deve estar no formato nome@email.com.")
             patient = Patient(
                 id=self.selected_patient_id,
                 name=self.name.text().strip(),
-                birth_date=parse_date(self.birth_date.text()),
-                phone=self.phone.text().strip(),
-                email=self.email.text().strip(),
+                birth_date=parse_date(birth_date),
+                phone=phone,
+                email=email,
                 health_insurance=self.health_insurance.text().strip(),
-                document=self.document.text().strip(),
+                document=document,
                 responsible=self.responsible.text().strip(),
                 clinical_notes=self.notes.toPlainText().strip(),
             )
-        except ValueError:
-            QMessageBox.warning(self, "Validacao", "Use a data no formato mm-dd-aaaa.")
+        except ValueError as exc:
+            QMessageBox.warning(self, "Validacao", str(exc) or "Revise os campos informados.")
             return
 
         if not patient.name:
@@ -214,6 +248,28 @@ class PatientsPage(Page):
         self.document.clear()
         self.responsible.clear()
         self.notes.clear()
+
+    def _required_mask_text(
+        self,
+        field: QLineEdit,
+        label: str,
+        expected_digits: int,
+        expected_format: str,
+    ) -> str:
+        text = field.text().strip()
+        digits = "".join(char for char in text if char.isdigit())
+        if len(digits) != expected_digits:
+            raise ValueError(f"{label} deve estar completo no formato {expected_format}.")
+        return text
+
+    def _optional_mask_text(self, field: QLineEdit, label: str, expected_digits: int) -> str:
+        text = field.text().strip()
+        digits = "".join(char for char in text if char.isdigit())
+        if not digits:
+            return ""
+        if len(digits) != expected_digits:
+            raise ValueError(f"{label} esta incompleto.")
+        return text
 
     def _reload_table(self) -> None:
         patients = self.repository.search(self.search.text())
