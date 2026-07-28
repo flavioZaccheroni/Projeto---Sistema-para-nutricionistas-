@@ -38,6 +38,7 @@ from nutri_app.ui.date_format import (
     parse_optional_date,
     today_text,
 )
+from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -72,9 +73,9 @@ class MealPlanPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.start_date = QLineEdit()
-        self.start_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.start_date)
         self.end_date = QLineEdit()
-        self.end_date.setPlaceholderText("mm-dd-aaaa opcional")
+        apply_date_mask(self.end_date, optional=True)
         self.objective = QLineEdit()
         self.target_energy = QLineEdit()
         self.target_protein = QLineEdit()
@@ -191,7 +192,7 @@ class MealPlanPage(Page):
     def _build_smart_plan_tab(self) -> QWidget:
         self.smart_patient = QComboBox()
         self.smart_record_date = QLineEdit(today_text())
-        self.smart_record_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.smart_record_date)
         self.smart_profile = QComboBox()
         self.smart_profile.addItems(self.smart_definition.profiles)
         self.smart_notes = QTextEdit()
@@ -612,10 +613,7 @@ class MealPlanPage(Page):
             return
 
         try:
-            values = {
-                key: field.text().strip()
-                for key, field in self.smart_inputs.items()
-            }
+            values = {key: field.text().strip() for key, field in self.smart_inputs.items()}
             notes = self.smart_notes.toPlainText().strip()
             result = self.smart_definition.evaluator(
                 self.smart_profile.currentText(),
@@ -650,9 +648,7 @@ class MealPlanPage(Page):
     def _reload_smart_patients(self) -> None:
         current_patient_id = None
         if self.smart_patient.currentIndex() >= 0 and self.smart_patient_ids_by_index:
-            current_patient_id = self.smart_patient_ids_by_index[
-                self.smart_patient.currentIndex()
-            ]
+            current_patient_id = self.smart_patient_ids_by_index[self.smart_patient.currentIndex()]
 
         self.smart_patient.blockSignals(True)
         self.smart_patient.clear()
@@ -715,7 +711,9 @@ class MealPlanPage(Page):
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(record.patient_id))
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
-            self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
+            self.appointment.setCurrentIndex(
+                self.appointment_ids_by_index.index(record.appointment_id)
+            )
         self.start_date.setText(format_date(record.start_date))
         self.end_date.setText(format_date(record.end_date))
         self.objective.setText(record.objective)

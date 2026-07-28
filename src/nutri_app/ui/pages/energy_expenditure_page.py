@@ -30,6 +30,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.energy_expenditure import EnergyExpenditureService
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date
+from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -59,7 +60,7 @@ class EnergyExpenditurePage(Page):
         self.patient.currentIndexChanged.connect(self._patient_changed)
         self.appointment = QComboBox()
         self.assessment_date = QLineEdit()
-        self.assessment_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.assessment_date)
         self.sex = QComboBox()
         self.sex.addItems([item.value for item in BiologicalSex])
         self.age = QLineEdit()
@@ -412,7 +413,9 @@ class EnergyExpenditurePage(Page):
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(record.patient_id))
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
-            self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
+            self.appointment.setCurrentIndex(
+                self.appointment_ids_by_index.index(record.appointment_id)
+            )
         self.assessment_date.setText(format_date(record.assessment_date))
         self.sex.setCurrentText(record.sex.value)
         self.age.setText(str(record.age_years))

@@ -28,6 +28,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.advanced_clinical import AdvancedModuleDefinition
 from nutri_app.ui.date_format import format_date, parse_date, today_text
+from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -63,7 +64,7 @@ class AdvancedModulePage(Page):
 
         self.patient = QComboBox()
         self.record_date = QLineEdit(today_text())
-        self.record_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.record_date)
         self.profile = QComboBox()
         self.profile.addItems(definition.profiles)
         self.notes = QTextEdit()

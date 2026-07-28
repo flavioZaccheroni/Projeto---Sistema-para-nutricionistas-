@@ -34,6 +34,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.patient_app import PatientAppService
 from nutri_app.ui.date_format import format_date, parse_date, parse_optional_date, today_text
+from nutri_app.ui.input_masks import apply_date_mask, apply_email_validator
 from nutri_app.ui.pages.base import Page
 
 
@@ -70,6 +71,7 @@ class PatientAppPage(Page):
         self.patient = QComboBox()
         self.patient.currentIndexChanged.connect(self._reload_patient_dependents)
         self.email = QLineEdit()
+        apply_email_validator(self.email)
         self.access_code = QLineEdit()
         self.access_notes = QLineEdit()
 
@@ -80,10 +82,11 @@ class PatientAppPage(Page):
         self.content = QTextEdit()
         self.content.setFixedHeight(90)
         self.expiration_date = QLineEdit()
-        self.expiration_date.setPlaceholderText("mm-dd-aaaa opcional")
+        apply_date_mask(self.expiration_date, optional=True)
 
         self.publication = QComboBox()
         self.record_date = QLineEdit(today_text())
+        apply_date_mask(self.record_date)
         self.adherence = QLineEdit()
         self.mood = QLineEdit()
         self.difficulties = QLineEdit()
@@ -137,7 +140,9 @@ class PatientAppPage(Page):
         self._add_stacked_field(adherence_form, 2, "Adesao %", self.adherence, column=1)
         self._add_stacked_field(adherence_form, 4, "Humor", self.mood)
         self._add_stacked_field(adherence_form, 4, "Dificuldades", self.difficulties, column=1)
-        self._add_stacked_field(adherence_form, 6, "Observacoes", self.adherence_notes, column_span=2)
+        self._add_stacked_field(
+            adherence_form, 6, "Observacoes", self.adherence_notes, column_span=2
+        )
         adherence_layout.addLayout(adherence_form)
         adherence_layout.addWidget(save_adherence)
 
@@ -147,9 +152,7 @@ class PatientAppPage(Page):
         self.tabs.addTab(adherence_widget, "Adesao")
 
         self.access_table = QTableWidget(0, 5)
-        self.access_table.setHorizontalHeaderLabels(
-            ["ID", "Paciente", "E-mail", "Codigo", "Ativo"]
-        )
+        self.access_table.setHorizontalHeaderLabels(["ID", "Paciente", "E-mail", "Codigo", "Ativo"])
         self.publication_table = QTableWidget(0, 6)
         self.publication_table.setHorizontalHeaderLabels(
             ["ID", "Paciente", "Tipo", "Titulo", "Status", "Data"]
@@ -242,6 +245,9 @@ class PatientAppPage(Page):
     def _save_access(self) -> None:
         if not self.patient_ids_by_index:
             QMessageBox.warning(self, "Aplicativo Paciente", "Cadastre um paciente primeiro.")
+            return
+        if not self.email.hasAcceptableInput():
+            QMessageBox.warning(self, "Validacao", "E-mail deve estar no formato nome@email.com.")
             return
         access = PatientAppAccess(
             patient_id=self.patient_ids_by_index[self.patient.currentIndex()],

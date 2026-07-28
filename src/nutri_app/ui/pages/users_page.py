@@ -16,6 +16,7 @@ from nutri_app.domain.user import User, UserRole
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.user_repository import UserRepository
 from nutri_app.services.security import PasswordHasher
+from nutri_app.ui.input_masks import apply_email_validator
 from nutri_app.ui.pages.base import Page
 
 
@@ -34,6 +35,7 @@ class UsersPage(Page):
 
         self.name = QLineEdit()
         self.email = QLineEdit()
+        apply_email_validator(self.email)
         self.password = QLineEdit()
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
         self.role = QComboBox()
@@ -75,6 +77,9 @@ class UsersPage(Page):
 
         if not name or not email:
             QMessageBox.warning(self, "Validacao", "Nome e e-mail sao obrigatorios.")
+            return
+        if not self.email.hasAcceptableInput():
+            QMessageBox.warning(self, "Validacao", "E-mail deve estar no formato nome@email.com.")
             return
 
         try:

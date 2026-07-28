@@ -23,6 +23,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.finance import FinanceService
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date, parse_optional_date
+from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -59,9 +60,9 @@ class FinancePage(Page):
         self.description = QLineEdit()
         self.amount = QLineEdit()
         self.due_date = QLineEdit()
-        self.due_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.due_date)
         self.payment_date = QLineEdit()
-        self.payment_date.setPlaceholderText("mm-dd-aaaa opcional")
+        apply_date_mask(self.payment_date, optional=True)
         self.payment_method = QLineEdit()
         self.status = QComboBox()
         self.status.addItems([item.value for item in FinancialStatus])
@@ -100,9 +101,9 @@ class FinancePage(Page):
         actions.addStretch()
 
         self.start_filter = QLineEdit()
-        self.start_filter.setPlaceholderText("Inicio mm-dd-aaaa")
+        apply_date_mask(self.start_filter, optional=True)
         self.end_filter = QLineEdit()
-        self.end_filter.setPlaceholderText("Fim mm-dd-aaaa")
+        apply_date_mask(self.end_filter, optional=True)
         self.status_filter = QComboBox()
         self.status_filter.addItem("Todos")
         self.status_filter.addItems([item.value for item in FinancialStatus])
@@ -187,7 +188,7 @@ class FinancePage(Page):
         if self.selected_entry_id is None:
             QMessageBox.warning(self, "Financeiro", "Selecione um lancamento.")
             return
-        if not self.payment_date.text().strip():
+        if not any(char.isdigit() for char in self.payment_date.text()):
             self.payment_date.setText(format_date(date.today()))
         self.status.setCurrentText(FinancialStatus.PAID.value)
         self._save_entry()

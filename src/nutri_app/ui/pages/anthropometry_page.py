@@ -34,6 +34,7 @@ from nutri_app.ui.date_format import (
     parse_date,
     today_text,
 )
+from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -69,7 +70,7 @@ class AnthropometryPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.assessment_date = QLineEdit()
-        self.assessment_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.assessment_date)
         self.weight = QLineEdit()
         self.height = QLineEdit()
         self.height.setPlaceholderText("Ex.: 175")
@@ -216,7 +217,7 @@ class AnthropometryPage(Page):
     def _build_advanced_tab(self) -> QWidget:
         self.advanced_patient = QComboBox()
         self.advanced_record_date = QLineEdit(today_text())
-        self.advanced_record_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.advanced_record_date)
         self.advanced_profile = QComboBox()
         self.advanced_profile.addItems(self.advanced_definition.profiles)
         self.advanced_notes = QTextEdit()
@@ -507,10 +508,7 @@ class AnthropometryPage(Page):
             return
 
         profile = self.advanced_profile.currentText()
-        inputs = {
-            key: field.text().strip()
-            for key, field in self.advanced_inputs.items()
-        }
+        inputs = {key: field.text().strip() for key, field in self.advanced_inputs.items()}
         self._update_advanced_bmi()
         notes = self.advanced_notes.toPlainText().strip()
         result = self.advanced_definition.evaluator(profile, inputs, notes)
@@ -594,7 +592,9 @@ class AnthropometryPage(Page):
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(record.patient_id))
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
-            self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
+            self.appointment.setCurrentIndex(
+                self.appointment_ids_by_index.index(record.appointment_id)
+            )
         self.assessment_date.setText(format_date(record.assessment_date))
         self.weight.setText(str(record.weight_kg))
         self.height.setText(f"{record.height_m * 100:g}")

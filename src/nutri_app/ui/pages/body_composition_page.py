@@ -26,6 +26,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.body_composition import BodyCompositionService
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date
+from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -57,7 +58,7 @@ class BodyCompositionPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.assessment_date = QLineEdit()
-        self.assessment_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.assessment_date)
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in BodyCompositionProtocol])
         self.weight = QLineEdit()
@@ -89,7 +90,9 @@ class BodyCompositionPage(Page):
 
         self.metrics_table = QTableWidget(0, 5)
         self.metrics_table.setObjectName("bodyCompositionTable")
-        self.metrics_table.setHorizontalHeaderLabels(["Item", "Valor", "Protocolo", "Data", "Acoes"])
+        self.metrics_table.setHorizontalHeaderLabels(
+            ["Item", "Valor", "Protocolo", "Data", "Acoes"]
+        )
         self.metrics_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.metrics_table.verticalHeader().setVisible(False)
         self.metrics_table.setShowGrid(False)
@@ -361,7 +364,9 @@ class BodyCompositionPage(Page):
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(record.patient_id))
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
-            self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
+            self.appointment.setCurrentIndex(
+                self.appointment_ids_by_index.index(record.appointment_id)
+            )
         self.assessment_date.setText(format_date(record.assessment_date))
         self.protocol.setCurrentText(record.protocol.value)
         self.weight.setText(str(record.weight_kg))

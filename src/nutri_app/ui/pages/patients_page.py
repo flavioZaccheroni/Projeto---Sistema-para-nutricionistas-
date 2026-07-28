@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
-
-from PySide6.QtCore import QRegularExpression, Qt
-from PySide6.QtGui import QRegularExpressionValidator
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
@@ -24,7 +21,8 @@ from nutri_app.domain.patient import Patient
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
-from nutri_app.ui.date_format import DATE_FORMAT, format_date
+from nutri_app.ui.date_format import DATE_PLACEHOLDER, format_date, parse_date
+from nutri_app.ui.input_masks import apply_date_mask, apply_email_validator, apply_phone_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -58,7 +56,6 @@ class PatientsPage(Page):
 
         self.name = QLineEdit()
         self.birth_date = QLineEdit()
-        self.birth_date.setPlaceholderText("mm-dd-aaaa")
         self.phone = QLineEdit()
         self.email = QLineEdit()
         self.health_insurance = QLineEdit()
@@ -180,17 +177,9 @@ class PatientsPage(Page):
     def _configure_field_formats(self) -> None:
         self.name.setMaxLength(120)
         self.name.setPlaceholderText("Nome completo")
-        self.birth_date.setInputMask("00-00-0000;_")
-        self.birth_date.setPlaceholderText("mm-dd-aaaa")
-        self.phone.setInputMask("(00) 00000-0000;_")
-        self.phone.setPlaceholderText("(00) 00000-0000")
-        self.email.setPlaceholderText("nome@email.com")
-        self.email.setValidator(
-            QRegularExpressionValidator(
-                QRegularExpression(r"^$|^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"),
-                self.email,
-            )
-        )
+        apply_date_mask(self.birth_date)
+        apply_phone_mask(self.phone)
+        apply_email_validator(self.email)
         self.health_insurance.setMaxLength(80)
         self.health_insurance.setPlaceholderText("Convenio")
         self.document.setInputMask("000.000.000-00;_")
@@ -204,7 +193,7 @@ class PatientsPage(Page):
                 self.birth_date,
                 "Data de nascimento",
                 expected_digits=8,
-                expected_format="mm-dd-aaaa",
+                expected_format=DATE_PLACEHOLDER,
             )
             phone = self._optional_mask_text(self.phone, "Telefone", expected_digits=11)
             document = self._optional_mask_text(self.document, "Documento", expected_digits=11)
@@ -214,7 +203,7 @@ class PatientsPage(Page):
             patient = Patient(
                 id=self.selected_patient_id,
                 name=self.name.text().strip(),
-                birth_date=self._parse_birth_date(birth_date),
+                birth_date=parse_date(birth_date),
                 phone=phone,
                 email=email,
                 health_insurance=self.health_insurance.text().strip(),
@@ -277,14 +266,6 @@ class PatientsPage(Page):
             raise ValueError(f"{label} deve estar completo no formato {expected_format}.")
         return text
 
-    def _parse_birth_date(self, value: str) -> date:
-        for date_format in [DATE_FORMAT, "%d-%m-%Y"]:
-            try:
-                return datetime.strptime(value, date_format).date()
-            except ValueError:
-                continue
-        raise ValueError("Data de nascimento invalida. Use mm-dd-aaaa ou dd-mm-aaaa.")
-
     def _optional_mask_text(self, field: QLineEdit, label: str, expected_digits: int) -> str:
         text = field.text().strip()
         digits = "".join(char for char in text if char.isdigit())
@@ -311,9 +292,7 @@ class PatientsPage(Page):
             ]
             for column, (value, sort_value) in enumerate(values):
                 item = SortableTableItem(value, sort_value)
-                item.setTextAlignment(
-                    Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignCenter
-                )
+                item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignCenter)
                 self.table.setItem(row, column, item)
         self.table.setSortingEnabled(True)
 

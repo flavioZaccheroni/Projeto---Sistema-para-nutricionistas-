@@ -27,6 +27,7 @@ from nutri_app.repositories.screening_repository import ScreeningRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.screening import ScreeningService
 from nutri_app.ui.date_format import format_date, format_datetime, today_text
+from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -57,7 +58,7 @@ class ScreeningPage(Page):
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in ScreeningProtocol])
         self.assessment_date = QLineEdit(today_text())
-        self.assessment_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.assessment_date)
         self.score = QLineEdit()
         self.score.setPlaceholderText("Pontuacao")
         self.classification = QLineEdit()
@@ -332,7 +333,9 @@ class ScreeningPage(Page):
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(record.patient_id))
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
-            self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
+            self.appointment.setCurrentIndex(
+                self.appointment_ids_by_index.index(record.appointment_id)
+            )
         self.protocol.setCurrentText(record.protocol.value)
         self.score.setText(str(record.score))
         self.classification.setText(record.classification)

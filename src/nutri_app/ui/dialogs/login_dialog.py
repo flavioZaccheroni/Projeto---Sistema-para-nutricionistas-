@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from nutri_app.domain.user import AuthenticatedUser
 from nutri_app.services.auth import AuthService
+from nutri_app.ui.input_masks import apply_email_validator
 
 
 class LoginDialog(QDialog):
@@ -31,7 +32,7 @@ class LoginDialog(QDialog):
         subtitle.setObjectName("pageSubtitle")
 
         self.email = QLineEdit()
-        self.email.setPlaceholderText("admin@nutricionistas.local")
+        apply_email_validator(self.email)
         self.password = QLineEdit()
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
         self.password.setPlaceholderText("Admin@123")

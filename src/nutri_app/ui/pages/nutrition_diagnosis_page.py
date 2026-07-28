@@ -25,6 +25,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.nutrition_diagnosis import NutritionDiagnosisService
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date
+from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -53,7 +54,7 @@ class NutritionDiagnosisPage(Page):
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.diagnosis_date = QLineEdit()
-        self.diagnosis_date.setPlaceholderText("mm-dd-aaaa")
+        apply_date_mask(self.diagnosis_date)
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in DiagnosisProtocol])
         self.primary_label = QLineEdit("Criterios principais/fenotipicos")
@@ -344,7 +345,9 @@ class NutritionDiagnosisPage(Page):
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(record.patient_id))
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
-            self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
+            self.appointment.setCurrentIndex(
+                self.appointment_ids_by_index.index(record.appointment_id)
+            )
         self.diagnosis_date.setText(format_date(record.diagnosis_date))
         self.protocol.setCurrentText(record.protocol.value)
         self.criteria.setPlainText(record.criteria)

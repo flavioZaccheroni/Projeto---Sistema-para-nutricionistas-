@@ -25,7 +25,14 @@ from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
-from nutri_app.ui.date_format import format_datetime, parse_date, parse_datetime
+from nutri_app.ui.date_format import (
+    DATE_PLACEHOLDER,
+    DATETIME_PLACEHOLDER,
+    format_datetime,
+    parse_date,
+    parse_datetime,
+)
+from nutri_app.ui.input_masks import apply_date_mask, apply_datetime_mask
 from nutri_app.ui.pages.base import Page
 
 
@@ -49,7 +56,7 @@ class AppointmentsPage(Page):
 
         self.patient = QComboBox()
         self.scheduled_at = QLineEdit()
-        self.scheduled_at.setPlaceholderText("mm-dd-aaaa HH:MM")
+        apply_datetime_mask(self.scheduled_at)
         self.kind = QComboBox()
         self.kind.addItems([kind.value for kind in AppointmentKind])
         self.status = QComboBox()
@@ -78,9 +85,9 @@ class AppointmentsPage(Page):
         actions.addStretch()
 
         self.start_filter = QLineEdit()
-        self.start_filter.setPlaceholderText("Inicio mm-dd-aaaa")
+        apply_date_mask(self.start_filter, optional=True)
         self.end_filter = QLineEdit()
-        self.end_filter.setPlaceholderText("Fim mm-dd-aaaa")
+        apply_date_mask(self.end_filter, optional=True)
         self.status_filter = QComboBox()
         self.status_filter.addItem("Todos")
         self.status_filter.addItems([status.value for status in AppointmentStatus])
@@ -168,7 +175,9 @@ class AppointmentsPage(Page):
                 notes=self.notes.toPlainText().strip(),
             )
         except ValueError:
-            QMessageBox.warning(self, "Validacao", "Use data/hora no formato mm-dd-aaaa HH:MM.")
+            QMessageBox.warning(
+                self, "Validacao", f"Use data/hora no formato {DATETIME_PLACEHOLDER}."
+            )
             return
 
         if appointment.id is None:
@@ -280,12 +289,14 @@ class AppointmentsPage(Page):
 
     def _filter_date(self, value: str) -> date | None:
         value = value.strip()
-        if not value:
+        if not any(char.isdigit() for char in value):
             return None
         try:
             return parse_date(value)
         except ValueError:
-            QMessageBox.warning(self, "Filtro", "Use datas de filtro no formato mm-dd-aaaa.")
+            QMessageBox.warning(
+                self, "Filtro", f"Use datas de filtro no formato {DATE_PLACEHOLDER}."
+            )
             return None
 
     def _filter_status(self) -> AppointmentStatus | None:
