@@ -15,14 +15,15 @@ class PatientRepository:
             cursor = connection.execute(
                 """
                 INSERT INTO pacientes (
-                    nome, data_nascimento, telefone, email, convenio, documento,
+                    nome, data_nascimento, sexo_biologico, telefone, email, convenio, documento,
                     responsavel, observacoes_clinicas
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     patient.name,
                     patient.birth_date.isoformat(),
+                    patient.biological_sex,
                     patient.phone,
                     patient.email,
                     patient.health_insurance,
@@ -43,6 +44,7 @@ class PatientRepository:
                 UPDATE pacientes
                 SET nome = ?,
                     data_nascimento = ?,
+                    sexo_biologico = ?,
                     telefone = ?,
                     email = ?,
                     convenio = ?,
@@ -55,6 +57,7 @@ class PatientRepository:
                 (
                     patient.name,
                     patient.birth_date.isoformat(),
+                    patient.biological_sex,
                     patient.phone,
                     patient.email,
                     patient.health_insurance,
@@ -81,7 +84,7 @@ class PatientRepository:
         with self.connection_factory.connect() as connection:
             row = connection.execute(
                 """
-                SELECT id, nome, data_nascimento, telefone, email, convenio,
+                SELECT id, nome, data_nascimento, sexo_biologico, telefone, email, convenio,
                        documento, responsavel, observacoes_clinicas, created_at, updated_at
                 FROM pacientes
                 WHERE id = ? AND deleted_at IS NULL
@@ -99,7 +102,7 @@ class PatientRepository:
         with self.connection_factory.connect() as connection:
             rows = connection.execute(
                 """
-                SELECT id, nome, data_nascimento, telefone, email, convenio,
+                SELECT id, nome, data_nascimento, sexo_biologico, telefone, email, convenio,
                        documento, responsavel,
                        observacoes_clinicas, created_at, updated_at
                 FROM pacientes
@@ -123,6 +126,7 @@ class PatientRepository:
             id=row["id"],
             name=row["nome"],
             birth_date=date.fromisoformat(row["data_nascimento"]),
+            biological_sex=row["sexo_biologico"] or "Feminino",
             phone=row["telefone"] or "",
             email=row["email"] or "",
             health_insurance=row["convenio"] or "",

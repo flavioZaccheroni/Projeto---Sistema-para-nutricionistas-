@@ -48,11 +48,7 @@ class SelectableSection(QWidget):
         return bool(self.selected_options() or self.notes.toPlainText().strip())
 
     def selected_options(self) -> list[str]:
-        return [
-            option
-            for option, checkbox in self.checkboxes.items()
-            if checkbox.isChecked()
-        ]
+        return [option for option, checkbox in self.checkboxes.items() if checkbox.isChecked()]
 
     def to_text(self) -> str:
         selected = "; ".join(self.selected_options()) or "Nenhum"
@@ -110,10 +106,7 @@ def _split_blocks(text: str) -> dict[str, str]:
             continue
         if current_title:
             blocks[current_title].append(line)
-    return {
-        title: "\n".join(lines).strip()
-        for title, lines in blocks.items()
-    }
+    return {title: "\n".join(lines).strip() for title, lines in blocks.items()}
 
 
 def _extract_selected_and_notes(text: str, note_label: str) -> tuple[str, str]:
@@ -268,6 +261,54 @@ ROTINA_ALIMENTAR = SectionDefinition(
         "Ingestao hidrica",
         "Uso de suplementos",
         "Uso de fitoterapicos",
+    ),
+)
+
+FREQUENCIA_CONSUMO_ALIMENTAR = [
+    SectionDefinition(
+        f"Frequencia alimentar - {group}",
+        ("Raro", "1-2x/semana", "A cada 15 dias", "1x/mes", "Diario"),
+    )
+    for group in [
+        "Verduras",
+        "Legumes",
+        "Frutas",
+        "Cereais integrais",
+        "Arroz, massas e paes",
+        "Feijao, lentilha e ervilha",
+        "Carnes, frango, peixes e ovos",
+        "Leite e derivados",
+        "Embutidos, ultraprocessados, fast-food e frituras",
+        "Doces, refrigerantes e sucos",
+        "Cafe, chas, alcool e energeticos",
+    ]
+]
+
+CONSUMO_SAL_ACUCAR = SectionDefinition(
+    "Consumo de sal e acucar",
+    (
+        "Sal baixo",
+        "Sal moderado",
+        "Sal elevado",
+        "Adiciona sal a comida pronta",
+        "Nao utiliza acucar",
+        "Acucar em pequena quantidade",
+        "Acucar moderado",
+        "Acucar elevado",
+        "Usa adocante",
+    ),
+)
+
+PREFERENCIAS_ALIMENTARES = SectionDefinition(
+    "Preferencias alimentares",
+    (
+        "Onivoro",
+        "Vegetariano",
+        "Vegano",
+        "Low carb",
+        "Cetogenica",
+        "Mediterranea",
+        "Outra",
     ),
 )
 

@@ -14,6 +14,7 @@ class Patient:
     document: str = ""
     responsible: str = ""
     clinical_notes: str = ""
+    biological_sex: str = "Feminino"
     id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None

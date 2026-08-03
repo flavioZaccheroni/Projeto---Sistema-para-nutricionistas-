@@ -69,9 +69,21 @@ class EnergyExpenditurePage(Page):
         self.lean_mass = QLineEdit()
         self.equation = QComboBox()
         self.equation.addItems([item.value for item in EnergyEquation])
+        self.activity_category = QComboBox()
+        self.activity_category.addItems(list(self.service.ACTIVITY_FACTORS.keys()))
+        self.activity_category.currentTextChanged.connect(self._sync_factor_fields)
         self.activity_factor = QLineEdit("1.30")
+        self.stress_condition = QComboBox()
+        self.stress_condition.addItems(list(self.service.STRESS_FACTORS.keys()))
+        self.stress_condition.currentTextChanged.connect(self._sync_factor_fields)
         self.stress_factor = QLineEdit("1.00")
+        self.goal = QComboBox()
+        self.goal.addItems([*self.service.GOAL_ADJUSTMENTS.keys(), "Manual"])
         self.goal_adjustment = QLineEdit("0")
+        self.kcal_per_kg = QComboBox()
+        self.kcal_per_kg.addItems(["20", "25", "30", "35", "40"])
+        self.energy_by_kg = QLineEdit()
+        self.energy_by_kg.setReadOnly(True)
         self.protein_per_kg = QLineEdit("1.20")
         self.fat_percentage = QLineEdit("30")
         self.basal_energy = QLineEdit()
@@ -86,6 +98,9 @@ class EnergyExpenditurePage(Page):
         self.fat.setReadOnly(True)
         self.notes = QTextEdit()
         self.notes.setFixedHeight(70)
+        self.reference_trace = QTextEdit()
+        self.reference_trace.setReadOnly(True)
+        self.reference_trace.setFixedHeight(90)
 
         calculate = QPushButton("Calcular")
         calculate.clicked.connect(self._calculate)
@@ -145,10 +160,15 @@ class EnergyExpenditurePage(Page):
         layout = QGridLayout(card)
         fields = [
             ("Equacao", self.equation),
+            ("Categoria atividade", self.activity_category),
+            ("Condicao clinica", self.stress_condition),
+            ("Objetivo nutricional", self.goal),
             ("Ajuste objetivo (kcal)", self.goal_adjustment),
             ("Fator atividade", self.activity_factor),
+            ("Fator injuria/estresse", self.stress_factor),
+            ("Energia (kcal/kg)", self.kcal_per_kg),
+            ("Necessidade por kg (kcal)", self.energy_by_kg),
             ("Proteina (g/kg)", self.protein_per_kg),
-            ("Fator estresse", self.stress_factor),
             ("Lipidios (%)", self.fat_percentage),
         ]
         for index, (label, widget) in enumerate(fields):
@@ -175,6 +195,8 @@ class EnergyExpenditurePage(Page):
             layout.addWidget(widget, row, column + 1)
         layout.addWidget(QLabel("Observacoes"), 3, 0)
         layout.addWidget(self.notes, 3, 1, 1, 3)
+        layout.addWidget(QLabel("Formula, referencias e valores intermediarios"), 4, 0)
+        layout.addWidget(self.reference_trace, 4, 1, 1, 3)
         return card
 
     def _configure_table(self) -> None:
@@ -243,6 +265,16 @@ class EnergyExpenditurePage(Page):
             basal_energy_kcal=basal,
             activity_factor=activity_factor,
             stress_factor=stress_factor,
+            goal_adjustment_kcal=0,
+            equation=equation,
+        )
+        if self.goal.currentText() != "Manual":
+            adjustment = self.service.calculate_goal_adjustment(total, self.goal.currentText())
+            self.goal_adjustment.setText(f"{adjustment:.0f}")
+        total = self.service.calculate_total_energy(
+            basal_energy_kcal=basal,
+            activity_factor=activity_factor,
+            stress_factor=stress_factor,
             goal_adjustment_kcal=adjustment,
             equation=equation,
         )
@@ -252,7 +284,28 @@ class EnergyExpenditurePage(Page):
             protein_g_per_kg=protein_per_kg,
             fat_percentage=fat_percentage,
         )
+        kcal_per_kg = self._required_float(self.kcal_per_kg.currentText(), "Energia por kg")
+        energy_by_kg = self.service.calculate_energy_by_weight(weight, kcal_per_kg)
+        self.energy_by_kg.setText(f"{energy_by_kg:.0f}")
+        trace = self.service.build_trace(
+            equation=equation,
+            basal=basal,
+            activity_category=self.activity_category.currentText(),
+            activity_factor=activity_factor,
+            stress_condition=self.stress_condition.currentText(),
+            stress_factor=stress_factor,
+            goal=self.goal.currentText(),
+            goal_adjustment=adjustment,
+            total=total,
+            weight_kg=weight,
+            kcal_per_kg=kcal_per_kg,
+            protein_g_per_kg=protein_per_kg,
+            protein_g=macros.protein_g,
+        )
         self._show_results(basal, total, macros.protein_g, macros.carbohydrate_g, macros.fat_g)
+        self.reference_trace.setPlainText(
+            f"Formula: {trace.formula}\nReferencias: {trace.reference}\nDetalhes: {trace.details}"
+        )
 
         return EnergyExpenditure(
             id=self.selected_expenditure_id,
@@ -273,7 +326,7 @@ class EnergyExpenditurePage(Page):
             protein_g=macros.protein_g,
             carbohydrate_g=macros.carbohydrate_g,
             fat_g=macros.fat_g,
-            notes=self.notes.toPlainText().strip(),
+            notes=self._notes_with_trace(trace.formula, trace.reference, trace.details),
         )
 
     def _calculate(self) -> None:
@@ -311,8 +364,11 @@ class EnergyExpenditurePage(Page):
             self.patient.setCurrentIndex(0)
         self.sex.setCurrentIndex(0)
         self.equation.setCurrentIndex(0)
-        self.activity_factor.setText("1.30")
-        self.stress_factor.setText("1.00")
+        self.activity_category.setCurrentText("Sedentario")
+        self.stress_condition.setCurrentText("Sem estresse metabolico")
+        self.goal.setCurrentText("Manutencao de peso")
+        self.kcal_per_kg.setCurrentText("25")
+        self._sync_factor_fields()
         self.goal_adjustment.setText("0")
         self.protein_per_kg.setText("1.20")
         self.fat_percentage.setText("30")
@@ -322,6 +378,7 @@ class EnergyExpenditurePage(Page):
             self.weight,
             self.height,
             self.lean_mass,
+            self.energy_by_kg,
             self.basal_energy,
             self.total_energy,
             self.protein,
@@ -330,7 +387,9 @@ class EnergyExpenditurePage(Page):
         ]:
             field.clear()
         self.notes.clear()
+        self.reference_trace.clear()
         self._fill_age_from_patient()
+        self._fill_sex_from_patient()
 
     def _reload_patients(self) -> None:
         current_patient_id = None
@@ -355,6 +414,7 @@ class EnergyExpenditurePage(Page):
     def _patient_changed(self) -> None:
         self._reload_appointments()
         self._fill_age_from_patient()
+        self._fill_sex_from_patient()
 
     def _fill_age_from_patient(self) -> None:
         if self.patient.currentIndex() < 0 or not self.patient_records_by_index:
@@ -367,6 +427,12 @@ class EnergyExpenditurePage(Page):
         if (today.month, today.day) < (patient.birth_date.month, patient.birth_date.day):
             age -= 1
         self.age.setText(str(max(age, 1)))
+
+    def _fill_sex_from_patient(self) -> None:
+        if self.patient.currentIndex() < 0 or not self.patient_records_by_index:
+            return
+        patient = self.patient_records_by_index[self.patient.currentIndex()]
+        self.sex.setCurrentText(patient.biological_sex)
 
     def _reload_appointments(self) -> None:
         self.appointment.clear()
@@ -423,6 +489,13 @@ class EnergyExpenditurePage(Page):
         self.height.setText(str(record.height_cm))
         self.lean_mass.setText(self._format_optional(record.lean_mass_kg))
         self.equation.setCurrentText(record.equation.value)
+        self._select_factor_option(
+            self.activity_category, self.service.ACTIVITY_FACTORS, record.activity_factor
+        )
+        self._select_factor_option(
+            self.stress_condition, self.service.STRESS_FACTORS, record.stress_factor
+        )
+        self.goal.setCurrentText("Manual")
         self.activity_factor.setText(str(record.activity_factor))
         self.stress_factor.setText(str(record.stress_factor))
         self.goal_adjustment.setText(str(record.goal_adjustment_kcal))
@@ -433,7 +506,15 @@ class EnergyExpenditurePage(Page):
             record.carbohydrate_g,
             record.fat_g,
         )
-        self.notes.setPlainText(record.notes)
+        self.energy_by_kg.setText(
+            f"{self.service.calculate_energy_by_weight(record.weight_kg, 25):.0f}"
+        )
+        self.reference_trace.setPlainText(
+            record.notes.split("Rastreabilidade do calculo:", 1)[-1].strip()
+            if "Rastreabilidade do calculo:" in record.notes
+            else f"Referencia: {self.service.reference_for(record.equation)}"
+        )
+        self.notes.setPlainText(record.notes.split("\n\nRastreabilidade do calculo:", 1)[0].strip())
 
     def _show_results(
         self,
@@ -482,6 +563,35 @@ class EnergyExpenditurePage(Page):
 
     def _format_optional(self, value: float | None) -> str:
         return "" if value is None else f"{value:.2f}"
+
+    def _sync_factor_fields(self) -> None:
+        self.activity_factor.setText(
+            f"{self.service.ACTIVITY_FACTORS[self.activity_category.currentText()]:g}"
+        )
+        self.stress_factor.setText(
+            f"{self.service.STRESS_FACTORS[self.stress_condition.currentText()]:g}"
+        )
+
+    def _select_factor_option(
+        self,
+        combo: QComboBox,
+        options: dict[str, float],
+        value: float,
+    ) -> None:
+        for label, factor in options.items():
+            if abs(factor - value) < 0.001:
+                combo.setCurrentText(label)
+                return
+
+    def _notes_with_trace(self, formula: str, reference: str, details: str) -> str:
+        notes = self.notes.toPlainText().strip().split("\n\nRastreabilidade do calculo:", 1)[0]
+        trace = (
+            "Rastreabilidade do calculo:\n"
+            f"Formula: {formula}\n"
+            f"Referencias: {reference}\n"
+            f"Detalhes: {details}"
+        )
+        return f"{notes}\n\n{trace}" if notes else trace
 
     def _audit(self, action: str, expenditure_id: int, details: str) -> None:
         self.audit_repository.log(

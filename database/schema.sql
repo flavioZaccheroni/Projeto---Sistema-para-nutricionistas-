@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS pacientes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     data_nascimento TEXT NOT NULL,
+    sexo_biologico TEXT NOT NULL DEFAULT 'Feminino',
     telefone TEXT,
     email TEXT,
     convenio TEXT,

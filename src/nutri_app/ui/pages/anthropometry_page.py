@@ -56,6 +56,7 @@ class AnthropometryPage(Page):
         self.advanced_definition = AdvancedClinicalService().by_module("Antropometria Avancada")
         self.selected_anthropometry_id: int | None = None
         self.patient_ids_by_index: list[int] = []
+        self.patient_records_by_index = []
         self.appointment_ids_by_index: list[int | None] = []
         self.advanced_patient_ids_by_index: list[int | None] = []
         self.advanced_inputs: dict[str, QLineEdit] = {}
@@ -84,6 +85,13 @@ class AnthropometryPage(Page):
         self.waist_hip_ratio.setReadOnly(True)
         self.waist_height_ratio = QLineEdit()
         self.waist_height_ratio.setReadOnly(True)
+        self.waist_classification = QLineEdit()
+        self.waist_classification.setReadOnly(True)
+        self.rcq_classification = QLineEdit()
+        self.rcq_classification.setReadOnly(True)
+        self.nutritional_diagnosis = QTextEdit()
+        self.nutritional_diagnosis.setReadOnly(True)
+        self.nutritional_diagnosis.setFixedHeight(90)
         self.notes = QTextEdit()
         self.notes.setFixedHeight(180)
 
@@ -184,6 +192,12 @@ class AnthropometryPage(Page):
         layout.addWidget(QLabel("RCEst"), 4, 1)
         layout.addWidget(self.waist_hip_ratio, 5, 0)
         layout.addWidget(self.waist_height_ratio, 5, 1)
+        layout.addWidget(QLabel("Classificacao RCQ"), 6, 0)
+        layout.addWidget(QLabel("Classificacao cintura"), 6, 1)
+        layout.addWidget(self.rcq_classification, 7, 0)
+        layout.addWidget(self.waist_classification, 7, 1)
+        layout.addWidget(QLabel("Diagnostico nutricional automatico"), 8, 0, 1, 2)
+        layout.addWidget(self.nutritional_diagnosis, 9, 0, 1, 2)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
         return card
@@ -376,7 +390,16 @@ class AnthropometryPage(Page):
         if waist is not None:
             waist_height_ratio = self.service.calculate_waist_height_ratio(waist, height)
 
-        self._show_results(bmi, classification, waist_hip_ratio, waist_height_ratio)
+        biological_sex = self._current_patient_sex()
+        diagnosis = self.service.build_diagnosis_summary(
+            biological_sex=biological_sex,
+            bmi=bmi,
+            bmi_classification=classification,
+            waist_cm=waist,
+            waist_hip_ratio=waist_hip_ratio,
+        )
+        self._show_results(bmi, classification, waist_hip_ratio, waist_height_ratio, diagnosis)
+        self._prefill_advanced_from_basic(weight, height * 100, waist, hip)
         return Anthropometry(
             id=self.selected_anthropometry_id,
             patient_id=self.patient_ids_by_index[self.patient.currentIndex()],
@@ -390,7 +413,7 @@ class AnthropometryPage(Page):
             hip_cm=hip,
             waist_hip_ratio=waist_hip_ratio,
             waist_height_ratio=waist_height_ratio,
-            notes=self.notes.toPlainText().strip(),
+            notes=self._notes_with_diagnosis(diagnosis),
         )
 
     def _calculate_indicators(self) -> None:
@@ -436,8 +459,11 @@ class AnthropometryPage(Page):
             self.bmi_classification,
             self.waist_hip_ratio,
             self.waist_height_ratio,
+            self.waist_classification,
+            self.rcq_classification,
         ]:
             field.clear()
+        self.nutritional_diagnosis.clear()
         self.notes.clear()
 
     def _reload_patients(self) -> None:
@@ -448,11 +474,13 @@ class AnthropometryPage(Page):
         self.patient.blockSignals(True)
         self.patient.clear()
         self.patient_ids_by_index = []
+        self.patient_records_by_index = []
         for patient in self.patient_repository.list_active():
             if patient.id is None:
                 continue
             self.patient.addItem(patient.name)
             self.patient_ids_by_index.append(patient.id)
+            self.patient_records_by_index.append(patient)
         if current_patient_id in self.patient_ids_by_index:
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(current_patient_id))
         self.patient.blockSignals(False)
@@ -605,8 +633,15 @@ class AnthropometryPage(Page):
             record.bmi_classification,
             record.waist_hip_ratio,
             record.waist_height_ratio,
+            self.service.build_diagnosis_summary(
+                biological_sex=self._current_patient_sex(),
+                bmi=record.bmi,
+                bmi_classification=record.bmi_classification,
+                waist_cm=record.waist_cm,
+                waist_hip_ratio=record.waist_hip_ratio,
+            ),
         )
-        self.notes.setPlainText(record.notes)
+        self.notes.setPlainText(record.notes.split("\n\nDiagnostico automatico:", 1)[0].strip())
 
     def _show_results(
         self,
@@ -614,11 +649,62 @@ class AnthropometryPage(Page):
         classification: str,
         waist_hip_ratio: float | None,
         waist_height_ratio: float | None,
+        diagnosis: str,
     ) -> None:
         self.bmi.setText(f"{bmi:.1f}")
         self.bmi_classification.setText(classification)
         self.waist_hip_ratio.setText(self._format_optional(waist_hip_ratio))
         self.waist_height_ratio.setText(self._format_optional(waist_height_ratio))
+        self.rcq_classification.setText(
+            ""
+            if waist_hip_ratio is None
+            else self.service.classify_waist_hip_ratio(waist_hip_ratio, self._current_patient_sex())
+        )
+        waist = (
+            self._optional_float(self.waist.text(), "Cintura")
+            if self.waist.text().strip()
+            else None
+        )
+        self.waist_classification.setText(
+            ""
+            if waist is None
+            else self.service.classify_waist_circumference(waist, self._current_patient_sex())
+        )
+        self.nutritional_diagnosis.setPlainText(diagnosis)
+
+    def _current_patient_sex(self) -> str:
+        if self.patient.currentIndex() < 0 or not self.patient_records_by_index:
+            return "Feminino"
+        return self.patient_records_by_index[self.patient.currentIndex()].biological_sex
+
+    def _prefill_advanced_from_basic(
+        self,
+        weight: float,
+        height_cm: float,
+        waist: float | None,
+        hip: float | None,
+    ) -> None:
+        if self.patient.currentIndex() >= 0 and self.patient_ids_by_index:
+            patient_id = self.patient_ids_by_index[self.patient.currentIndex()]
+            if patient_id in self.advanced_patient_ids_by_index:
+                self.advanced_patient.setCurrentIndex(
+                    self.advanced_patient_ids_by_index.index(patient_id)
+                )
+        self.advanced_inputs["weight"].setText(f"{weight:g}")
+        self.advanced_inputs["height_cm"].setText(f"{height_cm:g}")
+        if waist is not None:
+            self.advanced_inputs["waist"].setText(f"{waist:g}")
+        if hip is not None:
+            self.advanced_inputs["hip"].setText(f"{hip:g}")
+        self._update_advanced_bmi()
+
+    def _notes_with_diagnosis(self, diagnosis: str) -> str:
+        notes = self.notes.toPlainText().strip()
+        if not diagnosis:
+            return notes
+        if notes:
+            return f"{notes}\n\nDiagnostico automatico:\n{diagnosis}"
+        return f"Diagnostico automatico:\n{diagnosis}"
 
     def _required_float(self, value: str, label: str) -> float:
         try:

@@ -12,7 +12,51 @@ class MacronutrientTargets:
     fat_g: float
 
 
+@dataclass(frozen=True)
+class CalculationTrace:
+    formula: str
+    reference: str
+    details: str
+
+
 class EnergyExpenditureService:
+    EQUATION_REFERENCES = {
+        EnergyEquation.MIFFLIN_ST_JEOR: "Mifflin-St. Jeor (1990)",
+        EnergyEquation.HARRIS_BENEDICT: "Harris-Benedict (1919/1984)",
+        EnergyEquation.FAO_WHO: "FAO/WHO/UNU",
+        EnergyEquation.DRI: "IOM/DRI",
+        EnergyEquation.OWEN: "Owen",
+        EnergyEquation.SCHOFIELD: "Schofield",
+        EnergyEquation.CUNNINGHAM: "Cunningham",
+        EnergyEquation.KATCH_MCARDLE: "Katch-McArdle",
+    }
+    ACTIVITY_FACTORS = {
+        "Sedentario": 1.20,
+        "Pouco ativo": 1.375,
+        "Moderadamente ativo": 1.55,
+        "Muito ativo": 1.725,
+    }
+    STRESS_FACTORS = {
+        "Sem estresse metabolico": 1.00,
+        "Pos-operatorio eletivo": 1.20,
+        "Infeccao leve": 1.20,
+        "Infeccao moderada": 1.30,
+        "Infeccao grave": 1.50,
+        "Trauma": 1.35,
+        "Queimaduras": 1.80,
+        "Sepse": 1.60,
+        "Paciente critico": 1.40,
+    }
+    GOAL_ADJUSTMENTS = {
+        "Manutencao de peso": 0.0,
+        "Perda de peso leve": -0.10,
+        "Perda de peso moderada": -0.20,
+        "Perda de peso intensa": -0.30,
+        "Ganho de peso leve": 0.10,
+        "Ganho de peso moderado": 0.20,
+        "Ganho de peso intenso": 0.30,
+    }
+
     def calculate_basal_energy(
         self,
         equation: EnergyEquation,
@@ -60,9 +104,7 @@ class EnergyExpenditureService:
             raise ValueError("Fator de estresse deve ser maior que zero.")
 
         multiplier = (
-            stress_factor
-            if equation == EnergyEquation.DRI
-            else activity_factor * stress_factor
+            stress_factor if equation == EnergyEquation.DRI else activity_factor * stress_factor
         )
         return basal_energy_kcal * multiplier + goal_adjustment_kcal
 
@@ -94,6 +136,50 @@ class EnergyExpenditureService:
             carbohydrate_g=carbohydrate_kcal / 4,
             fat_g=fat_g,
         )
+
+    def calculate_goal_adjustment(self, total_energy_kcal: float, goal: str) -> float:
+        return total_energy_kcal * self.GOAL_ADJUSTMENTS.get(goal, 0.0)
+
+    def calculate_energy_by_weight(self, weight_kg: float, kcal_per_kg: float) -> float:
+        if weight_kg <= 0 or kcal_per_kg <= 0:
+            raise ValueError("Peso e kcal/kg devem ser maiores que zero.")
+        return weight_kg * kcal_per_kg
+
+    def reference_for(self, equation: EnergyEquation) -> str:
+        return self.EQUATION_REFERENCES.get(equation, equation.value)
+
+    def build_trace(
+        self,
+        equation: EnergyEquation,
+        basal: float,
+        activity_category: str,
+        activity_factor: float,
+        stress_condition: str,
+        stress_factor: float,
+        goal: str,
+        goal_adjustment: float,
+        total: float,
+        weight_kg: float,
+        kcal_per_kg: float,
+        protein_g_per_kg: float,
+        protein_g: float,
+    ) -> CalculationTrace:
+        reference = (
+            f"{self.reference_for(equation)}; IOM/DRI para atividade; "
+            "BRASPEN/AMB para estresse metabolico; DRIs para distribuicao nutricional."
+        )
+        formula = "GET = TMB x Fator de Atividade x Fator de Injuria + Ajuste de Objetivo"
+        details = (
+            f"TMB/GEB: {basal:.0f} kcal/dia. "
+            f"Atividade: {activity_category} ({activity_factor:g}). "
+            f"Estresse/injuria: {stress_condition} ({stress_factor:g}). "
+            f"Objetivo: {goal} ({goal_adjustment:+.0f} kcal). "
+            f"GET final: {total:.0f} kcal/dia. "
+            f"Prescricao por peso: {weight_kg:g} kg x {kcal_per_kg:g} kcal/kg = "
+            f"{self.calculate_energy_by_weight(weight_kg, kcal_per_kg):.0f} kcal/dia. "
+            f"Proteina: {weight_kg:g} kg x {protein_g_per_kg:g} g/kg = {protein_g:.1f} g/dia."
+        )
+        return CalculationTrace(formula=formula, reference=reference, details=details)
 
     def _validate_common(self, age_years: int, weight_kg: float, height_cm: float) -> None:
         if age_years <= 0:
@@ -172,9 +258,9 @@ class EnergyExpenditureService:
     ) -> float:
         height_m = height_cm / 100
         if sex == BiologicalSex.MALE:
-            return 662 - (9.53 * age_years) + activity_factor * (
-                (15.91 * weight_kg) + (539.6 * height_m)
+            return (
+                662
+                - (9.53 * age_years)
+                + activity_factor * ((15.91 * weight_kg) + (539.6 * height_m))
             )
-        return 354 - (6.91 * age_years) + activity_factor * (
-            (9.36 * weight_kg) + (726 * height_m)
-        )
+        return 354 - (6.91 * age_years) + activity_factor * ((9.36 * weight_kg) + (726 * height_m))

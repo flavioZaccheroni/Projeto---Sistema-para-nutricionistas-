@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QComboBox,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -56,6 +57,8 @@ class PatientsPage(Page):
 
         self.name = QLineEdit()
         self.birth_date = QLineEdit()
+        self.biological_sex = QComboBox()
+        self.biological_sex.addItems(["Feminino", "Masculino"])
         self.phone = QLineEdit()
         self.email = QLineEdit()
         self.health_insurance = QLineEdit()
@@ -79,9 +82,9 @@ class PatientsPage(Page):
         actions.addWidget(delete)
         actions.addStretch()
 
-        self.table = QTableWidget(0, 7)
+        self.table = QTableWidget(0, 8)
         self.table.setHorizontalHeaderLabels(
-            ["ID", "Nome", "Nascimento", "Telefone", "E-mail", "Convenio", "Documento"]
+            ["ID", "Nome", "Nascimento", "Sexo", "Telefone", "E-mail", "Convenio", "Documento"]
         )
         self.table.setObjectName("patientCardsTable")
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -137,8 +140,9 @@ class PatientsPage(Page):
         card = QGroupBox("")
         layout = QGridLayout(card)
         self._add_stacked_field(layout, 0, "Data de nascimento", self.birth_date)
-        self._add_stacked_field(layout, 2, "E-mail", self.email)
-        self._add_stacked_field(layout, 4, "Responsavel", self.responsible)
+        self._add_stacked_field(layout, 2, "Sexo biologico", self.biological_sex)
+        self._add_stacked_field(layout, 4, "E-mail", self.email)
+        self._add_stacked_field(layout, 6, "Responsavel", self.responsible)
         return card
 
     def _notes_card(self) -> QGroupBox:
@@ -204,6 +208,7 @@ class PatientsPage(Page):
                 id=self.selected_patient_id,
                 name=self.name.text().strip(),
                 birth_date=parse_date(birth_date),
+                biological_sex=self.biological_sex.currentText(),
                 phone=phone,
                 email=email,
                 health_insurance=self.health_insurance.text().strip(),
@@ -246,6 +251,7 @@ class PatientsPage(Page):
         self.selected_patient_id = None
         self.name.clear()
         self.birth_date.clear()
+        self.biological_sex.setCurrentIndex(0)
         self.phone.clear()
         self.email.clear()
         self.health_insurance.clear()
@@ -285,6 +291,7 @@ class PatientsPage(Page):
                 (str(patient.id or ""), patient.id or 0),
                 (patient.name, patient.name.casefold()),
                 (format_date(patient.birth_date), patient.birth_date.toordinal()),
+                (patient.biological_sex, patient.biological_sex.casefold()),
                 (patient.phone or "-", patient.phone.casefold()),
                 (patient.email or "-", patient.email.casefold()),
                 (patient.health_insurance or "-", patient.health_insurance.casefold()),
@@ -310,6 +317,7 @@ class PatientsPage(Page):
         self.selected_patient_id = patient.id
         self.name.setText(patient.name)
         self.birth_date.setText(format_date(patient.birth_date))
+        self.biological_sex.setCurrentText(patient.biological_sex)
         self.phone.setText(patient.phone)
         self.email.setText(patient.email)
         self.health_insurance.setText(patient.health_insurance)

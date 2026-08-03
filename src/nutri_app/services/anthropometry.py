@@ -13,6 +13,8 @@ class BmiClassification(StrEnum):
 
 
 class AnthropometryService:
+    REFERENCE = "Organizacao Mundial da Saude (OMS)"
+
     def calculate_bmi(self, weight_kg: float, height_meters: float) -> float:
         if weight_kg <= 0 or height_meters <= 0:
             raise ValueError("Peso e altura devem ser maiores que zero.")
@@ -52,3 +54,50 @@ class AnthropometryService:
         if waist_cm <= 0 or height_meters <= 0:
             raise ValueError("Cintura e altura devem ser maiores que zero.")
         return waist_cm / (height_meters * 100)
+
+    def classify_waist_hip_ratio(self, ratio: float, biological_sex: str) -> str:
+        cutoff = 0.90 if biological_sex == "Masculino" else 0.85
+        if ratio <= cutoff:
+            return "sem risco aumentado"
+        return "risco cardiovascular aumentado"
+
+    def classify_waist_circumference(self, waist_cm: float, biological_sex: str) -> str:
+        if biological_sex == "Masculino":
+            if waist_cm < 94:
+                return "sem risco aumentado"
+            if waist_cm < 102:
+                return "risco aumentado para doencas cardiovasculares e metabolicas"
+            return "risco muito aumentado para doencas cardiovasculares e metabolicas"
+
+        if waist_cm < 80:
+            return "sem risco aumentado"
+        if waist_cm < 88:
+            return "risco aumentado para doencas cardiovasculares e metabolicas"
+        return "risco muito aumentado para doencas cardiovasculares e metabolicas"
+
+    def build_diagnosis_summary(
+        self,
+        biological_sex: str,
+        bmi: float,
+        bmi_classification: str,
+        waist_cm: float | None,
+        waist_hip_ratio: float | None,
+    ) -> str:
+        parts = [
+            f"Paciente do sexo {biological_sex.lower()}.",
+            (
+                f"IMC de {bmi:.1f} kg/m2, classificado como "
+                f"{bmi_classification} segundo a {self.REFERENCE}."
+            ),
+        ]
+        if waist_hip_ratio is not None:
+            rcq_classification = self.classify_waist_hip_ratio(waist_hip_ratio, biological_sex)
+            parts.append(f"RCQ de {waist_hip_ratio:.2f}, compativel com {rcq_classification}.")
+        if waist_cm is not None:
+            waist_classification = self.classify_waist_circumference(waist_cm, biological_sex)
+            parts.append(
+                f"Circunferencia da cintura de {waist_cm:g} cm, compativel com "
+                f"{waist_classification}."
+            )
+        parts.append(f"Referencia utilizada: {self.REFERENCE}.")
+        return " ".join(parts)

@@ -25,12 +25,15 @@ from nutri_app.services.advanced_clinical import AdvancedClinicalService
 from nutri_app.ui.anamnesis_form import (
     ALERGIAS_INTOLERANCIAS,
     COMPORTAMENTO_ALIMENTAR,
+    CONSUMO_SAL_ACUCAR,
+    FREQUENCIA_CONSUMO_ALIMENTAR,
     HABITOS_VIDA,
     HISTORIA_DOENCA_ATUAL,
     HISTORICO_FAMILIAR,
     HISTORICO_PATOLOGICO,
     MEDICAMENTOS_SUPLEMENTOS,
     OBSERVACOES_CLINICAS,
+    PREFERENCIAS_ALIMENTARES,
     QUEIXA_PRINCIPAL,
     ROTINA_ALIMENTAR,
     SINTOMAS_GASTROINTESTINAIS,
@@ -80,17 +83,20 @@ class AnamnesisPage(Page):
         self.pathological_history = SelectableSection(HISTORICO_PATOLOGICO)
         self.family_history = SelectableSection(HISTORICO_FAMILIAR)
         self.food_routine = SelectableSection(ROTINA_ALIMENTAR)
+        self.food_frequency_sections = [
+            SelectableSection(definition) for definition in FREQUENCIA_CONSUMO_ALIMENTAR
+        ]
+        self.salt_sugar_section = SelectableSection(CONSUMO_SAL_ACUCAR)
+        self.food_preferences_section = SelectableSection(PREFERENCIAS_ALIMENTARES)
         self.eating_behavior = SelectableSection(COMPORTAMENTO_ALIMENTAR)
         self.gastrointestinal_symptoms = SelectableSection(SINTOMAS_GASTROINTESTINAIS)
         self.observations_section = SelectableSection(OBSERVACOES_CLINICAS)
         self.habits_sections = [SelectableSection(definition) for definition in HABITOS_VIDA]
         self.medication_sections = [
-            SelectableSection(definition)
-            for definition in MEDICAMENTOS_SUPLEMENTOS
+            SelectableSection(definition) for definition in MEDICAMENTOS_SUPLEMENTOS
         ]
         self.allergy_sections = [
-            SelectableSection(definition)
-            for definition in ALERGIAS_INTOLERANCIAS
+            SelectableSection(definition) for definition in ALERGIAS_INTOLERANCIAS
         ]
 
         form = QFormLayout()
@@ -125,20 +131,27 @@ class AnamnesisPage(Page):
 
         section_tabs = QTabWidget()
         section_tabs.addTab(
-            self._scroll_tab([
-                self.chief_complaint,
-                self.current_disease_history,
-                self.pathological_history,
-                self.family_history,
-            ]),
+            self._scroll_tab(
+                [
+                    self.chief_complaint,
+                    self.current_disease_history,
+                    self.pathological_history,
+                    self.family_history,
+                ]
+            ),
             "Clinica",
         )
         section_tabs.addTab(
-            self._scroll_tab([
-                self.food_routine,
-                self.eating_behavior,
-                self.gastrointestinal_symptoms,
-            ]),
+            self._scroll_tab(
+                [
+                    self.food_routine,
+                    *self.food_frequency_sections,
+                    self.salt_sugar_section,
+                    self.food_preferences_section,
+                    self.eating_behavior,
+                    self.gastrointestinal_symptoms,
+                ]
+            ),
             "Alimentacao e GI",
         )
         section_tabs.addTab(
@@ -181,7 +194,14 @@ class AnamnesisPage(Page):
             current_disease_history=self.current_disease_history.to_text(),
             pathological_history=self.pathological_history.to_text(),
             family_history=self.family_history.to_text(),
-            food_routine=self.food_routine.to_text(),
+            food_routine=serialize_sections(
+                [
+                    self.food_routine,
+                    *self.food_frequency_sections,
+                    self.salt_sugar_section,
+                    self.food_preferences_section,
+                ]
+            ),
             eating_behavior=self.eating_behavior.to_text(),
             gastrointestinal_symptoms=self.gastrointestinal_symptoms.to_text(),
             notes=self._notes_text(),
@@ -270,9 +290,9 @@ class AnamnesisPage(Page):
             self.table.setItem(row, 0, QTableWidgetItem(str(record.id or "")))
             self.table.setItem(row, 1, QTableWidgetItem(record.patient_name))
             self.table.setItem(row, 2, QTableWidgetItem(record.appointment_label))
-            self.table.setItem(row, 3, QTableWidgetItem(
-                summarize_anamnesis_text(record.chief_complaint)
-            ))
+            self.table.setItem(
+                row, 3, QTableWidgetItem(summarize_anamnesis_text(record.chief_complaint))
+            )
             self.table.setItem(row, 4, QTableWidgetItem(format_datetime(record.updated_at)))
 
     def _select_anamnesis_from_table(self, row: int, _column: int) -> None:
@@ -291,12 +311,22 @@ class AnamnesisPage(Page):
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(record.patient_id))
         self._reload_appointments()
         if record.appointment_id in self.appointment_ids_by_index:
-            self.appointment.setCurrentIndex(self.appointment_ids_by_index.index(record.appointment_id))
+            self.appointment.setCurrentIndex(
+                self.appointment_ids_by_index.index(record.appointment_id)
+            )
         self.chief_complaint.set_text(record.chief_complaint)
         self.current_disease_history.set_text(record.current_disease_history)
         self.pathological_history.set_text(record.pathological_history)
         self.family_history.set_text(record.family_history)
-        self.food_routine.set_text(record.food_routine)
+        load_sections(
+            [
+                self.food_routine,
+                *self.food_frequency_sections,
+                self.salt_sugar_section,
+                self.food_preferences_section,
+            ],
+            record.food_routine,
+        )
         self.eating_behavior.set_text(record.eating_behavior)
         self.gastrointestinal_symptoms.set_text(record.gastrointestinal_symptoms)
         self._load_notes(record.notes)
@@ -308,6 +338,9 @@ class AnamnesisPage(Page):
             self.pathological_history,
             self.family_history,
             self.food_routine,
+            *self.food_frequency_sections,
+            self.salt_sugar_section,
+            self.food_preferences_section,
             self.eating_behavior,
             self.gastrointestinal_symptoms,
             self.observations_section,
@@ -317,20 +350,25 @@ class AnamnesisPage(Page):
         ]
 
     def _notes_text(self) -> str:
-        return serialize_sections([
-            self.observations_section,
-            *self.habits_sections,
-            *self.medication_sections,
-            *self.allergy_sections,
-        ])
+        return serialize_sections(
+            [
+                self.observations_section,
+                *self.habits_sections,
+                *self.medication_sections,
+                *self.allergy_sections,
+            ]
+        )
 
     def _load_notes(self, text: str) -> None:
-        load_sections([
-            self.observations_section,
-            *self.habits_sections,
-            *self.medication_sections,
-            *self.allergy_sections,
-        ], text)
+        load_sections(
+            [
+                self.observations_section,
+                *self.habits_sections,
+                *self.medication_sections,
+                *self.allergy_sections,
+            ],
+            text,
+        )
 
     def _scroll_tab(self, sections: list[SelectableSection]) -> QScrollArea:
         content = QWidget()
