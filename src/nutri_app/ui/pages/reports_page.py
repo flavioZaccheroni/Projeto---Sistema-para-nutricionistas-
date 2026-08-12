@@ -53,6 +53,12 @@ class ReportsPage(Page):
         self.include_diagnosis = QCheckBox("Diagnostico")
         self.include_meal_plan = QCheckBox("Plano alimentar")
         self.include_energy_expenditure = QCheckBox("Gasto energetico")
+        self.include_validation_appendix = QCheckBox("Rastreabilidade clinica")
+        self.include_validation_appendix.setChecked(True)
+        self.professional_name = QLineEdit()
+        self.professional_name.setPlaceholderText("Nome da nutricionista responsavel")
+        self.professional_registration = QLineEdit()
+        self.professional_registration.setPlaceholderText("CRN/UF")
         for checkbox in self._section_checkboxes():
             checkbox.setChecked(True)
 
@@ -66,6 +72,9 @@ class ReportsPage(Page):
         form.addRow("Pesquisar historico", self.search)
         form.addRow("Paciente", self.patient)
         form.addRow("Secoes", self._sections_widget())
+        form.addRow("Profissional", self.professional_name)
+        form.addRow("CRN", self.professional_registration)
+        form.addRow("Rastreabilidade", self.include_validation_appendix)
         form.addRow("Observacoes", self.notes)
         form.addRow("Pre-visualizacao", self.preview)
 
@@ -144,12 +153,18 @@ class ReportsPage(Page):
             include_diagnosis=self.include_diagnosis.isChecked(),
             include_meal_plan=self.include_meal_plan.isChecked(),
             include_energy_expenditure=self.include_energy_expenditure.isChecked(),
+            include_validation_appendix=self.include_validation_appendix.isChecked(),
+            professional_name=self.professional_name.text().strip(),
+            professional_registration=self.professional_registration.text().strip(),
             notes=self.notes.toPlainText().strip(),
         )
 
     def _clear_form(self) -> None:
         self.notes.clear()
         self.preview.clear()
+        self.professional_name.clear()
+        self.professional_registration.clear()
+        self.include_validation_appendix.setChecked(True)
         for checkbox in self._section_checkboxes():
             checkbox.setChecked(True)
 

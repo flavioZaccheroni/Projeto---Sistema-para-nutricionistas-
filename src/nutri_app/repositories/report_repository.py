@@ -86,7 +86,7 @@ class ClinicalReportRepository:
                     connection,
                     """
                     SELECT equacao, tmb_kcal, get_kcal, proteina_g, carboidrato_g,
-                           lipidios_g
+                           lipidios_g, observacoes
                     FROM gastos_energeticos
                     WHERE paciente_id = ? AND deleted_at IS NULL
                     ORDER BY data_avaliacao DESC, updated_at DESC
@@ -98,7 +98,8 @@ class ClinicalReportRepository:
                 "diagnosis": self._fetch_one(
                     connection,
                     """
-                    SELECT classificacao, gravidade, criterios, conduta, observacoes
+                    SELECT protocolo, classificacao, gravidade, criterios, confirmado,
+                           conduta, observacoes
                     FROM diagnosticos_nutricionais
                     WHERE paciente_id = ? AND deleted_at IS NULL
                     ORDER BY data_diagnostico DESC, updated_at DESC

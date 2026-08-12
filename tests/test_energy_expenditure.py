@@ -47,6 +47,8 @@ class EnergyExpenditureServiceTest(unittest.TestCase):
         self.assertAlmostEqual(macros.protein_g, 96)
         self.assertAlmostEqual(macros.fat_g, 77.13, places=2)
         self.assertAlmostEqual(macros.carbohydrate_g, 308.95, places=2)
+        self.assertIn("Mifflin", service.reference_for(EnergyEquation.MIFFLIN_ST_JEOR))
+        self.assertIn("nutricionista", service.reference_for(EnergyEquation.MIFFLIN_ST_JEOR))
 
     def test_cunningham_exige_massa_magra(self) -> None:
         with self.assertRaises(ValueError):

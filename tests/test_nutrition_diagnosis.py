@@ -29,6 +29,7 @@ class NutritionDiagnosisServiceTest(unittest.TestCase):
 
         self.assertEqual(classification, "desnutricao relacionada a doenca")
         self.assertEqual(severity, DiagnosisSeverity.SEVERE)
+        self.assertIn("GLIM", NutritionDiagnosisService().reference_for(DiagnosisProtocol.GLIM))
 
     def test_classifica_fragilidade_e_pre_fragilidade(self) -> None:
         service = NutritionDiagnosisService()

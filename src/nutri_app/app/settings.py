@@ -14,7 +14,7 @@ class AppSettings:
     icon_path: Path
 
     @classmethod
-    def load(cls) -> "AppSettings":
+    def load(cls) -> AppSettings:
         root = Path(__file__).resolve().parents[3]
         return cls(
             app_name="Nutri Clinic Pro",

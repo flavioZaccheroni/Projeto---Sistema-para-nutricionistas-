@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 from nutri_app.domain.screening import ScreeningProtocol
+from nutri_app.services.clinical_validation import ClinicalValidationMatrix
 
 
 class ScreeningService:
+    def reference_for(self, protocol: ScreeningProtocol) -> str:
+        return ClinicalValidationMatrix.summary_for(protocol.value)
+
+    def result_with_reference(self, protocol: ScreeningProtocol, score: float) -> str:
+        classification = self.classify(protocol, score)
+        return f"{classification} | {self.reference_for(protocol)}"
+
     def classify(self, protocol: ScreeningProtocol, score: float) -> str:
         if score < 0:
             raise ValueError("Pontuacao nao pode ser negativa.")

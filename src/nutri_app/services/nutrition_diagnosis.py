@@ -1,9 +1,23 @@
 from __future__ import annotations
 
 from nutri_app.domain.nutrition_diagnosis import DiagnosisProtocol, DiagnosisSeverity
+from nutri_app.services.clinical_validation import ClinicalValidationMatrix
 
 
 class NutritionDiagnosisService:
+    PROTOCOL_REFERENCE_KEYS = {
+        DiagnosisProtocol.GLIM: "GLIM",
+        DiagnosisProtocol.ASPEN: "ASPEN",
+        DiagnosisProtocol.ESPEN: "ESPEN",
+        DiagnosisProtocol.BRASPEN: "BRASPEN",
+        DiagnosisProtocol.SARCOPENIA: "Sarcopenia",
+        DiagnosisProtocol.CACHEXIA: "Caquexia",
+        DiagnosisProtocol.FRAILTY: "Fragilidade",
+    }
+
+    def reference_for(self, protocol: DiagnosisProtocol) -> str:
+        return ClinicalValidationMatrix.summary_for(self.PROTOCOL_REFERENCE_KEYS[protocol])
+
     def classify(
         self,
         protocol: DiagnosisProtocol,

@@ -1,29 +1,29 @@
-# Nutri Clinic Pro
+﻿# Nutri Clinic Pro
 
 Projeto iniciado a partir do `Manual_Engenharia_Software_Sistema_Nutricionistas_V1.docx`.
 
 ## Objetivo
 
-Construir um MVP Desktop em Python para nutricionistas, preparado para evoluir para API, Web, Mobile, relatórios profissionais e recursos de IA assistiva.
+Construir um MVP Desktop em Python para nutricionistas, preparado para evoluir para API, Web, Mobile, relatÃ³rios profissionais e recursos de IA assistiva.
 
 ## Stack inicial
 
 - Python 3.12+.
 - PySide6 para interface Desktop.
 - SQLite no MVP, com caminho preparado para PostgreSQL no futuro.
-- Regras clínicas isoladas em serviços testáveis.
+- Regras clÃ­nicas isoladas em serviÃ§os testÃ¡veis.
 - Git/GitHub com commits por fase.
 
 ## Estrutura
 
-- `src/nutri_app/app`: inicialização e configurações.
+- `src/nutri_app/app`: inicializaÃ§Ã£o e configuraÃ§Ãµes.
 - `src/nutri_app/ui`: telas e componentes Desktop.
-- `src/nutri_app/modules`: módulos funcionais por domínio.
+- `src/nutri_app/modules`: mÃ³dulos funcionais por domÃ­nio.
 - `src/nutri_app/domain`: entidades e regras centrais.
-- `src/nutri_app/services`: cálculos clínicos e serviços reutilizáveis.
+- `src/nutri_app/services`: cÃ¡lculos clÃ­nicos e serviÃ§os reutilizÃ¡veis.
 - `src/nutri_app/repositories`: acesso a dados.
 - `database`: schema e banco local.
-- `docs`: documentação técnica e fluxo de fases.
+- `docs`: documentaÃ§Ã£o tÃ©cnica e fluxo de fases.
 - `tests`: testes automatizados.
 
 ## Comandos previstos no PyCharm
@@ -44,11 +44,11 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - E-mail: `admin@nutricionistas.local`
 - Senha: `Admin@123`
 
-## Fases concluídas
+## Fases concluÃ­das
 
-- Fase 1: preparação do ambiente.
+- Fase 1: preparaÃ§Ã£o do ambiente.
 - Fase 2: arquitetura base.
-- Fase 3: login e permissões.
+- Fase 3: login e permissÃµes.
 - Fase 4: dashboard inicial.
 - Fase 5: cadastro de pacientes.
 - Fase 6: agenda.
@@ -85,9 +85,10 @@ No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
 - Produto: `Nutri Clinic Pro`
 - Versao comercial inicial: `1.0.0`
 - Status: preparado para empacotamento Windows e validacao comercial.
-- Datas na interface: `mm-dd-aaaa`.
+- Datas na interface: `dd/mm/aaaa`.
 
 ## Identidade do app
 
 - Nome: `Nutri Clinic Pro`
 - Icone: `icone.png`
+

@@ -32,7 +32,8 @@ class AIAssistantServiceTest(unittest.TestCase):
             "Paciente relata fome noturna",
         )
 
-        self.assertIn("Revisao e decisao final", result.result)
+        self.assertIn("IA assistiva supervisionada", result.result)
+        self.assertIn("Fontes internas usadas", result.result)
         self.assertIn("saciedade", result.result)
         self.assertIn("fome noturna", result.result)
 

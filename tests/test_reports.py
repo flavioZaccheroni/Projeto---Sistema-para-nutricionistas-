@@ -24,7 +24,11 @@ class ClinicalReportServiceTest(unittest.TestCase):
         )
         report = service.build(
             patient,
-            ClinicalReportOptions(notes="Retorno em 30 dias."),
+            ClinicalReportOptions(
+                notes="Retorno em 30 dias.",
+                professional_name="Dra. Ana Nutri",
+                professional_registration="CRN-3 12345",
+            ),
             {
                 "anthropometry": {
                     "data_avaliacao": "2026-07-04",
@@ -33,7 +37,17 @@ class ClinicalReportServiceTest(unittest.TestCase):
                     "imc": 24.2,
                     "classificacao_imc": "Eutrofia",
                 },
+                "energy_expenditure": {
+                    "equacao": "Mifflin-St Jeor",
+                    "tmb_kcal": 1400,
+                    "get_kcal": 1900,
+                    "proteina_g": 90,
+                    "carboidrato_g": 220,
+                    "lipidios_g": 60,
+                },
                 "diagnosis": {
+                    "protocolo": "GLIM",
+                    "confirmado": 1,
                     "classificacao": "Sem risco",
                     "gravidade": "Leve",
                     "criterios": "Avaliacao clinica",
@@ -46,7 +60,13 @@ class ClinicalReportServiceTest(unittest.TestCase):
             content = path.read_text(encoding="utf-8")
 
         self.assertIn("Relatorio clinico - Paciente Relatorio", report.content)
+        self.assertIn("Gerado em:", report.content)
+        self.assertIn("Dra. Ana Nutri", report.content)
+        self.assertIn("CRN-3 12345", report.content)
         self.assertIn("Antropometria", report.content)
+        self.assertIn("Rastreabilidade clinica", report.content)
+        self.assertIn("Mifflin", report.content)
+        self.assertIn("GLIM", report.content)
         self.assertIn("Retorno em 30 dias.", report.content)
         self.assertTrue(path.name.endswith("_paciente_relatorio_relatorio_clinico.txt"))
         self.assertEqual(content, report.content)

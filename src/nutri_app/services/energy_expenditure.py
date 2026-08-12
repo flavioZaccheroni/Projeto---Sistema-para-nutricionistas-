@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from nutri_app.domain.energy_expenditure import BiologicalSex, EnergyEquation
+from nutri_app.services.clinical_validation import ClinicalValidationMatrix
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,16 @@ class EnergyExpenditureService:
         EnergyEquation.HARRIS_BENEDICT: "Harris-Benedict (1919/1984)",
         EnergyEquation.FAO_WHO: "FAO/WHO/UNU",
         EnergyEquation.DRI: "IOM/DRI",
+        EnergyEquation.OWEN: "Owen",
+        EnergyEquation.SCHOFIELD: "Schofield",
+        EnergyEquation.CUNNINGHAM: "Cunningham",
+        EnergyEquation.KATCH_MCARDLE: "Katch-McArdle",
+    }
+    EQUATION_REFERENCE_KEYS = {
+        EnergyEquation.MIFFLIN_ST_JEOR: "Mifflin-St. Jeor",
+        EnergyEquation.HARRIS_BENEDICT: "Harris-Benedict",
+        EnergyEquation.FAO_WHO: "FAO/WHO/UNU",
+        EnergyEquation.DRI: "DRI",
         EnergyEquation.OWEN: "Owen",
         EnergyEquation.SCHOFIELD: "Schofield",
         EnergyEquation.CUNNINGHAM: "Cunningham",
@@ -146,7 +157,10 @@ class EnergyExpenditureService:
         return weight_kg * kcal_per_kg
 
     def reference_for(self, equation: EnergyEquation) -> str:
-        return self.EQUATION_REFERENCES.get(equation, equation.value)
+        key = self.EQUATION_REFERENCE_KEYS.get(equation)
+        if key is None:
+            return self.EQUATION_REFERENCES.get(equation, equation.value)
+        return ClinicalValidationMatrix.summary_for(key)
 
     def build_trace(
         self,

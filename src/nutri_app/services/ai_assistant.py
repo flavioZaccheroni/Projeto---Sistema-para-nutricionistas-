@@ -4,7 +4,11 @@ from nutri_app.domain.ai_assistant import AIAssistantRequestType, AIAssistantRes
 
 
 class AIAssistantService:
-    disclaimer = "Sugestao assistiva. Revisao e decisao final sao da nutricionista."
+    disclaimer = (
+        "IA assistiva supervisionada: este conteudo e uma sugestao de apoio, "
+        "nao e diagnostico nem prescricao automatica. Revisao, ajuste e decisao "
+        "final sao obrigatoriamente da nutricionista."
+    )
 
     def generate(
         self,
@@ -49,7 +53,15 @@ class AIAssistantService:
             )
         if "ganho" in objective or "hipertrof" in objective:
             suggestions.append("Avaliar aumento gradual de energia e proteina conforme evolucao.")
-        result = self.disclaimer + "\n\n" + "\n".join(f"- {item}" for item in suggestions)
+        result = (
+            self.disclaimer
+            + (
+                "\n\nFontes internas usadas: contexto clinico cadastrado, "
+                "objetivo alimentar e alertas do sistema."
+            )
+            + "\n\n"
+            + "\n".join(f"- {item}" for item in suggestions)
+        )
         if prompt:
             result += f"\n- Observacao considerada: {prompt}"
         return AIAssistantResult(AIAssistantRequestType.FOOD_SUGGESTIONS, result)
@@ -87,7 +99,12 @@ class AIAssistantService:
         alerts = self._build_alerts(context)
         if not alerts:
             alerts = ["Nenhum alerta inteligente gerado com os dados atuais."]
-        result = self.disclaimer + "\n\n" + "\n".join(f"- {alert}" for alert in alerts)
+        result = (
+            self.disclaimer
+            + "\n\nFontes internas usadas: IMC, alertas laboratoriais e adesao registrada."
+            + "\n\n"
+            + "\n".join(f"- {alert}" for alert in alerts)
+        )
         if prompt:
             result += f"\n- Contexto adicional: {prompt}"
         return AIAssistantResult(AIAssistantRequestType.SMART_ALERTS, result, alerts)

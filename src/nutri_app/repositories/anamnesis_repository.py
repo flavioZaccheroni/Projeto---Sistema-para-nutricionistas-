@@ -64,7 +64,10 @@ class AnamnesisRepository:
     def get(self, anamnesis_id: int) -> Anamnesis | None:
         with self.connection_factory.connect() as connection:
             row = connection.execute(
-                f"{self._select_sql()} WHERE a.id = ? AND a.deleted_at IS NULL AND p.deleted_at IS NULL",
+                (
+                    f"{self._select_sql()} "
+                    "WHERE a.id = ? AND a.deleted_at IS NULL AND p.deleted_at IS NULL"
+                ),
                 (anamnesis_id,),
             ).fetchone()
         return self._row_to_anamnesis(row) if row is not None else None

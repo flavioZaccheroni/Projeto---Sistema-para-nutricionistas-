@@ -62,11 +62,11 @@ class AdvancedClinicalServiceTest(unittest.TestCase):
             ),
         )
 
-    def test_formato_visual_de_data_mm_dd_aaaa(self) -> None:
+    def test_formato_visual_de_data_dd_mm_aaaa(self) -> None:
         parsed = parse_date("07-07-2026")
 
         self.assertEqual(parsed, date(2026, 7, 7))
-        self.assertEqual(format_date(parsed), "07-07-2026")
+        self.assertEqual(format_date(parsed), "07/07/2026")
 
 
 class AdvancedClinicalRepositoryTest(unittest.TestCase):

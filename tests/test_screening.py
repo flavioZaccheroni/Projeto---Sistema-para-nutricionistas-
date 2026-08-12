@@ -23,6 +23,7 @@ class ScreeningServiceTest(unittest.TestCase):
         self.assertEqual(service.classify(ScreeningProtocol.MUST, 2), "alto risco")
         self.assertEqual(service.classify(ScreeningProtocol.MST, 2), "risco nutricional")
         self.assertEqual(service.classify(ScreeningProtocol.MNA_SF, 7), "desnutricao")
+        self.assertIn("Referencia", service.reference_for(ScreeningProtocol.NRS_2002))
 
     def test_rejeita_pontuacao_negativa(self) -> None:
         with self.assertRaises(ValueError):

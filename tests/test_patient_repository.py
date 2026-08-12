@@ -1,7 +1,7 @@
+import unittest
 from datetime import date
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from nutri_app.database.schema import initialize_database
 from nutri_app.domain.patient import Patient

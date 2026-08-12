@@ -66,7 +66,10 @@ class AnthropometryRepository:
     def get(self, anthropometry_id: int) -> Anthropometry | None:
         with self.connection_factory.connect() as connection:
             row = connection.execute(
-                f"{self._select_sql()} WHERE a.id = ? AND a.deleted_at IS NULL AND p.deleted_at IS NULL",
+                (
+                    f"{self._select_sql()} "
+                    "WHERE a.id = ? AND a.deleted_at IS NULL AND p.deleted_at IS NULL"
+                ),
                 (anthropometry_id,),
             ).fetchone()
         return self._row_to_anthropometry(row) if row is not None else None

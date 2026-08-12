@@ -58,7 +58,10 @@ class ScreeningRepository:
     def get(self, screening_id: int) -> Screening | None:
         with self.connection_factory.connect() as connection:
             row = connection.execute(
-                f"{self._select_sql()} WHERE t.id = ? AND t.deleted_at IS NULL AND p.deleted_at IS NULL",
+                (
+                    f"{self._select_sql()} "
+                    "WHERE t.id = ? AND t.deleted_at IS NULL AND p.deleted_at IS NULL"
+                ),
                 (screening_id,),
             ).fetchone()
         return self._row_to_screening(row) if row is not None else None

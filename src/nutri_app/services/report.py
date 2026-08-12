@@ -7,6 +7,7 @@ from datetime import date
 from pathlib import Path
 
 from nutri_app.domain.patient import Patient
+from nutri_app.services.clinical_validation import ClinicalValidationMatrix
 
 
 @dataclass(frozen=True)
@@ -17,6 +18,9 @@ class ClinicalReportOptions:
     include_diagnosis: bool = True
     include_meal_plan: bool = True
     include_energy_expenditure: bool = True
+    include_validation_appendix: bool = True
+    professional_name: str = "Nutricionista responsavel"
+    professional_registration: str = "CRN nao informado"
     notes: str = ""
 
     def to_json(self) -> str:
@@ -31,6 +35,30 @@ class GeneratedClinicalReport:
 
 
 class ClinicalReportService:
+    ENERGY_REFERENCE_KEYS = {
+        "Harris-Benedict": "Harris-Benedict",
+        "Mifflin-St Jeor": "Mifflin-St. Jeor",
+        "Mifflin-St. Jeor": "Mifflin-St. Jeor",
+        "FAO/OMS": "FAO/WHO/UNU",
+        "FAO/WHO/UNU": "FAO/WHO/UNU",
+        "DRIs": "DRI",
+        "DRI": "DRI",
+        "Owen": "Owen",
+        "Schofield": "Schofield",
+        "Cunningham": "Cunningham",
+        "Katch-McArdle": "Katch-McArdle",
+    }
+
+    DIAGNOSIS_REFERENCE_KEYS = {
+        "GLIM": "GLIM",
+        "ASPEN": "ASPEN",
+        "ESPEN": "ESPEN",
+        "BRASPEN": "BRASPEN",
+        "Sarcopenia": "Sarcopenia",
+        "Caquexia": "Caquexia",
+        "Fragilidade": "Fragilidade",
+    }
+
     def build(
         self,
         patient: Patient,
@@ -55,11 +83,18 @@ class ClinicalReportService:
         lines = [
             "Nutri Clinic Pro",
             title,
-            f"Gerado em: {date.today().isoformat()}",
+            f"Gerado em: {self._format_date(date.today())}",
+            f"Profissional responsavel: {options.professional_name or 'Nutricionista responsavel'}",
+            f"Registro profissional: {options.professional_registration or 'CRN nao informado'}",
+            "Status: documento de apoio clinico, pendente de assinatura/validacao profissional.",
+            (
+                "Aviso: resultados, alertas e sugestoes nao substituem "
+                "julgamento clinico da nutricionista."
+            ),
             "",
             "Paciente",
             f"- Nome: {patient.name}",
-            f"- Data de nascimento: {patient.birth_date.isoformat()}",
+            f"- Data de nascimento: {self._format_date(patient.birth_date)}",
             f"- Telefone: {patient.phone or 'Nao informado'}",
             f"- E-mail: {patient.email or 'Nao informado'}",
             f"- Convenio: {patient.health_insurance or 'Nao informado'}",
@@ -67,22 +102,39 @@ class ClinicalReportService:
         if patient.clinical_notes:
             lines.append(f"- Observacoes clinicas: {patient.clinical_notes}")
 
+        clinical_references: list[str] = []
         if options.include_anamnesis:
             self._append_anamnesis(lines, context.get("anamnesis"))
         if options.include_anthropometry:
             self._append_anthropometry(lines, context.get("anthropometry"))
         if options.include_energy_expenditure:
             self._append_energy_expenditure(lines, context.get("energy_expenditure"))
+            self._collect_energy_reference(clinical_references, context.get("energy_expenditure"))
         if options.include_laboratory_exams:
             self._append_laboratory_exam(lines, context.get("laboratory_exam"))
         if options.include_diagnosis:
             self._append_diagnosis(lines, context.get("diagnosis"))
+            self._collect_diagnosis_reference(clinical_references, context.get("diagnosis"))
         if options.include_meal_plan:
             self._append_meal_plan(lines, context.get("meal_plan"))
         if options.notes.strip():
             lines.extend(["", "Observacoes do relatorio", options.notes.strip()])
+        if options.include_validation_appendix:
+            self._append_validation_appendix(lines, clinical_references)
 
-        lines.extend(["", "Assinatura do nutricionista:", ""])
+        lines.extend(
+            [
+                "",
+                "Responsabilidade profissional",
+                (
+                    "Declaro que este relatorio deve ser revisado, ajustado e "
+                    "validado pela nutricionista antes do uso com o paciente."
+                ),
+                f"Profissional: {options.professional_name or 'Nutricionista responsavel'}",
+                f"Registro: {options.professional_registration or 'CRN nao informado'}",
+                "Assinatura: __________________________________________",
+            ]
+        )
         return GeneratedClinicalReport(
             title=title,
             content="\n".join(lines),
@@ -124,10 +176,14 @@ class ClinicalReportService:
             return
         lines.extend(
             [
-                f"- Data: {data.get('data_avaliacao')}",
+                f"- Data: {self._format_date_text(data.get('data_avaliacao'))}",
                 f"- Peso: {data.get('peso_kg')} kg",
                 f"- Altura: {data.get('altura_m')} m",
                 f"- IMC: {data.get('imc')} ({data.get('classificacao_imc')})",
+                (
+                    "- Interpretacao: usar em conjunto com historia clinica, "
+                    "evolucao ponderal e exame fisico."
+                ),
             ]
         )
 
@@ -145,6 +201,10 @@ class ClinicalReportService:
                 f"- Proteina: {data.get('proteina_g')} g",
                 f"- Carboidrato: {data.get('carboidrato_g')} g",
                 f"- Lipidios: {data.get('lipidios_g')} g",
+                (
+                    "- Observacao: estimativa deve ser reavaliada conforme "
+                    "adesao, sintomas, exames e evolucao corporal."
+                ),
             ]
         )
 
@@ -154,14 +214,21 @@ class ClinicalReportService:
         if not data:
             lines.append("- Nenhum exame laboratorial registrado.")
             return
-        lines.append(f"- Data: {data.get('data_exame')}")
+        lines.append(f"- Data: {self._format_date_text(data.get('data_exame'))}")
         lines.append(f"- Laboratorio: {data.get('laboratorio') or 'Nao informado'}")
         for item in data.get("itens", []):
             item_data = self._as_dict(item)
             value = item_data.get("valor")
             unit = item_data.get("unidade") or ""
+            reference = item_data.get("referencia") or "sem referencia cadastrada"
             alert = item_data.get("alerta") or "Sem alerta"
-            lines.append(f"  - {item_data.get('nome')}: {value} {unit} ({alert})")
+            lines.append(
+                f"  - {item_data.get('nome')}: {value} {unit} ({alert}; ref.: {reference})"
+            )
+        lines.append(
+            "- Interpretacao: correlacionar exames com sinais, sintomas, "
+            "medicamentos e objetivo nutricional."
+        )
 
     def _append_diagnosis(self, lines: list[str], diagnosis: object) -> None:
         data = self._as_dict(diagnosis)
@@ -169,11 +236,14 @@ class ClinicalReportService:
         if not data:
             lines.append("- Nenhum diagnostico nutricional registrado.")
             return
+        confirmed = "sim" if data.get("confirmado") else "nao"
         lines.extend(
             [
+                f"- Protocolo: {data.get('protocolo') or 'Nao informado'}",
                 f"- Classificacao: {data.get('classificacao')}",
                 f"- Gravidade: {data.get('gravidade')}",
                 f"- Criterios: {data.get('criterios')}",
+                f"- Confirmado pela nutricionista: {confirmed}",
                 f"- Conduta: {data.get('conduta') or 'Nao informado'}",
             ]
         )
@@ -206,8 +276,46 @@ class ClinicalReportService:
                     f"{item_data.get('quantidade')} {item_data.get('unidade')}"
                 )
 
+    def _append_validation_appendix(self, lines: list[str], references: list[str]) -> None:
+        lines.extend(["", "Rastreabilidade clinica e limites de uso"])
+        if not references:
+            lines.append(
+                "- Nenhum protocolo ou formula com matriz especifica foi incluido neste relatorio."
+            )
+        for reference in dict.fromkeys(references):
+            lines.append(f"- {reference}")
+        lines.append(
+            "- Regra geral: dados calculados sao apoio a decisao; revisar "
+            "populacao indicada, contexto clinico e sinais de alerta antes "
+            "de orientar o paciente."
+        )
+
+    def _collect_energy_reference(self, references: list[str], expenditure: object) -> None:
+        data = self._as_dict(expenditure)
+        key = self.ENERGY_REFERENCE_KEYS.get(str(data.get("equacao") or ""))
+        if key:
+            references.append(ClinicalValidationMatrix.summary_for(key))
+
+    def _collect_diagnosis_reference(self, references: list[str], diagnosis: object) -> None:
+        data = self._as_dict(diagnosis)
+        key = self.DIAGNOSIS_REFERENCE_KEYS.get(str(data.get("protocolo") or ""))
+        if key:
+            references.append(ClinicalValidationMatrix.summary_for(key))
+
     def _as_dict(self, value: object) -> dict:
         return value if isinstance(value, dict) else {}
+
+    def _format_date(self, value: date) -> str:
+        return value.strftime("%d/%m/%Y")
+
+    def _format_date_text(self, value: object) -> str:
+        text = str(value or "")
+        if not text:
+            return "Nao informado"
+        try:
+            return date.fromisoformat(text[:10]).strftime("%d/%m/%Y")
+        except ValueError:
+            return text
 
     def _slugify(self, value: str) -> str:
         slug = re.sub(r"[^a-zA-Z0-9]+", "_", value.strip().lower()).strip("_")

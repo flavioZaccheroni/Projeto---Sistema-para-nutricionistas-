@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-DATE_FORMAT = "%d-%m-%Y"
-DATETIME_FORMAT = "%d-%m-%Y %H:%M"
-DATE_PLACEHOLDER = "dd-mm-aaaa"
-DATETIME_PLACEHOLDER = "dd-mm-aaaa HH:MM"
+DATE_FORMAT = "%d/%m/%Y"
+DATETIME_FORMAT = "%d/%m/%Y %H:%M"
+DATE_PLACEHOLDER = "dd/mm/aaaa"
+DATETIME_PLACEHOLDER = "dd/mm/aaaa HH:MM"
 
 
 def format_date(value: date | None) -> str:
@@ -18,7 +18,7 @@ def format_datetime(value: datetime | None) -> str:
 
 def parse_date(value: str) -> date:
     text = value.strip()
-    for date_format in [DATE_FORMAT, "%m-%d-%Y"]:
+    for date_format in [DATE_FORMAT, "%d-%m-%Y", "%m-%d-%Y"]:
         try:
             return datetime.strptime(text, date_format).date()
         except ValueError:
@@ -35,7 +35,7 @@ def parse_optional_date(value: str) -> date | None:
 
 def parse_datetime(value: str) -> datetime:
     text = value.strip()
-    for date_format in [DATETIME_FORMAT, "%m-%d-%Y %H:%M"]:
+    for date_format in [DATETIME_FORMAT, "%d-%m-%Y %H:%M", "%m-%d-%Y %H:%M"]:
         try:
             return datetime.strptime(text, date_format)
         except ValueError:

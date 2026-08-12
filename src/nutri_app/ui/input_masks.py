@@ -10,13 +10,13 @@ EMAIL_PATTERN = r"^$|^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
 
 
 def apply_date_mask(field: QLineEdit, optional: bool = False) -> None:
-    field.setInputMask("00-00-0000;_")
+    field.setInputMask("00/00/0000;_")
     suffix = " opcional" if optional else ""
     field.setPlaceholderText(f"{DATE_PLACEHOLDER}{suffix}")
 
 
 def apply_datetime_mask(field: QLineEdit) -> None:
-    field.setInputMask("00-00-0000 00:00;_")
+    field.setInputMask("00/00/0000 00:00;_")
     field.setPlaceholderText(DATETIME_PLACEHOLDER)
 
 
