@@ -31,8 +31,9 @@ if ($LASTEXITCODE -ne 0) {
     throw "Ruff encontrou problemas; commit cancelado."
 }
 
-& $python -m pytest -q -p no:cacheprovider -c (Join-Path $repositoryRoot "pyproject.toml") `
-    (Join-Path $repositoryRoot "tests")
+$pytestCache = Join-Path ([System.IO.Path]::GetTempPath()) "nutri_clinic_pytest_cache"
+& $python -m pytest -q -c (Join-Path $repositoryRoot "pyproject.toml") `
+    -o "cache_dir=$pytestCache" (Join-Path $repositoryRoot "tests")
 if ($LASTEXITCODE -ne 0) {
     throw "Testes falharam; commit cancelado."
 }
