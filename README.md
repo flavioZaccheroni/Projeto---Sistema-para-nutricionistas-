@@ -35,6 +35,16 @@ copie uma `.venv` criada em outro usuário ou computador.
 
 ## Execução
 
+### PyCharm
+
+O projeto inclui a configuração compartilhada `Nutri Clinic Pro (.venv)`. Ela utiliza o
+interpretador `.venv\Scripts\python.exe`, executa `run_app.py` na raiz do projeto e adiciona
+`src` ao `PYTHONPATH`.
+
+Depois de abrir ou recarregar o projeto, selecione `Nutri Clinic Pro (.venv)` no seletor de
+execução. Não utilize configurações temporárias chamadas apenas `run_app` ou `__main__`
+quando elas exibirem `<No interpreter>`.
+
 ```powershell
 .\.venv\Scripts\python.exe run_app.py
 ```
