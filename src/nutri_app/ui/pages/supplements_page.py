@@ -18,6 +18,7 @@ from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.repositories.supplement_repository import SupplementRepository
 from nutri_app.services.supplement import SupplementService
+from nutri_app.ui.dialogs.supplement_prescriptions_dialog import SupplementPrescriptionsDialog
 from nutri_app.ui.pages.base import Page
 
 
@@ -30,6 +31,7 @@ class SupplementsPage(Page):
     ) -> None:
         super().__init__("Suplementos", "Suplementos, formulas enterais e modulos.")
         self.repository = SupplementRepository(connection_factory)
+        self.connection_factory = connection_factory
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.service = SupplementService()
@@ -97,9 +99,11 @@ class SupplementsPage(Page):
         new.clicked.connect(self._clear_form)
         delete = QPushButton("Excluir")
         delete.clicked.connect(self._delete_supplement)
+        prescribe = QPushButton("Prescrever para paciente")
+        prescribe.clicked.connect(self._open_prescriptions)
 
         actions = QHBoxLayout()
-        for button in [calculate, save, new, delete]:
+        for button in [calculate, save, new, delete, prescribe]:
             actions.addWidget(button)
         actions.addStretch()
 
@@ -299,3 +303,12 @@ class SupplementsPage(Page):
             entity_id=supplement_id,
             details=details,
         )
+
+    def _open_prescriptions(self) -> None:
+        SupplementPrescriptionsDialog(
+            self.connection_factory,
+            self.audit_repository,
+            self.current_user_id,
+            self.selected_supplement_id,
+            self,
+        ).exec()

@@ -31,11 +31,22 @@ Status: concluida em 2026-08-15.
 - Imagem clinica somente com consentimento especifico registrado.
 - Gravidade global, resumo, vinculo opcional ao diagnostico e comparacao longitudinal.
 
+## Fase 3 - Suplementacao individualizada
+
+Status: concluida em 2026-08-15.
+
+- `RF-M18-03`: prescricao por paciente com dose, unidade, frequencia, horarios, periodo,
+  objetivo e instrucoes.
+- `RF-M18-04`: calculo persistido de energia e nutrientes por dia.
+- `RF-M18-05`: aceitacao, adesao, intercorrencias, resposta e motivo de suspensao.
+- `RN-M18-02`: snapshot imutavel do produto em cada prescricao historica.
+- Auditoria das prescricoes e dos acompanhamentos.
+
 ## Proximas fases
 
 1. Avaliacao nutricional central e avaliacao dietetica.
 2. Referencias laboratoriais versionadas e correcoes imutaveis.
-3. Prescricao nutricional, suplementacao por paciente e evolucao SOAPI.
+3. Prescricao nutricional e evolucao SOAPI.
 4. Terapia enteral/parenteral, necessidades e hidratacao.
 5. Protocolos clinicos versionados, indicadores e alertas.
 6. Seguranca avancada, sessao, segundo fator e escopo por unidade.
