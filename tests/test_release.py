@@ -22,6 +22,12 @@ class ReleaseServiceTest(unittest.TestCase):
             "has_icon": True,
             "has_backup_config": True,
             "has_web_portal": True,
+            "venv_valid": True,
+            "has_ci": True,
+            "has_ui_tests": True,
+            "has_privacy_governance": True,
+            "has_encrypted_backup": True,
+            "clinical_validations_pending": 0,
         }
 
         readiness = ReleaseService().evaluate(metrics, "1.0.0")

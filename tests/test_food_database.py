@@ -33,6 +33,29 @@ class FoodServiceTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             FoodService().validate(Food(name="", source=FoodSource.CUSTOM))
 
+    def test_importa_csv_oficial_com_proveniencia(self) -> None:
+        with TemporaryDirectory() as tmp:
+            csv_path = Path(tmp) / "taco.csv"
+            csv_path.write_text(
+                "nome,categoria,energia_kcal,proteina_g,carboidrato_g,lipidios_g,"
+                "fibras_g,sodio_mg\n"
+                "Arroz integral,Cereais,124,2.6,25.8,1.0,2.7,1\n",
+                encoding="utf-8",
+            )
+
+            foods = FoodService().import_official_csv(
+                csv_path,
+                FoodSource.TACO,
+                "4a edicao",
+                "Termos de uso TACO",
+            )
+
+        self.assertEqual(len(foods), 1)
+        self.assertEqual(foods[0].name, "Arroz integral")
+        self.assertEqual(foods[0].source, FoodSource.TACO)
+        self.assertIn("versao 4a edicao", foods[0].notes)
+        self.assertIn("licenca Termos de uso TACO", foods[0].notes)
+
 
 class FoodRepositoryTest(unittest.TestCase):
     def test_cria_lista_atualiza_e_exclui_alimento(self) -> None:

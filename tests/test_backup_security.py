@@ -2,11 +2,13 @@ import sqlite3
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest import mock
 
 from nutri_app.database.schema import initialize_database
 from nutri_app.domain.backup import BackupStatus
 from nutri_app.repositories.backup_repository import BackupRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.services.automatic_backup import run_configured_automatic_backup
 from nutri_app.services.backup import BackupService
 
 
@@ -43,6 +45,33 @@ class BackupServiceTest(unittest.TestCase):
                     Path(tmp) / "backups",
                 )
 
+    def test_cria_e_restaura_backup_criptografado(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            database = root / "source.sqlite"
+            connection = sqlite3.connect(database)
+            try:
+                connection.execute("CREATE TABLE exemplo (valor TEXT)")
+                connection.execute("INSERT INTO exemplo VALUES ('dado clinico')")
+                connection.commit()
+            finally:
+                connection.close()
+            service = BackupService()
+            result = service.create_encrypted_backup(
+                database, root / "backups", "SenhaBackup@2026"
+            )
+            restored = service.restore_encrypted_backup(
+                Path(result.record.file_path), root / "restored.sqlite", "SenhaBackup@2026"
+            )
+            connection = sqlite3.connect(restored)
+            try:
+                value = connection.execute("SELECT valor FROM exemplo").fetchone()[0]
+            finally:
+                connection.close()
+
+        self.assertEqual(value, "dado clinico")
+        self.assertTrue(result.record.file_path.endswith(".ncpbackup"))
+
 
 class BackupRepositoryTest(unittest.TestCase):
     def test_salva_lista_atualiza_status_e_conta_permissoes(self) -> None:
@@ -68,6 +97,29 @@ class BackupRepositoryTest(unittest.TestCase):
 
         self.assertIn("Usuarios ativos cadastrados: 2", checklist)
         self.assertTrue(any("checksum SHA-256" in item for item in checklist))
+
+    def test_backup_automatico_usa_destino_e_segredo_externos(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            factory = SQLiteConnectionFactory(root / "test.sqlite")
+            initialize_database(factory)
+            with factory.connect() as connection:
+                connection.execute(
+                    "UPDATE configuracoes SET valor = '1' "
+                    "WHERE chave = 'backup_automatico_ativo'"
+                )
+            with mock.patch.dict(
+                "os.environ",
+                {
+                    "NUTRI_BACKUP_DIR": str(root / "external"),
+                    "NUTRI_BACKUP_PASSPHRASE": "SenhaExterna@2026",
+                },
+            ):
+                result = run_configured_automatic_backup(factory, factory.database_path)
+
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertTrue(result.record.file_path.endswith(".ncpbackup"))
 
 
 if __name__ == "__main__":

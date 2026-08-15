@@ -37,6 +37,15 @@ class AIAssistantServiceTest(unittest.TestCase):
         self.assertIn("saciedade", result.result)
         self.assertIn("fome noturna", result.result)
 
+    def test_ia_externa_exige_consentimento(self) -> None:
+        with self.assertRaises(ValueError):
+            AIAssistantService().generate_external(
+                AIAssistantRequestType.CONSULTATION_SUMMARY,
+                {"patient_name": "Dado identificavel"},
+                "Resuma",
+                patient_consent=False,
+            )
+
 
 class AIAssistantRepositoryTest(unittest.TestCase):
     def test_monta_contexto_e_salva_execucao(self) -> None:

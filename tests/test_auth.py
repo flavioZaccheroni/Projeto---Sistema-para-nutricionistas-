@@ -29,20 +29,41 @@ class AuthServiceTest(unittest.TestCase):
             auth = AuthService(users, AuditRepository(factory))
 
             auth.ensure_default_admin()
-            result = auth.login("admin@nutricionistas.local", "Admin@123")
+            result = auth.login("admin@nutricionistas.local", "Admin@1234")
 
         self.assertIsNotNone(result.user)
         self.assertEqual(result.user.email, "admin@nutricionistas.local")
+        self.assertTrue(result.password_change_required)
+
+    def test_troca_senha_inicial_e_libera_proximo_login(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            migrations = root / "migrations"
+            migrations.mkdir()
+            for migration in Path("database/migrations").glob("*.sql"):
+                (migrations / migration.name).write_text(
+                    migration.read_text(encoding="utf-8"), encoding="utf-8"
+                )
+            factory = SQLiteConnectionFactory(root / "test.sqlite")
+            DatabaseMigrator(factory, migrations).migrate()
+            auth = AuthService(UserRepository(factory), AuditRepository(factory))
+            auth.ensure_default_admin()
+            first = auth.login("admin@nutricionistas.local", "Admin@1234")
+            auth.change_password(first.user.id, "NovaSenha@2026")
+            second = auth.login("admin@nutricionistas.local", "NovaSenha@2026")
+
+        self.assertIsNotNone(second.user)
+        self.assertFalse(second.password_change_required)
 
 
 class PasswordHasherTest(unittest.TestCase):
     def test_hash_nao_armazena_senha_em_texto_puro(self) -> None:
         hasher = PasswordHasher()
 
-        password_hash = hasher.hash_password("Senha@123")
+        password_hash = hasher.hash_password("Senha@1234")
 
-        self.assertNotIn("Senha@123", password_hash)
-        self.assertTrue(hasher.verify_password("Senha@123", password_hash))
+        self.assertNotIn("Senha@1234", password_hash)
+        self.assertTrue(hasher.verify_password("Senha@1234", password_hash))
         self.assertFalse(hasher.verify_password("senha_errada", password_hash))
 
 

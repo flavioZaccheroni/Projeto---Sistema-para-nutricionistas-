@@ -59,6 +59,22 @@ class IntegrationServiceTest(unittest.TestCase):
         self.assertEqual(exam.items[0].name, "Glicemia")
         self.assertEqual(exam.items[0].value, 92)
 
+    def test_executa_integracao_file_com_payload_json(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "export.json"
+            integration = ExternalIntegration(
+                name="Arquivo local",
+                integration_type=IntegrationType.OTHER,
+                endpoint=path.as_uri(),
+            )
+            result = IntegrationService().execute_sync(
+                integration, "pacientes", '{"total": 2}'
+            )
+            content = path.read_text(encoding="utf-8")
+
+        self.assertIn("concluida", result)
+        self.assertIn('"total": 2', content)
+
 
 class IntegrationRepositoryTest(unittest.TestCase):
     def test_salva_integracao_e_execucao(self) -> None:

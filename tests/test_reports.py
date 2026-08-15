@@ -1,7 +1,10 @@
+import os
 import unittest
 from datetime import date
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+from PySide6.QtWidgets import QApplication
 
 from nutri_app.database.schema import initialize_database
 from nutri_app.domain.patient import Patient
@@ -10,6 +13,9 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.report_repository import ClinicalReportRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.report import ClinicalReportOptions, ClinicalReportService
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+APP = QApplication.instance() or QApplication([])
 
 
 class ClinicalReportServiceTest(unittest.TestCase):
@@ -57,7 +63,9 @@ class ClinicalReportServiceTest(unittest.TestCase):
         )
         with TemporaryDirectory() as tmp:
             path = service.export_text(report, Path(tmp), patient.name)
+            pdf_path = service.export_pdf(report, Path(tmp), patient.name)
             content = path.read_text(encoding="utf-8")
+            pdf_size = pdf_path.stat().st_size
 
         self.assertIn("Relatorio clinico - Paciente Relatorio", report.content)
         self.assertIn("Gerado em:", report.content)
@@ -70,6 +78,8 @@ class ClinicalReportServiceTest(unittest.TestCase):
         self.assertIn("Retorno em 30 dias.", report.content)
         self.assertTrue(path.name.endswith("_paciente_relatorio_relatorio_clinico.txt"))
         self.assertEqual(content, report.content)
+        self.assertTrue(pdf_path.name.endswith("_paciente_relatorio_relatorio_clinico.pdf"))
+        self.assertGreater(pdf_size, 1000)
 
     def test_rejeita_relatorio_sem_secao(self) -> None:
         patient = Patient(id=1, name="Paciente", birth_date=date(1990, 1, 1))

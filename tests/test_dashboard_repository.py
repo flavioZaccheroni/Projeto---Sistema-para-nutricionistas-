@@ -50,6 +50,7 @@ class DashboardRepositoryTest(unittest.TestCase):
             summary = repository.summary(today=date.today())
             alerts = repository.recent_alerts()
             appointments = repository.upcoming_appointments()
+            evolution = repository.evolution_series(patient_id, "Peso (kg)")
 
         self.assertEqual(summary.active_patients, 1)
         self.assertEqual(summary.today_appointments, 1)
@@ -57,6 +58,7 @@ class DashboardRepositoryTest(unittest.TestCase):
         self.assertEqual(summary.pending_items, 1)
         self.assertEqual(alerts[0].patient_name, "Paciente Teste")
         self.assertEqual(appointments[0].kind, "Consulta inicial")
+        self.assertEqual(evolution[0][1], 45.0)
 
 
 if __name__ == "__main__":
