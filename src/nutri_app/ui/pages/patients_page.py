@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
+    QFileDialog,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -22,6 +25,7 @@ from nutri_app.domain.patient import Patient
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.services.privacy import PatientPrivacyService
 from nutri_app.ui.date_format import DATE_PLACEHOLDER, format_date, parse_date
 from nutri_app.ui.input_masks import apply_date_mask, apply_email_validator, apply_phone_mask
 from nutri_app.ui.pages.base import Page
@@ -47,6 +51,7 @@ class PatientsPage(Page):
     ) -> None:
         super().__init__("Cadastro de Pacientes", "Dados pessoais, contato e historico clinico.")
         self.repository = PatientRepository(connection_factory)
+        self.privacy_service = PatientPrivacyService(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.selected_patient_id: int | None = None
@@ -75,11 +80,17 @@ class PatientsPage(Page):
         clear.clicked.connect(self._clear_form)
         delete = QPushButton("Excluir")
         delete.clicked.connect(self._delete_patient)
+        consent = QPushButton("Registrar consentimento LGPD")
+        consent.clicked.connect(self._record_consent)
+        export = QPushButton("Exportar dados LGPD")
+        export.clicked.connect(self._export_privacy_data)
 
         actions = QHBoxLayout()
         actions.addWidget(save)
         actions.addWidget(clear)
         actions.addWidget(delete)
+        actions.addWidget(consent)
+        actions.addWidget(export)
         actions.addStretch()
 
         self.table = QTableWidget(0, 8)
@@ -349,3 +360,47 @@ class PatientsPage(Page):
         )
         self._clear_form()
         self._reload_table()
+
+    def _record_consent(self) -> None:
+        if self.selected_patient_id is None:
+            QMessageBox.warning(self, "LGPD", "Selecione um paciente.")
+            return
+        consent_id = self.privacy_service.record_consent(
+            self.selected_patient_id,
+            policy_version="1.0",
+            granted=True,
+            user_id=self.current_user_id,
+            notes="Consentimento registrado na interface Desktop.",
+        )
+        self.audit_repository.log(
+            self.current_user_id,
+            "registrou_consentimento_lgpd",
+            "consentimentos_privacidade",
+            consent_id,
+            f"Paciente {self.selected_patient_id}; politica 1.0.",
+        )
+        QMessageBox.information(self, "LGPD", "Consentimento registrado e auditado.")
+
+    def _export_privacy_data(self) -> None:
+        if self.selected_patient_id is None:
+            QMessageBox.warning(self, "LGPD", "Selecione um paciente.")
+            return
+        output_dir = QFileDialog.getExistingDirectory(self, "Diretorio da exportacao LGPD")
+        if not output_dir:
+            return
+        result = self.privacy_service.export_patient_data(
+            self.selected_patient_id,
+            Path(output_dir),
+        )
+        self.audit_repository.log(
+            self.current_user_id,
+            "exportou_dados_lgpd",
+            "solicitacoes_privacidade",
+            None,
+            str(result.file_path),
+        )
+        QMessageBox.information(
+            self,
+            "LGPD",
+            f"Exportacao concluida: {result.records_exported} registros em {result.file_path}",
+        )

@@ -19,6 +19,10 @@ class User:
     password_hash: str
     role: UserRole
     active: bool = True
+    must_change_password: bool = True
+    failed_login_attempts: int = 0
+    locked_until: datetime | None = None
+    password_changed_at: datetime | None = None
     id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -30,6 +34,7 @@ class AuthenticatedUser:
     name: str
     email: str
     role: UserRole
+    must_change_password: bool = False
 
 
 @dataclass(frozen=True)

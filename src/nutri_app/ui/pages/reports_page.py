@@ -125,7 +125,8 @@ class ReportsPage(Page):
             context = self.repository.build_clinical_context(patient_id)
             generated = self.service.build(patient, options, context)
             export_dir = Path(__file__).resolve().parents[4] / "exports" / "relatorios"
-            file_path = self.service.export_text(generated, export_dir, patient.name)
+            text_path = self.service.export_text(generated, export_dir, patient.name)
+            file_path = self.service.export_pdf(generated, export_dir, patient.name)
         except ValueError as exc:
             QMessageBox.warning(self, "Validacao", str(exc) or "Dados invalidos.")
             return
@@ -133,7 +134,7 @@ class ReportsPage(Page):
         report = ClinicalReport(
             patient_id=patient.id,
             patient_name=patient.name,
-            report_type="Clinico simples",
+            report_type="Clinico profissional PDF",
             title=generated.title,
             file_path=str(file_path),
             parameters=generated.parameters,
@@ -143,7 +144,11 @@ class ReportsPage(Page):
         self.preview.setPlainText(generated.content)
         self._audit("gerou_relatorio_clinico", report_id, str(file_path))
         self._reload_table()
-        QMessageBox.information(self, "Relatorios", f"Relatorio gerado em:\n{file_path}")
+        QMessageBox.information(
+            self,
+            "Relatorios",
+            f"PDF gerado em:\n{file_path}\n\nCopia editavel:\n{text_path}",
+        )
 
     def _build_options(self) -> ClinicalReportOptions:
         return ClinicalReportOptions(

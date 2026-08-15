@@ -75,10 +75,13 @@ class IntegrationsPage(Page):
         save.clicked.connect(self._save_integration)
         simulate = QPushButton("Simular sync")
         simulate.clicked.connect(self._simulate_sync)
+        execute = QPushButton("Executar sync real")
+        execute.clicked.connect(self._execute_sync)
 
         actions = QHBoxLayout()
         actions.addWidget(save)
         actions.addWidget(simulate)
+        actions.addWidget(execute)
         actions.addStretch()
 
         import_form = QFormLayout()
@@ -206,6 +209,42 @@ class IntegrationsPage(Page):
             "exames_laboratoriais",
             exam_id,
             integration.name,
+        )
+        self.result.setPlainText(result)
+        self.refresh()
+
+    def _execute_sync(self) -> None:
+        integration = self._selected_integration()
+        if integration is None:
+            QMessageBox.warning(self, "Integracoes", "Selecione uma integracao.")
+            return
+        payload = self.payload.toPlainText().strip() or "{}"
+        try:
+            result = self.service.execute_sync(
+                integration,
+                "dados clinicos",
+                payload,
+            )
+            status = IntegrationStatus.SUCCESS
+        except ValueError as exc:
+            result = str(exc)
+            status = IntegrationStatus.FAILED
+        execution_id = self.repository.add_execution(
+            IntegrationExecution(
+                integration_id=integration.id,
+                direction=IntegrationDirection.EXPORT,
+                entity="dados clinicos",
+                status=status,
+                payload=payload,
+                result=result,
+            )
+        )
+        self.audit_repository.log(
+            self.current_user_id,
+            "executou_integracao_real",
+            "integracao_execucoes",
+            execution_id,
+            result,
         )
         self.result.setPlainText(result)
         self.refresh()

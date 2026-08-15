@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Portal do Paciente</title>
+  <style>
+    body { font-family: Arial; margin: 0; background: #f3f6f7; color: #17324d; }
+    main { max-width: 720px; margin: auto; padding: 24px; }
+    .card { background: white; padding: 20px; border-radius: 12px; margin: 12px 0;
+      box-shadow: 0 2px 8px #0001; }
+    input, button { box-sizing: border-box; width: 100%; padding: 12px; margin: 6px 0; }
+    button { background: #167d73; color: white; border: 0; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Nutri Clinic Pro</h1>
+    <div class="card">
+      <h2>Acesso do paciente</h2>
+      <input id="email" type="email" placeholder="E-mail">
+      <input id="code" placeholder="Código de acesso">
+      <button onclick="login()">Entrar</button>
+      <p id="message"></p>
+    </div>
+    <div id="items"></div>
+  </main>
+  <script>
+    let token = "";
+    async function login() {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({email: email.value, code: code.value})
+      });
+      const data = await response.json();
+      if (!response.ok) { message.textContent = data.error; return; }
+      token = data.token;
+      loadPublications();
+    }
+    async function loadPublications() {
+      const response = await fetch("/api/publications", {
+        headers: {Authorization: "Bearer " + token}
+      });
+      const data = await response.json();
+      items.innerHTML = data.publications.map(item =>
+        `<article class="card"><h2>${item.titulo}</h2><p>${item.conteudo}</p>` +
+        `<small>${item.data_publicacao}</small></article>`
+      ).join("");
+    }
+  </script>
+</body>
+</html>

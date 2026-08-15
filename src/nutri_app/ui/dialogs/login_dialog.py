@@ -35,7 +35,7 @@ class LoginDialog(QDialog):
         apply_email_validator(self.email)
         self.password = QLineEdit()
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password.setPlaceholderText("Admin@123")
+        self.password.setPlaceholderText("Admin@1234")
 
         form = QFormLayout()
         form.addRow("E-mail", self.email)
@@ -52,7 +52,7 @@ class LoginDialog(QDialog):
         actions.addWidget(cancel)
         actions.addWidget(login)
 
-        help_label = QLabel("Primeiro acesso: admin@nutricionistas.local / Admin@123")
+        help_label = QLabel("Primeiro acesso: admin@nutricionistas.local / Admin@1234")
         help_label.setObjectName("pageSubtitle")
 
         layout = QVBoxLayout(self)
@@ -70,5 +70,60 @@ class LoginDialog(QDialog):
             QMessageBox.warning(self, "Login", result.message)
             return
 
+        if result.password_change_required:
+            dialog = PasswordChangeDialog(self.auth_service, result.user.id, self)
+            if dialog.exec() != QDialog.DialogCode.Accepted:
+                QMessageBox.information(
+                    self,
+                    "Primeiro acesso",
+                    "A troca da senha inicial e obrigatoria para continuar.",
+                )
+                return
+            result = self.auth_service.login(self.email.text(), dialog.new_password)
+            if result.user is None:
+                QMessageBox.warning(self, "Login", result.message)
+                return
         self.user = result.user
+        self.accept()
+
+
+class PasswordChangeDialog(QDialog):
+    def __init__(self, auth_service: AuthService, user_id: int, parent=None) -> None:
+        super().__init__(parent)
+        self.auth_service = auth_service
+        self.user_id = user_id
+        self.new_password = ""
+        self.setWindowTitle("Troca obrigatoria de senha")
+        self.setMinimumWidth(420)
+
+        self.password = QLineEdit()
+        self.password.setEchoMode(QLineEdit.EchoMode.Password)
+        self.confirmation = QLineEdit()
+        self.confirmation.setEchoMode(QLineEdit.EchoMode.Password)
+        form = QFormLayout()
+        form.addRow("Nova senha", self.password)
+        form.addRow("Confirmar senha", self.confirmation)
+        guidance = QLabel(
+            "Use pelo menos 10 caracteres, com maiuscula, minuscula, numero e simbolo."
+        )
+        guidance.setWordWrap(True)
+        save = QPushButton("Alterar senha")
+        save.setObjectName("primaryButton")
+        save.clicked.connect(self._save)
+        layout = QVBoxLayout(self)
+        layout.addWidget(guidance)
+        layout.addLayout(form)
+        layout.addWidget(save)
+
+    def _save(self) -> None:
+        password = self.password.text()
+        if password != self.confirmation.text():
+            QMessageBox.warning(self, "Senha", "As senhas informadas nao conferem.")
+            return
+        try:
+            self.auth_service.change_password(self.user_id, password)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Senha", str(exc))
+            return
+        self.new_password = password
         self.accept()

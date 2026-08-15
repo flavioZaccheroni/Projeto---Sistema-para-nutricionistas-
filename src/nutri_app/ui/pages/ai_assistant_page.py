@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFormLayout,
     QHBoxLayout,
@@ -19,6 +20,7 @@ from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.ai_assistant import AIAssistantService
+from nutri_app.services.privacy import PatientPrivacyService
 from nutri_app.ui.date_format import format_datetime
 from nutri_app.ui.pages.base import Page
 
@@ -39,6 +41,7 @@ class AIAssistantPage(Page):
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.service = AIAssistantService()
+        self.privacy_service = PatientPrivacyService(connection_factory)
         self.patient_ids_by_index: list[int | None] = []
 
         self.search = QLineEdit()
@@ -52,12 +55,14 @@ class AIAssistantPage(Page):
         self.result = QTextEdit()
         self.result.setReadOnly(True)
         self.result.setFixedHeight(180)
+        self.external_ai = QCheckBox("Usar provedor externo (requer consentimento)")
 
         form = QFormLayout()
         form.addRow("Pesquisar", self.search)
         form.addRow("Paciente", self.patient)
         form.addRow("Tipo", self.request_type)
         form.addRow("Contexto adicional", self.prompt)
+        form.addRow("Modo", self.external_ai)
         form.addRow("Resultado", self.result)
 
         generate = QPushButton("Gerar assistencia")
@@ -95,7 +100,24 @@ class AIAssistantPage(Page):
         request_type = AIAssistantRequestType(self.request_type.currentText())
         prompt = self.prompt.toPlainText().strip()
         context = self.repository.build_context(patient_id)
-        generated = self.service.generate(request_type, context, prompt)
+        try:
+            if self.external_ai.isChecked():
+                generated = self.service.generate_external(
+                    request_type,
+                    context,
+                    prompt,
+                    patient_consent=(
+                        patient_id is not None
+                        and self.privacy_service.has_active_consent(patient_id)
+                    ),
+                )
+                generation_note = "IA externa; contexto anonimizado; consentimento confirmado."
+            else:
+                generated = self.service.generate(request_type, context, prompt)
+                generation_note = "Assistente local baseado em regras."
+        except ValueError as exc:
+            QMessageBox.warning(self, "IA Assistiva", str(exc))
+            return
         execution = AIAssistantExecution(
             patient_id=patient_id,
             request_type=request_type,
@@ -103,7 +125,7 @@ class AIAssistantPage(Page):
             result=generated.result,
             alerts="\n".join(generated.alerts),
             status=generated.status,
-            notes="Gerado por assistente local baseado em regras.",
+            notes=generation_note,
         )
         execution_id = self.repository.add_execution(execution)
         self.audit_repository.log(

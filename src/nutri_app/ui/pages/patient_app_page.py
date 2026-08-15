@@ -33,6 +33,7 @@ from nutri_app.repositories.patient_app_repository import PatientAppRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.patient_app import PatientAppService
+from nutri_app.services.patient_portal_server import PatientPortalServer
 from nutri_app.ui.date_format import format_date, parse_date, parse_optional_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask, apply_email_validator
 from nutri_app.ui.pages.base import Page
@@ -55,6 +56,7 @@ class PatientAppPage(Page):
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.service = PatientAppService()
+        self.portal_server = PatientPortalServer(connection_factory)
         self.patient_ids_by_index: list[int] = []
         self.meal_plan_ids_by_index: list[int | None] = []
         self.publication_ids_by_index: list[int | None] = []
@@ -65,6 +67,7 @@ class PatientAppPage(Page):
         self.access_summary = QLabel("Acessos ativos: 0")
         self.publication_summary = QLabel("Publicacoes: 0")
         self.adherence_summary = QLabel("Adesao media: 0.0%")
+        self.portal_status = QLabel("Portal local parado")
         for label in [self.access_summary, self.publication_summary, self.adherence_summary]:
             label.setObjectName("summaryBadge")
 
@@ -188,6 +191,10 @@ class PatientAppPage(Page):
         summary.addWidget(self.access_summary)
         summary.addWidget(self.publication_summary)
         summary.addWidget(self.adherence_summary)
+        start_portal = QPushButton("Iniciar portal do paciente")
+        start_portal.clicked.connect(self._start_portal)
+        summary.addWidget(start_portal)
+        summary.addWidget(self.portal_status)
         summary.addStretch()
         layout.addLayout(summary, 2, 0, 1, 2)
         return card
@@ -371,7 +378,7 @@ class PatientAppPage(Page):
             self.access_table.setItem(row, 0, QTableWidgetItem(str(access.id or "")))
             self.access_table.setItem(row, 1, QTableWidgetItem(access.patient_name))
             self.access_table.setItem(row, 2, QTableWidgetItem(access.email_login))
-            self.access_table.setItem(row, 3, QTableWidgetItem(access.access_code))
+            self.access_table.setItem(row, 3, QTableWidgetItem("********"))
             self.access_table.setItem(row, 4, QTableWidgetItem("Sim" if access.active else "Nao"))
 
         publications = self.repository.list_publications(query)
@@ -424,4 +431,18 @@ class PatientAppPage(Page):
             "paciente_app",
             entity_id,
             details,
+        )
+
+    def _start_portal(self) -> None:
+        try:
+            url = self.portal_server.start()
+        except OSError as exc:
+            QMessageBox.warning(self, "Portal do paciente", str(exc))
+            return
+        self.portal_status.setText(f"Portal ativo: {url}")
+        self._audit("iniciou_portal_paciente", None, url)
+        QMessageBox.information(
+            self,
+            "Portal do paciente",
+            f"Portal responsivo iniciado em {url}. Publique externamente apenas com HTTPS.",
         )

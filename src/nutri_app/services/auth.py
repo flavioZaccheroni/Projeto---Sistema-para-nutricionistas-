@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from nutri_app.domain.user import AuthenticatedUser, User, UserRole
 from nutri_app.repositories.audit_repository import AuditRepository
@@ -12,6 +13,7 @@ from nutri_app.services.security import PasswordHasher
 class LoginResult:
     user: AuthenticatedUser | None
     message: str
+    password_change_required: bool = False
 
 
 class AuthService:
@@ -32,7 +34,7 @@ class AuthService:
         admin = User(
             name="Administrador",
             email="admin@nutricionistas.local",
-            password_hash=self.password_hasher.hash_password("Admin@123"),
+            password_hash=self.password_hasher.hash_password("Admin@1234"),
             role=UserRole.ADMINISTRADOR,
         )
         user_id = self.user_repository.add(admin)
@@ -57,7 +59,21 @@ class AuthService:
             )
             return LoginResult(user=None, message="E-mail ou senha invalidos.")
 
+        if user.locked_until and user.locked_until > datetime.now():
+            self.audit_repository.log(
+                user_id=user.id,
+                action="login_bloqueado",
+                entity="usuarios",
+                entity_id=user.id,
+                details=f"Acesso bloqueado ate {user.locked_until.isoformat()}.",
+            )
+            return LoginResult(
+                user=None,
+                message="Acesso temporariamente bloqueado por tentativas invalidas.",
+            )
+
         if not self.password_hasher.verify_password(password, user.password_hash):
+            self.user_repository.register_failed_login(user.id, max_attempts=5, lock_minutes=15)
             self.audit_repository.log(
                 user_id=user.id,
                 action="falha_login",
@@ -67,11 +83,14 @@ class AuthService:
             )
             return LoginResult(user=None, message="E-mail ou senha invalidos.")
 
+        self.user_repository.clear_login_failures(user.id)
+
         authenticated = AuthenticatedUser(
             id=user.id,
             name=user.name,
             email=user.email,
             role=user.role,
+            must_change_password=user.must_change_password,
         )
         self.audit_repository.log(
             user_id=user.id,
@@ -80,4 +99,19 @@ class AuthService:
             entity_id=user.id,
             details="Login realizado com sucesso.",
         )
-        return LoginResult(user=authenticated, message="Login realizado com sucesso.")
+        return LoginResult(
+            user=authenticated,
+            message="Login realizado com sucesso.",
+            password_change_required=user.must_change_password,
+        )
+
+    def change_password(self, user_id: int, new_password: str) -> None:
+        password_hash = self.password_hasher.hash_password(new_password)
+        self.user_repository.change_password(user_id, password_hash)
+        self.audit_repository.log(
+            user_id=user_id,
+            action="alterou_senha",
+            entity="usuarios",
+            entity_id=user_id,
+            details="Senha alterada pelo proprio usuario.",
+        )

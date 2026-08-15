@@ -47,6 +47,9 @@ class SettingsPage(Page):
         self.database_path.setReadOnly(True)
         self.backup_dir = QLineEdit(str(settings.database_path.parents[2] / "backups"))
         self.note = QLineEdit()
+        self.backup_passphrase = QLineEdit()
+        self.backup_passphrase.setEchoMode(QLineEdit.EchoMode.Password)
+        self.backup_passphrase.setPlaceholderText("Minimo de 12 caracteres")
         self.security_panel = QTextEdit()
         self.security_panel.setReadOnly(True)
         self.security_panel.setFixedHeight(120)
@@ -55,18 +58,21 @@ class SettingsPage(Page):
         form.addRow("Banco local", self.database_path)
         form.addRow("Diretorio backup", self.backup_dir)
         form.addRow("Observacoes", self.note)
+        form.addRow("Senha do backup", self.backup_passphrase)
         form.addRow("Painel seguranca", self.security_panel)
 
         create_backup = QPushButton("Criar backup")
         create_backup.setObjectName("primaryButton")
         create_backup.clicked.connect(self._create_backup)
+        create_encrypted_backup = QPushButton("Criar backup criptografado")
+        create_encrypted_backup.clicked.connect(self._create_encrypted_backup)
         verify_backup = QPushButton("Verificar backup")
         verify_backup.clicked.connect(self._verify_backup)
         refresh = QPushButton("Atualizar")
         refresh.clicked.connect(self.refresh)
 
         actions = QHBoxLayout()
-        for button in [create_backup, verify_backup, refresh]:
+        for button in [create_backup, create_encrypted_backup, verify_backup, refresh]:
             actions.addWidget(button)
         actions.addStretch()
 
@@ -143,6 +149,30 @@ class SettingsPage(Page):
             self.selected_backup_id,
             record.file_path,
         )
+        self.refresh()
+        QMessageBox.information(self, "Backup", result.message)
+
+    def _create_encrypted_backup(self) -> None:
+        try:
+            result = self.service.create_encrypted_backup(
+                self.settings.database_path,
+                Path(self.backup_dir.text().strip()),
+                self.backup_passphrase.text(),
+                self.note.text().strip(),
+            )
+        except ValueError as exc:
+            QMessageBox.warning(self, "Backup", str(exc))
+            return
+        backup_id = self.repository.add(result.record)
+        self.audit_repository.log(
+            self.current_user_id,
+            "criou_backup_criptografado",
+            "backups_sistema",
+            backup_id,
+            result.record.file_path,
+        )
+        self.backup_passphrase.clear()
+        self.note.clear()
         self.refresh()
         QMessageBox.information(self, "Backup", result.message)
 

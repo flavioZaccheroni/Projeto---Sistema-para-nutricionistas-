@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import secrets
+import string
 
 
 class PasswordHasher:
@@ -38,5 +39,14 @@ class PasswordHasher:
         ).hex()
 
     def _validate_password(self, password: str) -> None:
-        if len(password) < 8:
-            raise ValueError("A senha deve possuir pelo menos 8 caracteres.")
+        if len(password) < 10:
+            raise ValueError("A senha deve possuir pelo menos 10 caracteres.")
+        required = [
+            (any(char.isupper() for char in password), "uma letra maiuscula"),
+            (any(char.islower() for char in password), "uma letra minuscula"),
+            (any(char.isdigit() for char in password), "um numero"),
+            (any(char in string.punctuation for char in password), "um simbolo"),
+        ]
+        missing = [label for valid, label in required if not valid]
+        if missing:
+            raise ValueError("A senha deve conter " + ", ".join(missing) + ".")

@@ -21,8 +21,11 @@ class UserRepository:
         with self.connection_factory.connect() as connection:
             cursor = connection.execute(
                 """
-                INSERT INTO usuarios (nome, email, senha_hash, perfil, ativo)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO usuarios (
+                    nome, email, senha_hash, perfil, ativo, troca_senha_obrigatoria,
+                    tentativas_falhas, bloqueado_ate, senha_alterada_em
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user.name,
@@ -30,6 +33,10 @@ class UserRepository:
                     user.password_hash,
                     user.role.value,
                     1 if user.active else 0,
+                    1 if user.must_change_password else 0,
+                    user.failed_login_attempts,
+                    user.locked_until.isoformat() if user.locked_until else None,
+                    user.password_changed_at.isoformat() if user.password_changed_at else None,
                 ),
             )
             return int(cursor.lastrowid)
@@ -38,7 +45,9 @@ class UserRepository:
         with self.connection_factory.connect() as connection:
             rows = connection.execute(
                 """
-                SELECT id, nome, email, senha_hash, perfil, ativo, created_at, updated_at
+                SELECT id, nome, email, senha_hash, perfil, ativo, troca_senha_obrigatoria,
+                       tentativas_falhas, bloqueado_ate, senha_alterada_em,
+                       created_at, updated_at
                 FROM usuarios
                 WHERE deleted_at IS NULL
                 ORDER BY nome
@@ -50,13 +59,61 @@ class UserRepository:
         with self.connection_factory.connect() as connection:
             row = connection.execute(
                 """
-                SELECT id, nome, email, senha_hash, perfil, ativo, created_at, updated_at
+                SELECT id, nome, email, senha_hash, perfil, ativo, troca_senha_obrigatoria,
+                       tentativas_falhas, bloqueado_ate, senha_alterada_em,
+                       created_at, updated_at
                 FROM usuarios
                 WHERE lower(email) = lower(?) AND ativo = 1 AND deleted_at IS NULL
                 """,
                 (email.strip().lower(),),
             ).fetchone()
         return self._row_to_user(row) if row is not None else None
+
+    def register_failed_login(self, user_id: int, max_attempts: int, lock_minutes: int) -> None:
+        with self.connection_factory.connect() as connection:
+            row = connection.execute(
+                "SELECT tentativas_falhas FROM usuarios WHERE id = ?",
+                (user_id,),
+            ).fetchone()
+            attempts = int(row["tentativas_falhas"] or 0) + 1
+            locked_until = None
+            if attempts >= max_attempts:
+                from datetime import timedelta
+
+                locked_until = (datetime.now() + timedelta(minutes=lock_minutes)).isoformat()
+                attempts = 0
+            connection.execute(
+                """
+                UPDATE usuarios
+                SET tentativas_falhas = ?, bloqueado_ate = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (attempts, locked_until, user_id),
+            )
+
+    def clear_login_failures(self, user_id: int) -> None:
+        with self.connection_factory.connect() as connection:
+            connection.execute(
+                """
+                UPDATE usuarios
+                SET tentativas_falhas = 0, bloqueado_ate = NULL, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (user_id,),
+            )
+
+    def change_password(self, user_id: int, password_hash: str) -> None:
+        with self.connection_factory.connect() as connection:
+            connection.execute(
+                """
+                UPDATE usuarios
+                SET senha_hash = ?, troca_senha_obrigatoria = 0,
+                    senha_alterada_em = CURRENT_TIMESTAMP, tentativas_falhas = 0,
+                    bloqueado_ate = NULL, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND deleted_at IS NULL
+                """,
+                (password_hash, user_id),
+            )
 
     def list_permissions_for_role(self, role: UserRole) -> list[Permission]:
         with self.connection_factory.connect() as connection:
@@ -107,6 +164,18 @@ class UserRepository:
             password_hash=row["senha_hash"],
             role=UserRole(row["perfil"]),
             active=bool(row["ativo"]),
+            must_change_password=bool(row["troca_senha_obrigatoria"]),
+            failed_login_attempts=int(row["tentativas_falhas"] or 0),
+            locked_until=(
+                datetime.fromisoformat(row["bloqueado_ate"])
+                if row["bloqueado_ate"]
+                else None
+            ),
+            password_changed_at=(
+                datetime.fromisoformat(row["senha_alterada_em"])
+                if row["senha_alterada_em"]
+                else None
+            ),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )

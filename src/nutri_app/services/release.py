@@ -14,6 +14,15 @@ class ReleaseService:
             self._check_flag("Icone do aplicativo", bool(metrics.get("has_icon"))),
             self._check_flag("Backup configurado", bool(metrics.get("has_backup_config"))),
             self._check_flag("Portal Web preparado", bool(metrics.get("has_web_portal"))),
+            self._check_flag("Ambiente virtual executavel", bool(metrics.get("venv_valid"))),
+            self._check_flag("Pipeline CI configurado", bool(metrics.get("has_ci"))),
+            self._check_flag("Teste de interface", bool(metrics.get("has_ui_tests"))),
+            self._check_flag("Governanca LGPD", bool(metrics.get("has_privacy_governance"))),
+            self._check_flag("Backup criptografado", bool(metrics.get("has_encrypted_backup"))),
+            self._check_zero(
+                "Validacoes clinicas pendentes",
+                metrics.get("clinical_validations_pending", 1),
+            ),
         ]
         ready = all(check.status == ReleaseCheckStatus.PASSED for check in checks)
         return ReleaseReadiness(version=version, ready=ready, checks=checks)
@@ -39,3 +48,13 @@ class ReleaseService:
         if passed:
             return ReleaseCheck(name, ReleaseCheckStatus.PASSED, "Validado.")
         return ReleaseCheck(name, ReleaseCheckStatus.FAILED, "Pendente.")
+
+    def _check_zero(self, name: str, value: object) -> ReleaseCheck:
+        number = int(value or 0)
+        if number == 0:
+            return ReleaseCheck(name, ReleaseCheckStatus.PASSED, "Nenhuma pendencia.")
+        return ReleaseCheck(
+            name,
+            ReleaseCheckStatus.FAILED,
+            f"{number} validacao(oes) profissional(is) pendente(s).",
+        )

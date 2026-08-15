@@ -26,6 +26,7 @@ from nutri_app.ui.pages.anamnesis_page import AnamnesisPage
 from nutri_app.ui.pages.anthropometry_page import AnthropometryPage
 from nutri_app.ui.pages.appointments_page import AppointmentsPage
 from nutri_app.ui.pages.body_composition_page import BodyCompositionPage
+from nutri_app.ui.pages.clinical_governance_page import ClinicalGovernancePage
 from nutri_app.ui.pages.dashboard_page import DashboardPage
 from nutri_app.ui.pages.deployment_page import DeploymentPage
 from nutri_app.ui.pages.energy_expenditure_page import EnergyExpenditurePage
@@ -333,6 +334,15 @@ class MainWindow(QMainWindow):
                 ),
             ),
             NavigationItem(
+                "Governanca Clinica",
+                "Governanca Clinica",
+                ClinicalGovernancePage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
                 "Implantacao",
                 "Implantacao",
                 DeploymentPage(
@@ -423,6 +433,7 @@ class MainWindow(QMainWindow):
         self._add_leaf(management, "IA Assistiva", "IA Assistiva", items_by_module)
         self._add_leaf(management, "Implantacao", "Implantacao", items_by_module)
         self._add_leaf(management, "Integracoes", "Integracoes", items_by_module)
+        self._add_leaf(management, "Governanca Clinica", "Governanca Clinica", items_by_module)
         self._add_leaf(management, "Nefrologia", "Nefrologia", items_by_module)
         self._add_leaf(management, "Pediatria", "Pediatria", items_by_module)
         self._add_leaf(management, "Receitas", "Receitas", items_by_module)

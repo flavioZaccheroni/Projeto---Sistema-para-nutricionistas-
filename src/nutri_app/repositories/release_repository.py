@@ -42,6 +42,21 @@ class ReleaseRepository:
                 WHERE chave = 'portal_web_diretorio_padrao' AND deleted_at IS NULL
                 """
             ).fetchone()
+            privacy = connection.execute(
+                """
+                SELECT COUNT(*) AS total FROM sqlite_master
+                WHERE type = 'table' AND name IN (
+                    'consentimentos_privacidade', 'solicitacoes_privacidade'
+                )
+                """
+            ).fetchone()
+            clinical_pending = connection.execute(
+                """
+                SELECT COUNT(*) AS total
+                FROM referencias_clinicas
+                WHERE status_validacao <> 'Aprovada'
+                """
+            ).fetchone()
         phase_docs = len(list((self.project_root / "docs" / "fases").glob("fase_*.md")))
         return {
             "migrations": int(migrations["total"]),
@@ -52,6 +67,14 @@ class ReleaseRepository:
             "has_backup_config": int(backup_config["total"]) > 0,
             "has_web_portal": int(portal_config["total"]) > 0,
             "has_icon": (self.project_root / "icone.png").exists(),
+            "venv_valid": (self.project_root / ".venv" / "Scripts" / "python.exe").exists(),
+            "has_ci": (self.project_root / ".github" / "workflows" / "quality.yml").exists(),
+            "has_ui_tests": (self.project_root / "tests" / "test_ui_smoke.py").exists(),
+            "has_privacy_governance": int(privacy["total"]) == 2,
+            "has_encrypted_backup": any(
+                (self.project_root / "backups").glob("*.ncpbackup")
+            ),
+            "clinical_validations_pending": int(clinical_pending["total"]),
         }
 
     def replace_checks(self, checks: list[ReleaseCheck]) -> None:

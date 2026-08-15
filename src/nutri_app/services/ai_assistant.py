@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import json
+import os
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
 from nutri_app.domain.ai_assistant import AIAssistantRequestType, AIAssistantResult
 
 
@@ -25,6 +30,75 @@ class AIAssistantService:
         if request_type == AIAssistantRequestType.ASSISTED_INTERPRETATION:
             return self._interpretation(context, prompt)
         return self._smart_alerts(context, prompt)
+
+    def generate_external(
+        self,
+        request_type: AIAssistantRequestType,
+        context: dict[str, object],
+        prompt: str,
+        patient_consent: bool,
+        timeout_seconds: int = 30,
+    ) -> AIAssistantResult:
+        if not patient_consent:
+            raise ValueError("Consentimento explicito e obrigatorio para IA externa.")
+        endpoint = os.getenv("NUTRI_AI_ENDPOINT", "").strip()
+        api_key = os.getenv("NUTRI_AI_API_KEY", "").strip()
+        model = os.getenv("NUTRI_AI_MODEL", "").strip()
+        if not endpoint or not api_key or not model:
+            raise ValueError(
+                "Configure NUTRI_AI_ENDPOINT, NUTRI_AI_API_KEY e NUTRI_AI_MODEL."
+            )
+        safe_context = {
+            key: value
+            for key, value in context.items()
+            if key not in {"patient_name", "email", "phone", "document"}
+        }
+        instructions = (
+            self.disclaimer
+            + " Responda em portugues, sem prescrever automaticamente, cite limites "
+            "e solicite revisao profissional."
+        )
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": instructions},
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "tipo": request_type.value,
+                            "contexto_anonimizado": safe_context,
+                            "pedido": prompt,
+                        },
+                        ensure_ascii=False,
+                    ),
+                },
+            ],
+            "temperature": 0.2,
+        }
+        request = Request(
+            endpoint,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=timeout_seconds) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
+            raise ValueError(f"Falha ao consultar provedor de IA: {exc}") from exc
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise ValueError("Resposta do provedor de IA em formato inesperado.") from exc
+        return AIAssistantResult(
+            request_type,
+            f"{self.disclaimer}\n\n{content}",
+            status="Gerado por IA externa com consentimento",
+        )
 
     def _summary(self, context: dict[str, object], prompt: str) -> AIAssistantResult:
         patient = self._value(context, "patient_name", "Paciente nao informado")

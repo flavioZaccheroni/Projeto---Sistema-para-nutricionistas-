@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
+    QFileDialog,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -85,9 +89,11 @@ class FoodDatabasePage(Page):
         new.clicked.connect(self._clear_form)
         delete = QPushButton("Excluir")
         delete.clicked.connect(self._delete_food)
+        import_csv = QPushButton("Importar base oficial CSV")
+        import_csv.clicked.connect(self._import_official_csv)
 
         actions = QHBoxLayout()
-        for button in [calculate, save, new, delete]:
+        for button in [calculate, save, new, delete, import_csv]:
             actions.addWidget(button)
         actions.addStretch()
 
@@ -119,6 +125,50 @@ class FoodDatabasePage(Page):
         self.layout.addWidget(wrapper)
         self.layout.addWidget(self.table)
         self.refresh()
+
+    def _import_official_csv(self) -> None:
+        file_name, _ = QFileDialog.getOpenFileName(
+            self, "Importar base de alimentos", "", "CSV (*.csv)"
+        )
+        if not file_name:
+            return
+        source_name, accepted = QInputDialog.getItem(
+            self,
+            "Fonte",
+            "Base oficial",
+            [FoodSource.TACO.value, FoodSource.TBCA.value, FoodSource.REGIONAL.value],
+            editable=False,
+        )
+        if not accepted:
+            return
+        version, accepted = QInputDialog.getText(self, "Versao", "Versao/data da base")
+        if not accepted:
+            return
+        license_name, accepted = QInputDialog.getText(
+            self, "Licenca", "Licenca ou termos de uso"
+        )
+        if not accepted:
+            return
+        try:
+            foods = self.service.import_official_csv(
+                Path(file_name), FoodSource(source_name), version, license_name
+            )
+            for food in foods:
+                self.repository.add(food)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Importacao", str(exc))
+            return
+        self.audit_repository.log(
+            self.current_user_id,
+            "importou_base_oficial_alimentos",
+            "alimentos",
+            None,
+            f"{source_name} {version}; {len(foods)} alimento(s).",
+        )
+        self.refresh()
+        QMessageBox.information(
+            self, "Importacao", f"{len(foods)} alimento(s) importado(s)."
+        )
 
     def _basic_info_card(self) -> QGroupBox:
         card = QGroupBox("Informacoes Basicas")

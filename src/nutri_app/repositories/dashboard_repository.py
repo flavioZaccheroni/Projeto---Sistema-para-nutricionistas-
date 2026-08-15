@@ -147,6 +147,74 @@ class DashboardRepository:
             for row in rows
         ]
 
+    def list_patients(self) -> list[tuple[int, str]]:
+        with self.connection_factory.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT id, nome FROM pacientes
+                WHERE deleted_at IS NULL
+                ORDER BY nome
+                """
+            ).fetchall()
+        return [(int(row["id"]), row["nome"]) for row in rows]
+
+    def evolution_series(self, patient_id: int, metric: str) -> list[tuple[str, float]]:
+        queries = {
+            "Peso (kg)": (
+                "antropometrias",
+                "data_avaliacao",
+                "peso_kg",
+                "deleted_at IS NULL",
+            ),
+            "IMC (kg/m2)": (
+                "antropometrias",
+                "data_avaliacao",
+                "imc",
+                "deleted_at IS NULL",
+            ),
+            "Gordura corporal (%)": (
+                "composicoes_corporais",
+                "data_avaliacao",
+                "percentual_gordura",
+                "deleted_at IS NULL",
+            ),
+            "Adesao (%)": (
+                "paciente_app_adesoes",
+                "data_registro",
+                "percentual_adesao",
+                "deleted_at IS NULL",
+            ),
+        }
+        if metric == "Alertas laboratoriais":
+            with self.connection_factory.connect() as connection:
+                rows = connection.execute(
+                    """
+                    SELECT x.data_exame AS data, COUNT(i.id) AS valor
+                    FROM exames_laboratoriais x
+                    JOIN exame_itens i ON i.exame_id = x.id
+                    WHERE x.paciente_id = ? AND x.deleted_at IS NULL
+                      AND i.deleted_at IS NULL AND trim(coalesce(i.alerta, '')) <> ''
+                    GROUP BY x.data_exame
+                    ORDER BY x.data_exame
+                    """,
+                    (patient_id,),
+                ).fetchall()
+            return [(row["data"], float(row["valor"])) for row in rows]
+        if metric not in queries:
+            raise ValueError("Metrica de evolucao nao suportada.")
+        table, date_column, value_column, predicate = queries[metric]
+        with self.connection_factory.connect() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT {date_column} AS data, {value_column} AS valor
+                FROM {table}
+                WHERE paciente_id = ? AND {predicate} AND {value_column} IS NOT NULL
+                ORDER BY {date_column}
+                """,
+                (patient_id,),
+            ).fetchall()
+        return [(row["data"], float(row["valor"])) for row in rows]
+
     def _count(self, connection, sql: str, params: tuple = ()) -> int:
         row = connection.execute(sql, params).fetchone()
         return int(row["total"])

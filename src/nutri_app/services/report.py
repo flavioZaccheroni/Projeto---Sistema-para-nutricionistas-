@@ -4,6 +4,7 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import date
+from html import escape
 from pathlib import Path
 
 from nutri_app.domain.patient import Patient
@@ -152,6 +153,73 @@ class ClinicalReportService:
         file_path = export_dir / f"{date.today().isoformat()}_{slug}_relatorio_clinico.txt"
         file_path.write_text(report.content, encoding="utf-8")
         return file_path
+
+    def export_pdf(
+        self,
+        report: GeneratedClinicalReport,
+        export_dir: Path,
+        patient_name: str,
+    ) -> Path:
+        from PySide6.QtCore import QMarginsF
+        from PySide6.QtGui import QPageLayout, QPageSize, QPdfWriter, QTextDocument
+
+        export_dir.mkdir(parents=True, exist_ok=True)
+        slug = self._slugify(patient_name)
+        file_path = export_dir / f"{date.today().isoformat()}_{slug}_relatorio_clinico.pdf"
+        writer = QPdfWriter(str(file_path))
+        writer.setTitle(report.title)
+        writer.setCreator("Nutri Clinic Pro")
+        writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+        writer.setPageMargins(QMarginsF(18, 16, 18, 18), QPageLayout.Unit.Millimeter)
+        document = QTextDocument()
+        document.setDefaultFont(self._report_font())
+        document.setHtml(self._report_html(report))
+        document.print_(writer)
+        return file_path
+
+    def _report_font(self):
+        from PySide6.QtGui import QFont
+
+        return QFont("Arial", 10)
+
+    def _report_html(self, report: GeneratedClinicalReport) -> str:
+        section_titles = {
+            "Paciente",
+            "Anamnese",
+            "Antropometria",
+            "Gasto energetico",
+            "Exames laboratoriais",
+            "Diagnostico nutricional",
+            "Plano alimentar",
+            "Observacoes do relatorio",
+            "Rastreabilidade clinica e limites de uso",
+            "Responsabilidade profissional",
+        }
+        rendered: list[str] = []
+        for index, line in enumerate(report.content.splitlines()):
+            safe = escape(line)
+            if index == 0:
+                rendered.append(f"<div class='brand'>{safe}</div>")
+            elif index == 1:
+                rendered.append(f"<h1>{safe}</h1>")
+            elif line in section_titles:
+                rendered.append(f"<h2>{safe}</h2>")
+            elif not line:
+                rendered.append("<div class='space'></div>")
+            else:
+                rendered.append(f"<p>{safe}</p>")
+        return """
+        <html><head><style>
+        body { color: #20313f; line-height: 1.35; }
+        .brand { color: #167d73; font-size: 13pt; font-weight: bold;
+                 border-bottom: 2px solid #167d73; padding-bottom: 6px; }
+        h1 { color: #17324d; font-size: 18pt; margin: 14px 0 8px; }
+        h2 { color: #167d73; font-size: 12pt; margin: 14px 0 5px;
+             border-bottom: 1px solid #d5dde3; }
+        p { margin: 2px 0; white-space: pre-wrap; }
+        .space { height: 7px; }
+        </style></head><body>
+        """ + "\n".join(rendered) + "</body></html>"
 
     def _append_anamnesis(self, lines: list[str], anamnesis: object) -> None:
         data = self._as_dict(anamnesis)
