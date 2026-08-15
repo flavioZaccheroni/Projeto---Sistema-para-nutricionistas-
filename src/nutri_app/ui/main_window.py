@@ -38,6 +38,7 @@ from nutri_app.ui.pages.meal_plan_page import MealPlanPage
 from nutri_app.ui.pages.nutrition_diagnosis_page import NutritionDiagnosisPage
 from nutri_app.ui.pages.patient_app_page import PatientAppPage
 from nutri_app.ui.pages.patients_page import PatientsPage
+from nutri_app.ui.pages.physical_exam_page import PhysicalExamPage
 from nutri_app.ui.pages.recipes_page import RecipesPage
 from nutri_app.ui.pages.reports_page import ReportsPage
 from nutri_app.ui.pages.screening_page import ScreeningPage
@@ -334,6 +335,15 @@ class MainWindow(QMainWindow):
                 ),
             ),
             NavigationItem(
+                "Avaliacao Clinica",
+                "Avaliacao Clinica",
+                PhysicalExamPage(
+                    self.context.connection_factory,
+                    self.context.audit_repository,
+                    self.current_user.id,
+                ),
+            ),
+            NavigationItem(
                 "Governanca Clinica",
                 "Governanca Clinica",
                 ClinicalGovernancePage(
@@ -388,6 +398,7 @@ class MainWindow(QMainWindow):
         self._add_leaf(clinical, "Anamnese", "Anamnese", items_by_module)
         self._add_leaf(clinical, "Antropometria", "Antropometria", items_by_module)
         self._add_leaf(clinical, "Composicao Corporal", "Composicao Corporal", items_by_module)
+        self._add_leaf(clinical, "Avaliacao Clinica", "Avaliacao Clinica", items_by_module)
 
         exams = self._add_group("Exames", clinical, expanded=True)
         self._add_leaf(exams, "Exames", "Exames", items_by_module)

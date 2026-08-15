@@ -19,9 +19,21 @@ Status: concluida em 2026-08-15.
 - Inclusao das internacoes na exportacao de dados do titular (LGPD).
 - Auditoria de inclusao, alteracao e exclusao logica de internacoes.
 
+## Fase 2 - Avaliacao clinica e exame fisico nutricional
+
+Status: concluida em 2026-08-15.
+
+- `RF-M06-01` a `RF-M06-06`: exame fisico nutricional estruturado por paciente.
+- Estado geral, consciencia, desempenho funcional, mobilidade e hidratacao.
+- Edema, ascite, massa muscular, gordura subcutanea e regioes anatomicas.
+- Pele, cabelos, unhas, cavidade oral, denticao, degluticao, feridas e lesao por pressao.
+- `RN-M06-02`: estados distintos para nao avaliado, ausente e nao aplicavel.
+- Imagem clinica somente com consentimento especifico registrado.
+- Gravidade global, resumo, vinculo opcional ao diagnostico e comparacao longitudinal.
+
 ## Proximas fases
 
-1. Avaliacao nutricional central, exame fisico e avaliacao dietetica.
+1. Avaliacao nutricional central e avaliacao dietetica.
 2. Referencias laboratoriais versionadas e correcoes imutaveis.
 3. Prescricao nutricional, suplementacao por paciente e evolucao SOAPI.
 4. Terapia enteral/parenteral, necessidades e hidratacao.
