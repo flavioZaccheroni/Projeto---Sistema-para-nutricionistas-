@@ -10,9 +10,20 @@ env/
 .env.*
 
 .pytest_cache/
+.test_cache/
+.codex_work/
 .coverage
 coverage/
 htmlcov/
+
+# Artefatos temporarios de inspecao e pre-visualizacao
+outputs/**/*.inspect.ndjson
+outputs/**/preview_*.png
+outputs/**/verification_*.ndjson
+
+# Extracoes intermediarias dos documentos de requisitos
+/ESPECIFICAÇÃO DE REQUISITOS DE SOFTWARE- gemini.json
+/Minha recomendação para o Software.json
 
 *.log
 *.tmp

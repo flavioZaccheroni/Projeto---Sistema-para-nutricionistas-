@@ -1,94 +1,83 @@
-﻿# Nutri Clinic Pro
+# Nutri Clinic Pro
 
-Projeto iniciado a partir do `Manual_Engenharia_Software_Sistema_Nutricionistas_V1.docx`.
+Sistema desktop em Python para atendimento, avaliação e acompanhamento nutricional.
 
-## Objetivo
+## Situação atual
 
-Construir um MVP Desktop em Python para nutricionistas, preparado para evoluir para API, Web, Mobile, relatÃ³rios profissionais e recursos de IA assistiva.
+- Aplicativo desktop em PySide6 com SQLite.
+- Arquitetura separada em domínio, serviços, repositórios e interface.
+- Migrações versionadas e trilha de auditoria.
+- Testes automatizados, lint e workflow de CI.
+- Governança clínica com fontes, versões e aprovação profissional.
+- Recursos de LGPD para consentimento, portabilidade e anonimização controlada.
+- Backup local, checksum e opção criptografada.
+- Relatórios em TXT e PDF profissional.
+- Evolução gráfica de peso, IMC, gordura corporal, adesão e alertas laboratoriais.
 
-## Stack inicial
+## Requisitos
 
-- Python 3.12+.
-- PySide6 para interface Desktop.
-- SQLite no MVP, com caminho preparado para PostgreSQL no futuro.
-- Regras clÃ­nicas isoladas em serviÃ§os testÃ¡veis.
-- Git/GitHub com commits por fase.
+- Windows com Python 3.12 ou superior.
+- Dependências declaradas em `requirements.txt` e `requirements-dev.txt`.
 
-## Estrutura
+## Preparação do ambiente em D:
 
-- `src/nutri_app/app`: inicializaÃ§Ã£o e configuraÃ§Ãµes.
-- `src/nutri_app/ui`: telas e componentes Desktop.
-- `src/nutri_app/modules`: mÃ³dulos funcionais por domÃ­nio.
-- `src/nutri_app/domain`: entidades e regras centrais.
-- `src/nutri_app/services`: cÃ¡lculos clÃ­nicos e serviÃ§os reutilizÃ¡veis.
-- `src/nutri_app/repositories`: acesso a dados.
-- `database`: schema e banco local.
-- `docs`: documentaÃ§Ã£o tÃ©cnica e fluxo de fases.
-- `tests`: testes automatizados.
-
-## Comandos previstos no PyCharm
+O ambiente virtual deve permanecer dentro do próprio projeto. No PowerShell:
 
 ```powershell
+Set-Location "D:\Projetos\Projeto - sistema nutricionistas"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-dev.txt
-$env:PYTHONPATH="src"
-python -m unittest discover -s tests
-python -m nutri_app
 ```
 
-No PyCharm, execute preferencialmente o arquivo `run_app.py` na raiz do projeto.
+Se o projeto for movido ou o caminho do Python mudar, recrie ou atualize a `.venv`; não
+copie uma `.venv` criada em outro usuário ou computador.
+
+## Execução
+
+```powershell
+.\.venv\Scripts\python.exe run_app.py
+```
+
+Também é possível instalar o projeto e executar `nutri-app`.
 
 ## Primeiro acesso
 
 - E-mail: `admin@nutricionistas.local`
-- Senha: `Admin@123`
+- Senha inicial: `Admin@1234`
 
-## Fases concluÃ­das
+A troca da senha inicial é obrigatória. A senha nova deve ter pelo menos 10 caracteres,
+incluindo maiúscula, minúscula, número e símbolo.
 
-- Fase 1: preparaÃ§Ã£o do ambiente.
-- Fase 2: arquitetura base.
-- Fase 3: login e permissÃµes.
-- Fase 4: dashboard inicial.
-- Fase 5: cadastro de pacientes.
-- Fase 6: agenda.
-- Fase 7: anamnese estruturada com parametros selecionaveis.
-- Fase 8: triagem nutricional.
-- Fase 9: antropometria.
-- Fase 10: composicao corporal.
-- Fase 11: gasto energetico.
-- Fase 12: exames laboratoriais.
-- Fase 13: diagnostico nutricional.
-- Fase 14: planejamento alimentar.
-- Fase 15: banco de alimentos.
-- Fase 16: receitas.
-- Fase 17: suplementos.
-- Fase 18: relatorios.
-- Fase 19: financeiro.
-- Fase 20: backup e seguranca.
-- Fase 21: aplicativo do paciente.
-- Fase 22: portal web.
-- Fase 23: IA assistiva.
-- Fase 24: integracoes externas.
-- Fase 25: testes finais e implantacao.
-- Fase 26: anamnese avancada e atendimento adaptativo.
-- Fase 27: exames laboratoriais avancados.
-- Fase 28: protocolos clinicos BRASPEN/ASPEN/ESPEN e NFPE.
-- Fase 29: pediatria.
-- Fase 30: nefrologia e hemodialise.
-- Fase 31: antropometria avancada integrada ao modulo Antropometria.
-- Fase 32: terapia nutricional enteral/parenteral.
-- Fase 33: plano alimentar inteligente integrado ao modulo Plano Alimentar.
+## Qualidade
 
-## Versao atual
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\ruff.exe check src tests
+```
 
-- Produto: `Nutri Clinic Pro`
-- Versao comercial inicial: `1.0.0`
-- Status: preparado para empacotamento Windows e validacao comercial.
-- Datas na interface: `dd/mm/aaaa`.
+Os testes de interface usam a plataforma Qt `offscreen` em CI.
 
-## Identidade do app
+## Estrutura
 
-- Nome: `Nutri Clinic Pro`
-- Icone: `icone.png`
+- `src/nutri_app/app`: inicialização e configuração.
+- `src/nutri_app/ui`: telas e componentes desktop.
+- `src/nutri_app/domain`: entidades e tipos de domínio.
+- `src/nutri_app/services`: regras clínicas e serviços de aplicação.
+- `src/nutri_app/repositories`: persistência e consultas SQLite.
+- `database/migrations`: evolução versionada do banco.
+- `docs`: arquitetura, fases, release e implantação.
+- `tests`: testes automatizados.
 
+## Segurança e produção
+
+O checklist em `Implantação` bloqueia o status de produção enquanto houver referências
+clínicas sem aprovação profissional, ambiente inválido ou controles essenciais ausentes.
+Antes de uso real, registre as revisões em `Governança Clínica`, configure backups
+criptografados e valide LGPD, restauração e executável em uma máquina limpa.
+
+## Versão
+
+- Produto: Nutri Clinic Pro
+- Versão: 1.0.0
+- Datas na interface: `dd/mm/aaaa`

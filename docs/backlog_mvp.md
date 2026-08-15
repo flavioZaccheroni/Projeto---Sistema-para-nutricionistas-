@@ -24,7 +24,7 @@
 - Agenda e consultas. **Concluido na Fase 6.**
 - Triagem nutricional. **Concluido na Fase 8.**
 - Financeiro com pagamentos, recebimentos e inadimplencia. **Concluido na Fase 19.**
-- Evolução gráfica.
+- Evolução gráfica longitudinal de peso, IMC, gordura, adesão e alertas. **Concluído.**
 
 ## Baixa prioridade
 

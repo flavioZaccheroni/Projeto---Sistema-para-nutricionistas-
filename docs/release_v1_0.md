@@ -25,10 +25,11 @@ a 25 do manual de engenharia do sistema.
 - Gerar o executavel Windows seguindo `docs/build_executavel.md`.
 - Testar o executavel em uma maquina limpa ou usuario Windows separado.
 - Criar backup do banco local antes de qualquer demonstracao comercial.
+- Revisar `docs/implementacao_auditoria_2026-08-15.md` e concluir os aceites externos.
 
 ## Credencial inicial
 
 - E-mail: `admin@nutricionistas.local`
-- Senha: `Admin@123`
+- Senha inicial: `Admin@1234` (troca obrigatoria no primeiro acesso)
 
 Trocar essa senha antes de qualquer uso real.

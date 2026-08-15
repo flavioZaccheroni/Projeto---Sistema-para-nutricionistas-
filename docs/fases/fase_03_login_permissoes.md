@@ -20,7 +20,7 @@ Concluida em nivel de MVP funcional.
 ## Primeiro acesso
 
 - E-mail: `admin@nutricionistas.local`
-- Senha: `Admin@123`
+- Senha inicial: `Admin@1234` (troca obrigatoria no primeiro acesso)
 
 Essa senha deve ser alterada quando a tela de edicao de usuario for implementada.
 
