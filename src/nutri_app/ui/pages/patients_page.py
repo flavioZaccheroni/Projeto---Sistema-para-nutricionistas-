@@ -27,6 +27,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.privacy import PatientPrivacyService
 from nutri_app.ui.date_format import DATE_PLACEHOLDER, format_date, parse_date
+from nutri_app.ui.dialogs.hospitalizations_dialog import HospitalizationsDialog
 from nutri_app.ui.input_masks import apply_date_mask, apply_email_validator, apply_phone_mask
 from nutri_app.ui.pages.base import Page
 
@@ -51,13 +52,16 @@ class PatientsPage(Page):
     ) -> None:
         super().__init__("Cadastro de Pacientes", "Dados pessoais, contato e historico clinico.")
         self.repository = PatientRepository(connection_factory)
+        self.connection_factory = connection_factory
         self.privacy_service = PatientPrivacyService(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.selected_patient_id: int | None = None
 
         self.search = QLineEdit()
-        self.search.setPlaceholderText("Pesquisar por nome, telefone, e-mail ou documento")
+        self.search.setPlaceholderText(
+            "Pesquisar por nome, telefone, e-mail, CPF, CNS ou prontuario"
+        )
         self.search.textChanged.connect(self._reload_table)
 
         self.name = QLineEdit()
@@ -68,6 +72,8 @@ class PatientsPage(Page):
         self.email = QLineEdit()
         self.health_insurance = QLineEdit()
         self.document = QLineEdit()
+        self.medical_record_number = QLineEdit()
+        self.cns = QLineEdit()
         self.responsible = QLineEdit()
         self.notes = QTextEdit()
         self.notes.setFixedHeight(90)
@@ -84,6 +90,8 @@ class PatientsPage(Page):
         consent.clicked.connect(self._record_consent)
         export = QPushButton("Exportar dados LGPD")
         export.clicked.connect(self._export_privacy_data)
+        hospitalizations = QPushButton("Internacoes")
+        hospitalizations.clicked.connect(self._open_hospitalizations)
 
         actions = QHBoxLayout()
         actions.addWidget(save)
@@ -91,11 +99,23 @@ class PatientsPage(Page):
         actions.addWidget(delete)
         actions.addWidget(consent)
         actions.addWidget(export)
+        actions.addWidget(hospitalizations)
         actions.addStretch()
 
-        self.table = QTableWidget(0, 8)
+        self.table = QTableWidget(0, 10)
         self.table.setHorizontalHeaderLabels(
-            ["ID", "Nome", "Nascimento", "Sexo", "Telefone", "E-mail", "Convenio", "Documento"]
+            [
+                "ID",
+                "Prontuario",
+                "Nome",
+                "Nascimento",
+                "Sexo",
+                "Telefone",
+                "E-mail",
+                "Convenio",
+                "CPF",
+                "CNS",
+            ]
         )
         self.table.setObjectName("patientCardsTable")
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -142,7 +162,9 @@ class PatientsPage(Page):
         self._add_stacked_field(layout, 0, "Nome completo", self.name, column_span=2)
         self._add_stacked_field(layout, 2, "Telefone", self.phone, column_span=2)
         self._add_stacked_field(layout, 4, "Convenio", self.health_insurance)
-        self._add_stacked_field(layout, 4, "Documento", self.document, column=1)
+        self._add_stacked_field(layout, 4, "CPF", self.document, column=1)
+        self._add_stacked_field(layout, 6, "Prontuario", self.medical_record_number)
+        self._add_stacked_field(layout, 6, "CNS", self.cns, column=1)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
         return card
@@ -199,6 +221,10 @@ class PatientsPage(Page):
         self.health_insurance.setPlaceholderText("Convenio")
         self.document.setInputMask("000.000.000-00;_")
         self.document.setPlaceholderText("CPF")
+        self.medical_record_number.setMaxLength(40)
+        self.medical_record_number.setPlaceholderText("Automatico ao salvar")
+        self.cns.setInputMask("000 0000 0000 0000;_")
+        self.cns.setPlaceholderText("CNS")
         self.responsible.setMaxLength(120)
         self.responsible.setPlaceholderText("Responsavel")
 
@@ -212,6 +238,7 @@ class PatientsPage(Page):
             )
             phone = self._optional_mask_text(self.phone, "Telefone", expected_digits=11)
             document = self._optional_mask_text(self.document, "Documento", expected_digits=11)
+            cns = self._optional_mask_text(self.cns, "CNS", expected_digits=15)
             email = self.email.text().strip()
             if email and not self.email.hasAcceptableInput():
                 raise ValueError("E-mail deve estar no formato nome@email.com.")
@@ -224,6 +251,8 @@ class PatientsPage(Page):
                 email=email,
                 health_insurance=self.health_insurance.text().strip(),
                 document=document,
+                medical_record_number=self.medical_record_number.text().strip(),
+                cns=cns,
                 responsible=self.responsible.text().strip(),
                 clinical_notes=self.notes.toPlainText().strip(),
             )
@@ -267,6 +296,8 @@ class PatientsPage(Page):
         self.email.clear()
         self.health_insurance.clear()
         self.document.clear()
+        self.medical_record_number.clear()
+        self.cns.clear()
         self.responsible.clear()
         self.notes.clear()
 
@@ -300,6 +331,7 @@ class PatientsPage(Page):
             self.table.setRowHeight(row, 58)
             values = [
                 (str(patient.id or ""), patient.id or 0),
+                (patient.medical_record_number or "-", patient.medical_record_number.casefold()),
                 (patient.name, patient.name.casefold()),
                 (format_date(patient.birth_date), patient.birth_date.toordinal()),
                 (patient.biological_sex, patient.biological_sex.casefold()),
@@ -307,6 +339,7 @@ class PatientsPage(Page):
                 (patient.email or "-", patient.email.casefold()),
                 (patient.health_insurance or "-", patient.health_insurance.casefold()),
                 (patient.document or "-", patient.document.casefold()),
+                (patient.cns or "-", patient.cns.casefold()),
             ]
             for column, (value, sort_value) in enumerate(values):
                 item = SortableTableItem(value, sort_value)
@@ -333,6 +366,8 @@ class PatientsPage(Page):
         self.email.setText(patient.email)
         self.health_insurance.setText(patient.health_insurance)
         self.document.setText(patient.document)
+        self.medical_record_number.setText(patient.medical_record_number)
+        self.cns.setText(patient.cns)
         self.responsible.setText(patient.responsible)
         self.notes.setPlainText(patient.clinical_notes)
 
@@ -404,3 +439,21 @@ class PatientsPage(Page):
             "LGPD",
             f"Exportacao concluida: {result.records_exported} registros em {result.file_path}",
         )
+
+    def _open_hospitalizations(self) -> None:
+        if self.selected_patient_id is None:
+            QMessageBox.warning(self, "Internacoes", "Selecione um paciente.")
+            return
+        patient = self.repository.get(self.selected_patient_id)
+        if patient is None:
+            QMessageBox.warning(self, "Internacoes", "Paciente nao encontrado.")
+            return
+        HospitalizationsDialog(
+            self.connection_factory,
+            self.audit_repository,
+            self.current_user_id,
+            patient.id,
+            patient.name,
+            patient.health_insurance,
+            self,
+        ).exec()

@@ -36,7 +36,7 @@ class PatientPrivacyServiceTest(unittest.TestCase):
             DatabaseMigrator(factory, Path("database/migrations")).migrate()
             repository = PatientRepository(factory)
             patient_id = repository.add(
-                Patient("Nome Sensivel", date(1980, 2, 3), document="123.456.789-00")
+                Patient("Nome Sensivel", date(1980, 2, 3), document="529.982.247-25")
             )
             PatientPrivacyService(factory).anonymize_patient(
                 patient_id, "Solicitacao validada do titular"

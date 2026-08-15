@@ -140,7 +140,8 @@ class PatientPrivacyService:
             connection.execute(
                 """
                 UPDATE pacientes
-                SET nome = ?, telefone = '', email = '', convenio = '', documento = '',
+                SET nome = ?, telefone = '', email = '', convenio = '', documento = '', cns = '',
+                    numero_prontuario = '',
                     responsavel = '', observacoes_clinicas = '', anonimizado_em = CURRENT_TIMESTAMP,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
