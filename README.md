@@ -89,5 +89,5 @@ criptografados e valide LGPD, restauração e executável em uma máquina limpa.
 ## Versão
 
 - Produto: Nutri Clinic Pro
-- Versão: 1.0.0
+- Versão: 1.0.1
 - Datas na interface: `dd/mm/aaaa`

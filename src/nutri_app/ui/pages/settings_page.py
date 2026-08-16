@@ -45,7 +45,7 @@ class SettingsPage(Page):
 
         self.database_path = QLineEdit(str(settings.database_path))
         self.database_path.setReadOnly(True)
-        self.backup_dir = QLineEdit(str(settings.database_path.parents[2] / "backups"))
+        self.backup_dir = QLineEdit(str(settings.backups_dir))
         self.note = QLineEdit()
         self.backup_passphrase = QLineEdit()
         self.backup_passphrase.setEchoMode(QLineEdit.EchoMode.Password)

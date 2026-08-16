@@ -1,5 +1,5 @@
 #define MyAppName "Nutri Clinic Pro"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Nutri Clinic Pro"
 #define MyAppExeName "Nutri Clinic Pro.exe"
 

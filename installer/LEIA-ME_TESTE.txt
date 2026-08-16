@@ -1,0 +1,21 @@
+NUTRI CLINIC PRO 1.0.1 - PACOTE DE TESTE
+=========================================
+
+1. Extraia todo o conteudo do arquivo ZIP para uma pasta local.
+2. Execute "Nutri Clinic Pro.exe". Nao mova apenas o arquivo .exe para fora da pasta.
+3. Entre com:
+   Login: admin@local.com
+   Senha: Nutri1!
+
+Os dados deste computador ficam em:
+%LOCALAPPDATA%\Nutri Clinic Pro
+
+Relatorios, portais e backups tambem sao gravados nessa pasta. O pacote nao inclui
+o banco de dados usado no computador de desenvolvimento.
+
+Esta versao e destinada a testes. Nao utilize dados reais de pacientes antes da
+homologacao de seguranca e privacidade.
+
+Se o Windows SmartScreen exibir um alerta por o aplicativo ainda nao possuir
+assinatura digital, confirme a origem do arquivo antes de escolher "Mais informacoes"
+e "Executar assim mesmo".

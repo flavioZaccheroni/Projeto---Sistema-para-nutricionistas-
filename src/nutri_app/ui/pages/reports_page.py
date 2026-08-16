@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -16,6 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from nutri_app.app.settings import AppSettings
 from nutri_app.domain.report import ClinicalReport
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
@@ -124,7 +123,7 @@ class ReportsPage(Page):
             options = self._build_options()
             context = self.repository.build_clinical_context(patient_id)
             generated = self.service.build(patient, options, context)
-            export_dir = Path(__file__).resolve().parents[4] / "exports" / "relatorios"
+            export_dir = AppSettings.load().exports_dir / "relatorios"
             text_path = self.service.export_text(generated, export_dir, patient.name)
             file_path = self.service.export_pdf(generated, export_dir, patient.name)
         except ValueError as exc:

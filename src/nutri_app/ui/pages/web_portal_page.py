@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from nutri_app.app.settings import AppSettings
 from nutri_app.domain.web_portal import WebPortalPublishRecord
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
@@ -45,8 +46,7 @@ class WebPortalPage(Page):
         self.current_user_id = current_user_id
         self.service = WebPortalService()
 
-        root = Path(__file__).resolve().parents[4]
-        self.output_dir = QLineEdit(str(root / "exports" / "portal_web"))
+        self.output_dir = QLineEdit(str(AppSettings.load().exports_dir / "portal_web"))
         self.portal_title = QLineEdit("Nutri Clinic Pro")
         self.portal_subtitle = QLineEdit()
         self.portal_subtitle.setPlaceholderText("Entre a exploracao subtitulo")

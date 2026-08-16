@@ -1,4 +1,4 @@
-# Release 1.0.0 - Nutri Clinic Pro
+# Release 1.0.1 - Nutri Clinic Pro
 
 ## Escopo
 
@@ -29,7 +29,7 @@ a 25 do manual de engenharia do sistema.
 
 ## Credencial inicial
 
-- E-mail: `admin@nutricionistas.local`
-- Senha inicial: `Admin@1234` (troca obrigatoria no primeiro acesso)
+- E-mail: `admin@local.com`
+- Senha inicial: `Nutri1!`
 
 Trocar essa senha antes de qualquer uso real.

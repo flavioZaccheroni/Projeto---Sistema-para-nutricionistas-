@@ -1,22 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from pathlib import Path
-import sys
-
 from PyInstaller.utils.hooks import collect_submodules
-
-
-python_lib = Path(sys.base_prefix) / 'Lib'
-
 
 a = Analysis(
     ['run_app.py'],
     pathex=['src'],
     binaries=[],
     datas=[
-        ('src', 'src'),
+        ('src/nutri_app/ui/resources/app.qss', 'nutri_app/ui/resources'),
+        ('src/nutri_app/ui/resources/patient_portal.html', 'nutri_app/ui/resources'),
         ('database/migrations', 'database/migrations'),
-        (str(python_lib / 'sqlite3'), 'sqlite3'),
         ('icone.png', '.'),
     ],
     hiddenimports=collect_submodules('nutri_app') + [
