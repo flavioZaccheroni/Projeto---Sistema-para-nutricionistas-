@@ -10,6 +10,7 @@ class PasswordHasher:
     algorithm = "pbkdf2_sha256"
     iterations = 210_000
     salt_bytes = 16
+    minimum_length = 7
 
     def hash_password(self, password: str) -> str:
         self._validate_password(password)
@@ -39,8 +40,10 @@ class PasswordHasher:
         ).hex()
 
     def _validate_password(self, password: str) -> None:
-        if len(password) < 10:
-            raise ValueError("A senha deve possuir pelo menos 10 caracteres.")
+        if len(password) < self.minimum_length:
+            raise ValueError(
+                f"A senha deve possuir pelo menos {self.minimum_length} caracteres."
+            )
         required = [
             (any(char.isupper() for char in password), "uma letra maiuscula"),
             (any(char.islower() for char in password), "uma letra minuscula"),

@@ -33,9 +33,10 @@ class AuthService:
 
         admin = User(
             name="Administrador",
-            email="admin@nutricionistas.local",
-            password_hash=self.password_hasher.hash_password("Admin@1234"),
+            email="admin@local.com",
+            password_hash=self.password_hasher.hash_password("Nutri1!"),
             role=UserRole.ADMINISTRADOR,
+            must_change_password=False,
         )
         user_id = self.user_repository.add(admin)
         self.audit_repository.log(

@@ -53,11 +53,11 @@ Também é possível instalar o projeto e executar `nutri-app`.
 
 ## Primeiro acesso
 
-- E-mail: `admin@nutricionistas.local`
-- Senha inicial: `Admin@1234`
+- E-mail: `admin@local.com`
+- Senha inicial: `Nutri1!`
 
-A troca da senha inicial é obrigatória. A senha nova deve ter pelo menos 10 caracteres,
-incluindo maiúscula, minúscula, número e símbolo.
+A conta local inicial não exige troca imediata. Senhas novas devem ter pelo menos 7
+caracteres, incluindo maiúscula, minúscula, número e símbolo.
 
 ## Qualidade
 

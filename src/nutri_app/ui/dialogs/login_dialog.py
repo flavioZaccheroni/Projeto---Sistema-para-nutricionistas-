@@ -35,7 +35,7 @@ class LoginDialog(QDialog):
         apply_email_validator(self.email)
         self.password = QLineEdit()
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password.setPlaceholderText("Admin@1234")
+        self.password.setPlaceholderText("Nutri1!")
 
         form = QFormLayout()
         form.addRow("E-mail", self.email)
@@ -52,7 +52,7 @@ class LoginDialog(QDialog):
         actions.addWidget(cancel)
         actions.addWidget(login)
 
-        help_label = QLabel("Primeiro acesso: admin@nutricionistas.local / Admin@1234")
+        help_label = QLabel("Acesso local: admin@local.com / Nutri1!")
         help_label.setObjectName("pageSubtitle")
 
         layout = QVBoxLayout(self)
@@ -104,7 +104,7 @@ class PasswordChangeDialog(QDialog):
         form.addRow("Nova senha", self.password)
         form.addRow("Confirmar senha", self.confirmation)
         guidance = QLabel(
-            "Use pelo menos 10 caracteres, com maiuscula, minuscula, numero e simbolo."
+            "Use pelo menos 7 caracteres, com maiuscula, minuscula, numero e simbolo."
         )
         guidance.setWordWrap(True)
         save = QPushButton("Alterar senha")

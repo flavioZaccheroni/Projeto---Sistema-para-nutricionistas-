@@ -29,11 +29,11 @@ class AuthServiceTest(unittest.TestCase):
             auth = AuthService(users, AuditRepository(factory))
 
             auth.ensure_default_admin()
-            result = auth.login("admin@nutricionistas.local", "Admin@1234")
+            result = auth.login("admin@local.com", "Nutri1!")
 
         self.assertIsNotNone(result.user)
-        self.assertEqual(result.user.email, "admin@nutricionistas.local")
-        self.assertTrue(result.password_change_required)
+        self.assertEqual(result.user.email, "admin@local.com")
+        self.assertFalse(result.password_change_required)
 
     def test_troca_senha_inicial_e_libera_proximo_login(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -48,12 +48,21 @@ class AuthServiceTest(unittest.TestCase):
             DatabaseMigrator(factory, migrations).migrate()
             auth = AuthService(UserRepository(factory), AuditRepository(factory))
             auth.ensure_default_admin()
-            first = auth.login("admin@nutricionistas.local", "Admin@1234")
+            first = auth.login("admin@local.com", "Nutri1!")
             auth.change_password(first.user.id, "NovaSenha@2026")
-            second = auth.login("admin@nutricionistas.local", "NovaSenha@2026")
+            second = auth.login("admin@local.com", "NovaSenha@2026")
 
         self.assertIsNotNone(second.user)
         self.assertFalse(second.password_change_required)
+
+    def test_senha_curta_ainda_exige_complexidade(self) -> None:
+        hasher = PasswordHasher()
+
+        password_hash = hasher.hash_password("Nutri1!")
+
+        self.assertTrue(hasher.verify_password("Nutri1!", password_hash))
+        with self.assertRaises(ValueError):
+            hasher.hash_password("1234567")
 
 
 class PasswordHasherTest(unittest.TestCase):
