@@ -2,10 +2,32 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+from nutri_app.domain.food import Food
 from nutri_app.domain.meal_plan import Meal, MealPlan, MealPlanItem
+from nutri_app.services.food import FoodService
 
 
 class MealPlanService:
+    def build_item_from_food(
+        self,
+        food: Food,
+        quantity_g: float,
+        substitutions: str = "",
+        food_service: FoodService | None = None,
+    ) -> MealPlanItem:
+        nutrients = (food_service or FoodService()).calculate_portion(food, quantity_g)
+        return MealPlanItem(
+            food=food.name,
+            quantity=quantity_g,
+            unit="g",
+            energy_kcal=nutrients.energy_kcal,
+            protein_g=nutrients.protein_g,
+            carbohydrate_g=nutrients.carbohydrate_g,
+            fat_g=nutrients.fat_g,
+            substitutions=substitutions,
+            food_id=food.id,
+        )
+
     def calculate_totals(self, meals: list[Meal]) -> tuple[float, float, float, float]:
         energy = protein = carbohydrate = fat = 0.0
         for meal in meals:

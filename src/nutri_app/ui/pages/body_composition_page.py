@@ -19,15 +19,31 @@ from PySide6.QtWidgets import (
 )
 
 from nutri_app.domain.body_composition import BodyComposition, BodyCompositionProtocol
+from nutri_app.domain.energy_expenditure import BiologicalSex
+from nutri_app.domain.patient import Patient, calculate_age
 from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.body_composition_repository import BodyCompositionRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.body_composition import BodyCompositionService
+from nutri_app.services.body_fat_calculation import (
+    BodyFatCalculationService,
+    SkinfoldProtocol,
+    SkinfoldSite,
+)
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
+
+SKINFOLD_PROTOCOLS = {
+    BodyCompositionProtocol.DURNIN_WOMERSLEY: SkinfoldProtocol.DURNIN_WOMERSLEY,
+    BodyCompositionProtocol.FAULKNER: SkinfoldProtocol.FAULKNER,
+}
+POLLOCK_VARIANTS = {
+    "3 dobras": SkinfoldProtocol.POLLOCK_3,
+    "7 dobras": SkinfoldProtocol.POLLOCK_7,
+}
 
 
 class BodyCompositionPage(Page):
@@ -47,20 +63,34 @@ class BodyCompositionPage(Page):
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.service = BodyCompositionService()
+        self.body_fat_service = BodyFatCalculationService()
         self.selected_composition_id: int | None = None
         self.patient_ids_by_index: list[int] = []
+        self.patient_records_by_index: list[Patient] = []
         self.appointment_ids_by_index: list[int | None] = []
 
         self.search = QLineEdit()
         self.search.setPlaceholderText("Pesquisar pelo nome do paciente")
         self.search.textChanged.connect(self._reload_table)
         self.patient = QComboBox()
-        self.patient.currentIndexChanged.connect(self._reload_appointments)
+        self.patient.currentIndexChanged.connect(self._patient_changed)
         self.appointment = QComboBox()
         self.assessment_date = QLineEdit()
         apply_date_mask(self.assessment_date)
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in BodyCompositionProtocol])
+        self.protocol.currentTextChanged.connect(self._toggle_skinfold_card)
+        self.sex = QComboBox()
+        self.sex.addItems([item.value for item in BiologicalSex])
+        self.age = QLineEdit()
+        self.skinfold_variant = QComboBox()
+        self.skinfold_variant.addItems(list(POLLOCK_VARIANTS.keys()))
+        self.skinfold_fields: dict[SkinfoldSite, QLineEdit] = {
+            site: QLineEdit() for site in SkinfoldSite
+        }
+        calculate_skinfolds = QPushButton("Calcular % gordura (dobras)")
+        calculate_skinfolds.clicked.connect(self._calculate_body_fat_from_skinfolds)
+        self.calculate_skinfolds_button = calculate_skinfolds
         self.weight = QLineEdit()
         self.body_fat_percentage = QLineEdit()
         self.fat_mass = QLineEdit()
@@ -112,6 +142,7 @@ class BodyCompositionPage(Page):
         wrapper_layout.setContentsMargins(0, 0, 0, 0)
         wrapper_layout.setSpacing(12)
         wrapper_layout.addWidget(self._general_card())
+        wrapper_layout.addWidget(self._skinfold_card())
         wrapper_layout.addWidget(self._measurements_card(actions))
 
         self.layout.addWidget(wrapper)
@@ -127,8 +158,27 @@ class BodyCompositionPage(Page):
         self._add_stacked_field(layout, 2, "Consulta", self.appointment)
         self._add_stacked_field(layout, 2, "Protocolo", self.protocol, column=1)
         self._add_stacked_field(layout, 4, "Data da avaliacao", self.assessment_date)
+        self._add_stacked_field(layout, 4, "Sexo", self.sex, column=1)
+        self._add_stacked_field(layout, 6, "Idade (anos)", self.age)
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
+        return card
+
+    def _skinfold_card(self) -> QGroupBox:
+        card = QGroupBox("Dobras Cutaneas (mm)")
+        self.skinfold_card = card
+        layout = QGridLayout(card)
+        self.skinfold_variant_label = QLabel("Variante (Pollock)")
+        self.skinfold_variant_label.setObjectName("miniHeader")
+        layout.addWidget(self.skinfold_variant_label, 0, 0)
+        layout.addWidget(self.skinfold_variant, 0, 1)
+        for index, site in enumerate(SkinfoldSite):
+            row = 1 + index // 2
+            column = (index % 2) * 2
+            self._add_inline_field(layout, row, site.value, self.skinfold_fields[site], column)
+        layout.addWidget(self.calculate_skinfolds_button, 1 + len(SkinfoldSite) // 2 + 1, 0, 1, 4)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(3, 1)
         return card
 
     def _measurements_card(self, actions: QHBoxLayout) -> QGroupBox:
@@ -184,6 +234,7 @@ class BodyCompositionPage(Page):
     def refresh(self) -> None:
         self._reload_patients()
         self._reload_table()
+        self._toggle_skinfold_card()
 
     def _save_composition(self) -> None:
         if self.patient.currentIndex() < 0 or not self.patient_ids_by_index:
@@ -292,6 +343,9 @@ class BodyCompositionPage(Page):
         ]:
             field.clear()
         self.notes.clear()
+        self._clear_skinfold_fields()
+        self._fill_age_from_patient()
+        self._fill_sex_from_patient()
         self._reload_metrics_preview()
 
     def _reload_patients(self) -> None:
@@ -302,15 +356,94 @@ class BodyCompositionPage(Page):
         self.patient.blockSignals(True)
         self.patient.clear()
         self.patient_ids_by_index = []
+        self.patient_records_by_index = []
         for patient in self.patient_repository.list_active():
             if patient.id is None:
                 continue
             self.patient.addItem(patient.name)
             self.patient_ids_by_index.append(patient.id)
+            self.patient_records_by_index.append(patient)
         if current_patient_id in self.patient_ids_by_index:
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(current_patient_id))
         self.patient.blockSignals(False)
+        self._patient_changed()
+
+    def _patient_changed(self) -> None:
         self._reload_appointments()
+        self._fill_age_from_patient()
+        self._fill_sex_from_patient()
+
+    def _fill_age_from_patient(self) -> None:
+        if self.patient.currentIndex() < 0 or not self.patient_records_by_index:
+            return
+        if self.age.text().strip():
+            return
+        patient = self.patient_records_by_index[self.patient.currentIndex()]
+        self.age.setText(str(calculate_age(patient.birth_date)))
+
+    def _fill_sex_from_patient(self) -> None:
+        if self.patient.currentIndex() < 0 or not self.patient_records_by_index:
+            return
+        patient = self.patient_records_by_index[self.patient.currentIndex()]
+        self.sex.setCurrentText(patient.biological_sex)
+
+    def _clear_skinfold_fields(self) -> None:
+        for field in self.skinfold_fields.values():
+            field.clear()
+
+    def _toggle_skinfold_card(self) -> None:
+        if not hasattr(self, "skinfold_card"):
+            return
+        try:
+            protocol = BodyCompositionProtocol(self.protocol.currentText())
+        except ValueError:
+            protocol = None
+        supports_skinfolds = protocol == BodyCompositionProtocol.POLLOCK or (
+            protocol in SKINFOLD_PROTOCOLS
+        )
+        self.skinfold_card.setVisible(supports_skinfolds)
+        is_pollock = protocol == BodyCompositionProtocol.POLLOCK
+        self.skinfold_variant.setVisible(is_pollock)
+        self.skinfold_variant_label.setVisible(is_pollock)
+
+    def _resolve_skinfold_protocol(self) -> SkinfoldProtocol | None:
+        protocol = BodyCompositionProtocol(self.protocol.currentText())
+        if protocol == BodyCompositionProtocol.POLLOCK:
+            return POLLOCK_VARIANTS[self.skinfold_variant.currentText()]
+        return SKINFOLD_PROTOCOLS.get(protocol)
+
+    def _calculate_body_fat_from_skinfolds(self) -> None:
+        skinfold_protocol = self._resolve_skinfold_protocol()
+        if skinfold_protocol is None:
+            QMessageBox.information(
+                self,
+                "Composicao corporal",
+                "O protocolo selecionado nao usa calculo por dobras cutaneas.",
+            )
+            return
+
+        try:
+            sex = BiologicalSex(self.sex.currentText())
+            age_years = self._required_int(self.age.text(), "Idade")
+            folds_mm = {
+                site: self._optional_float(field.text(), site.value) or 0
+                for site, field in self.skinfold_fields.items()
+            }
+            percentage = self.body_fat_service.calculate_body_fat_percentage(
+                skinfold_protocol, sex, age_years, folds_mm
+            )
+            trace = self.body_fat_service.build_trace(
+                skinfold_protocol, sex, age_years, folds_mm, percentage
+            )
+        except ValueError as exc:
+            QMessageBox.warning(self, "Validacao", str(exc) or "Valores invalidos.")
+            return
+
+        self.body_fat_percentage.setText(f"{percentage:.1f}")
+        existing_notes = self.notes.toPlainText().strip()
+        trace_text = f"Calculo por dobras cutaneas: {trace.details}"
+        combined_notes = f"{existing_notes}\n\n{trace_text}" if existing_notes else trace_text
+        self.notes.setPlainText(combined_notes)
 
     def _reload_appointments(self) -> None:
         self.appointment.clear()
@@ -369,6 +502,7 @@ class BodyCompositionPage(Page):
             )
         self.assessment_date.setText(format_date(record.assessment_date))
         self.protocol.setCurrentText(record.protocol.value)
+        self._clear_skinfold_fields()
         self.weight.setText(str(record.weight_kg))
         self.body_fat_percentage.setText(str(record.body_fat_percentage))
         self._show_results(record.fat_mass_kg, record.lean_mass_kg)
@@ -407,6 +541,15 @@ class BodyCompositionPage(Page):
                 item = QTableWidgetItem(text)
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.metrics_table.setItem(row, column, item)
+
+    def _required_int(self, value: str, label: str) -> int:
+        try:
+            parsed = int(value.strip())
+        except ValueError as exc:
+            raise ValueError(f"{label} deve ser numerico.") from exc
+        if parsed <= 0:
+            raise ValueError(f"{label} deve ser maior que zero.")
+        return parsed
 
     def _required_float(self, value: str, label: str) -> float:
         try:

@@ -14,6 +14,7 @@ class MealPlanItem:
     carbohydrate_g: float = 0
     fat_g: float = 0
     substitutions: str = ""
+    food_id: int | None = None
     id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None

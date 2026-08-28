@@ -17,9 +17,9 @@ class FoodRepository:
                 INSERT INTO alimentos (
                     nome, categoria, fonte, porcao_base_g, medida_caseira, energia_kcal,
                     proteina_g, carboidrato_g, lipidios_g, fibras_g, sodio_mg,
-                    indice_glicemico, micronutrientes, observacoes
+                    indice_glicemico, micronutrientes, observacoes, alergenos
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 self._values(food),
             )
@@ -47,6 +47,7 @@ class FoodRepository:
                     indice_glicemico = ?,
                     micronutrientes = ?,
                     observacoes = ?,
+                    alergenos = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND deleted_at IS NULL
                 """,
@@ -108,6 +109,7 @@ class FoodRepository:
             food.glycemic_index,
             food.micronutrients,
             food.notes,
+            food.allergens,
         )
 
     def _select_sql(self) -> str:
@@ -115,7 +117,7 @@ class FoodRepository:
             SELECT id, nome, categoria, fonte, porcao_base_g, medida_caseira,
                    energia_kcal, proteina_g, carboidrato_g, lipidios_g,
                    fibras_g, sodio_mg, indice_glicemico, micronutrientes,
-                   observacoes, created_at, updated_at
+                   observacoes, alergenos, created_at, updated_at
             FROM alimentos
         """
 
@@ -137,6 +139,7 @@ class FoodRepository:
             if row["indice_glicemico"] is not None
             else None,
             micronutrients=row["micronutrientes"] or "",
+            allergens=row["alergenos"] or "",
             notes=row["observacoes"] or "",
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),

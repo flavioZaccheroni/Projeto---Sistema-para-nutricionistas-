@@ -9,6 +9,7 @@ from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.repositories.user_repository import UserRepository
 from nutri_app.services.auth import AuthService
 from nutri_app.services.automatic_backup import run_configured_automatic_backup
+from nutri_app.services.food_seed import seed_starter_foods
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ def build_app_context(settings: AppSettings) -> AppContext:
     connection_factory = SQLiteConnectionFactory(settings.database_path)
     migrator = DatabaseMigrator(connection_factory, settings.migrations_path)
     migrator.migrate()
+    seed_starter_foods(connection_factory, settings.seed_data_path)
     user_repository = UserRepository(connection_factory)
     audit_repository = AuditRepository(connection_factory)
     auth_service = AuthService(user_repository, audit_repository)

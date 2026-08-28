@@ -142,9 +142,9 @@ class MealPlanRepository:
                     """
                     INSERT INTO plano_itens (
                         refeicao_id, alimento, quantidade, unidade, energia_kcal,
-                        proteina_g, carboidrato_g, lipidios_g, substituicoes
+                        proteina_g, carboidrato_g, lipidios_g, substituicoes, alimento_id
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         meal_id,
@@ -156,6 +156,7 @@ class MealPlanRepository:
                         item.carbohydrate_g,
                         item.fat_g,
                         item.substitutions,
+                        item.food_id,
                     ),
                 )
 
@@ -201,7 +202,7 @@ class MealPlanRepository:
         item_rows = connection.execute(
             """
             SELECT id, alimento, quantidade, unidade, energia_kcal, proteina_g,
-                   carboidrato_g, lipidios_g, substituicoes, created_at, updated_at
+                   carboidrato_g, lipidios_g, substituicoes, alimento_id, created_at, updated_at
             FROM plano_itens
             WHERE refeicao_id = ? AND deleted_at IS NULL
             ORDER BY id
@@ -229,6 +230,7 @@ class MealPlanRepository:
             carbohydrate_g=float(row["carboidrato_g"]),
             fat_g=float(row["lipidios_g"]),
             substitutions=row["substituicoes"] or "",
+            food_id=row["alimento_id"],
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )

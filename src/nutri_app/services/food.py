@@ -84,6 +84,7 @@ class FoodService:
                         fiber_g=self._csv_float(row.get("fibras_g")),
                         sodium_mg=self._csv_float(row.get("sodio_mg")),
                         micronutrients=row.get("micronutrientes", "").strip(),
+                        allergens=row.get("alergenos", "").strip(),
                         notes=(
                             f"Importado de {source.value}; versao {version.strip()}; "
                             f"licenca {license_name.strip()}."
