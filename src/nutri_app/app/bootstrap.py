@@ -14,6 +14,7 @@ def run() -> int:
 
         from nutri_app.ui.dialogs.login_dialog import LoginDialog
         from nutri_app.ui.main_window import MainWindow
+        from nutri_app.ui.scroll_guard import install_scroll_wheel_guard
     except ModuleNotFoundError as exc:
         missing = exc.name or "dependencia"
         print(
@@ -28,6 +29,7 @@ def run() -> int:
     app.setApplicationName(settings.app_name)
     app.setOrganizationName(settings.organization_name)
     app.setStyleSheet(load_stylesheet(settings.stylesheet_path))
+    install_scroll_wheel_guard(app)
     if settings.icon_path.exists():
         app.setWindowIcon(QIcon(str(settings.icon_path)))
 
