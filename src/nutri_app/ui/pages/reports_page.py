@@ -20,6 +20,7 @@ from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.report_repository import ClinicalReportRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.repositories.user_repository import UserRepository
 from nutri_app.services.report import ClinicalReportOptions, ClinicalReportService
 from nutri_app.ui.pages.base import Page
 
@@ -37,6 +38,7 @@ class ReportsPage(Page):
         )
         self.patient_repository = PatientRepository(connection_factory)
         self.repository = ClinicalReportRepository(connection_factory)
+        self.user_repository = UserRepository(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.service = ClinicalReportService()
@@ -58,6 +60,7 @@ class ReportsPage(Page):
         self.professional_name.setPlaceholderText("Nome da nutricionista responsavel")
         self.professional_registration = QLineEdit()
         self.professional_registration.setPlaceholderText("CRN/UF")
+        self._fill_professional_from_current_user()
         for checkbox in self._section_checkboxes():
             checkbox.setChecked(True)
 
@@ -166,11 +169,16 @@ class ReportsPage(Page):
     def _clear_form(self) -> None:
         self.notes.clear()
         self.preview.clear()
-        self.professional_name.clear()
-        self.professional_registration.clear()
         self.include_validation_appendix.setChecked(True)
         for checkbox in self._section_checkboxes():
             checkbox.setChecked(True)
+
+    def _fill_professional_from_current_user(self) -> None:
+        current_user = self.user_repository.get(self.current_user_id)
+        if current_user is None:
+            return
+        self.professional_name.setText(current_user.name)
+        self.professional_registration.setText(current_user.professional_registration or "")
 
     def _reload_patients(self) -> None:
         current_id = (

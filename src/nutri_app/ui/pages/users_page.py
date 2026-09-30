@@ -40,12 +40,15 @@ class UsersPage(Page):
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
         self.role = QComboBox()
         self.role.addItems([role.value for role in UserRole])
+        self.professional_registration = QLineEdit()
+        self.professional_registration.setPlaceholderText("Ex.: CRN-3 12345")
 
         form = QFormLayout()
         form.addRow("Nome", self.name)
         form.addRow("E-mail", self.email)
         form.addRow("Senha inicial", self.password)
         form.addRow("Perfil", self.role)
+        form.addRow("CRN/UF", self.professional_registration)
 
         save = QPushButton("Criar usuario")
         save.setObjectName("primaryButton")
@@ -63,8 +66,8 @@ class UsersPage(Page):
         wrapper_layout.addRow(form)
         wrapper_layout.addRow(actions)
 
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["ID", "Nome", "E-mail", "Perfil", "Ativo"])
+        self.table = QTableWidget(0, 6)
+        self.table.setHorizontalHeaderLabels(["ID", "Nome", "E-mail", "Perfil", "CRN/UF", "Ativo"])
 
         self.layout.addWidget(wrapper)
         self.layout.addWidget(self.table)
@@ -95,6 +98,8 @@ class UsersPage(Page):
                     email=email,
                     password_hash=password_hash,
                     role=UserRole(self.role.currentText()),
+                    professional_registration=self.professional_registration.text().strip()
+                    or None,
                 )
             )
         except Exception as exc:
@@ -116,6 +121,7 @@ class UsersPage(Page):
         self.email.clear()
         self.password.clear()
         self.role.setCurrentIndex(0)
+        self.professional_registration.clear()
 
     def _reload_table(self) -> None:
         users = self.user_repository.list_active()
@@ -125,4 +131,5 @@ class UsersPage(Page):
             self.table.setItem(row, 1, QTableWidgetItem(user.name))
             self.table.setItem(row, 2, QTableWidgetItem(user.email))
             self.table.setItem(row, 3, QTableWidgetItem(user.role.value))
-            self.table.setItem(row, 4, QTableWidgetItem("Sim" if user.active else "Nao"))
+            self.table.setItem(row, 4, QTableWidgetItem(user.professional_registration or ""))
+            self.table.setItem(row, 5, QTableWidgetItem("Sim" if user.active else "Nao"))

@@ -23,9 +23,9 @@ class UserRepository:
                 """
                 INSERT INTO usuarios (
                     nome, email, senha_hash, perfil, ativo, troca_senha_obrigatoria,
-                    tentativas_falhas, bloqueado_ate, senha_alterada_em
+                    tentativas_falhas, bloqueado_ate, senha_alterada_em, registro_profissional
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user.name,
@@ -37,16 +37,31 @@ class UserRepository:
                     user.failed_login_attempts,
                     user.locked_until.isoformat() if user.locked_until else None,
                     user.password_changed_at.isoformat() if user.password_changed_at else None,
+                    user.professional_registration,
                 ),
             )
             return int(cursor.lastrowid)
+
+    def get(self, user_id: int) -> User | None:
+        with self.connection_factory.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT id, nome, email, senha_hash, perfil, ativo, troca_senha_obrigatoria,
+                       tentativas_falhas, bloqueado_ate, senha_alterada_em, registro_profissional,
+                       created_at, updated_at
+                FROM usuarios
+                WHERE id = ? AND deleted_at IS NULL
+                """,
+                (user_id,),
+            ).fetchone()
+        return self._row_to_user(row) if row is not None else None
 
     def list_active(self) -> list[User]:
         with self.connection_factory.connect() as connection:
             rows = connection.execute(
                 """
                 SELECT id, nome, email, senha_hash, perfil, ativo, troca_senha_obrigatoria,
-                       tentativas_falhas, bloqueado_ate, senha_alterada_em,
+                       tentativas_falhas, bloqueado_ate, senha_alterada_em, registro_profissional,
                        created_at, updated_at
                 FROM usuarios
                 WHERE deleted_at IS NULL
@@ -60,7 +75,7 @@ class UserRepository:
             row = connection.execute(
                 """
                 SELECT id, nome, email, senha_hash, perfil, ativo, troca_senha_obrigatoria,
-                       tentativas_falhas, bloqueado_ate, senha_alterada_em,
+                       tentativas_falhas, bloqueado_ate, senha_alterada_em, registro_profissional,
                        created_at, updated_at
                 FROM usuarios
                 WHERE lower(email) = lower(?) AND ativo = 1 AND deleted_at IS NULL
@@ -176,6 +191,7 @@ class UserRepository:
                 if row["senha_alterada_em"]
                 else None
             ),
+            professional_registration=row["registro_profissional"],
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )

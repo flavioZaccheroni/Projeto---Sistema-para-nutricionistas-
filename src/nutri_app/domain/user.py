@@ -23,6 +23,7 @@ class User:
     failed_login_attempts: int = 0
     locked_until: datetime | None = None
     password_changed_at: datetime | None = None
+    professional_registration: str | None = None
     id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
