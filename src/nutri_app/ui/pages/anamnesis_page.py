@@ -16,9 +16,11 @@ from PySide6.QtWidgets import (
 )
 
 from nutri_app.domain.anamnesis import Anamnesis
+from nutri_app.domain.patient_allergy import AllergyCategory, PatientAllergy
 from nutri_app.repositories.anamnesis_repository import AnamnesisRepository
 from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.patient_allergy_repository import PatientAllergyRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.advanced_clinical import AdvancedClinicalService
@@ -56,6 +58,7 @@ class AnamnesisPage(Page):
     ) -> None:
         super().__init__("Anamnese", "Queixa principal, historico, rotina alimentar e sintomas.")
         self.repository = AnamnesisRepository(connection_factory)
+        self.patient_allergy_repository = PatientAllergyRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
         self.appointment_repository = AppointmentRepository(connection_factory)
         self.audit_repository = audit_repository
@@ -219,8 +222,48 @@ class AnamnesisPage(Page):
             anamnesis_id = anamnesis.id
             self._audit("atualizou_anamnese", anamnesis_id, "Anamnese atualizada.")
 
+        self._sync_structured_allergies(anamnesis.patient_id)
         self._clear_form()
         self._reload_table()
+
+    def _sync_structured_allergies(self, patient_id: int) -> None:
+        (
+            food_section,
+            intolerance_section,
+            medication_section,
+            _reaction_section,
+            severity_section,
+            conduct_section,
+        ) = self.allergy_sections
+        severity = "; ".join(severity_section.selected_options())
+        conduct = "; ".join(conduct_section.selected_options())
+
+        allergies = [
+            PatientAllergy(
+                patient_id=patient_id,
+                category=AllergyCategory.FOOD,
+                allergen=allergen,
+                severity=severity,
+                conduct=conduct,
+            )
+            for allergen in [
+                *food_section.selected_options(),
+                *intolerance_section.selected_options(),
+            ]
+            if allergen != "Outro"
+        ]
+        allergies.extend(
+            PatientAllergy(
+                patient_id=patient_id,
+                category=AllergyCategory.MEDICATION,
+                allergen=allergen,
+                severity=severity,
+                conduct=conduct,
+            )
+            for allergen in medication_section.selected_options()
+            if allergen != "Outros"
+        )
+        self.patient_allergy_repository.replace_for_patient(patient_id, allergies)
 
     def _delete_anamnesis(self) -> None:
         if self.selected_anamnesis_id is None:

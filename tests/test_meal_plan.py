@@ -5,9 +5,11 @@ from tempfile import TemporaryDirectory
 
 from nutri_app.database.schema import initialize_database
 from nutri_app.domain.appointment import Appointment, AppointmentKind, AppointmentStatus
+from nutri_app.domain.food import Food, FoodSource
 from nutri_app.domain.meal_plan import Meal, MealPlan, MealPlanItem
 from nutri_app.domain.patient import Patient
 from nutri_app.repositories.appointment_repository import AppointmentRepository
+from nutri_app.repositories.food_repository import FoodRepository
 from nutri_app.repositories.meal_plan_repository import MealPlanRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
@@ -62,6 +64,27 @@ class MealPlanServiceTest(unittest.TestCase):
                 MealPlan(patient_id=1, start_date=date.today(), objective="Meta")
             )
 
+    def test_monta_item_a_partir_de_alimento_do_banco(self) -> None:
+        food = Food(
+            id=7,
+            name="Arroz branco cozido",
+            source=FoodSource.REGIONAL,
+            base_portion_g=100,
+            energy_kcal=128,
+            protein_g=2.5,
+            carbohydrate_g=28.1,
+            fat_g=0.2,
+        )
+
+        item = MealPlanService().build_item_from_food(food, 150)
+
+        self.assertEqual(item.food, "Arroz branco cozido")
+        self.assertEqual(item.food_id, 7)
+        self.assertEqual(item.unit, "g")
+        self.assertAlmostEqual(item.energy_kcal, 192)
+        self.assertAlmostEqual(item.protein_g, 3.75)
+        self.assertAlmostEqual(item.carbohydrate_g, 42.15)
+
 
 class MealPlanRepositoryTest(unittest.TestCase):
     def test_cria_lista_atualiza_e_exclui_plano_alimentar(self) -> None:
@@ -70,6 +93,16 @@ class MealPlanRepositoryTest(unittest.TestCase):
             initialize_database(factory)
             patient_id = PatientRepository(factory).add(
                 Patient(name="Paciente Plano", birth_date=date(1992, 8, 1))
+            )
+            food_id = FoodRepository(factory).add(
+                Food(
+                    name="Arroz branco cozido",
+                    source=FoodSource.REGIONAL,
+                    energy_kcal=128,
+                    protein_g=2.5,
+                    carbohydrate_g=28.1,
+                    fat_g=0.2,
+                )
             )
             appointment_id = AppointmentRepository(factory).add(
                 Appointment(
@@ -105,6 +138,7 @@ class MealPlanRepositoryTest(unittest.TestCase):
                                     protein_g=3,
                                     carbohydrate_g=35,
                                     fat_g=1,
+                                    food_id=food_id,
                                 ),
                                 MealPlanItem(
                                     "Frango",
@@ -161,6 +195,8 @@ class MealPlanRepositoryTest(unittest.TestCase):
         self.assertEqual(listed[0].patient_name, "Paciente Plano")
         self.assertEqual(len(loaded.meals), 1)
         self.assertEqual(len(loaded.meals[0].items), 2)
+        self.assertEqual(loaded.meals[0].items[0].food_id, food_id)
+        self.assertIsNone(loaded.meals[0].items[1].food_id)
         self.assertEqual(updated.objective, "Manutencao")
         self.assertEqual(updated.meals[0].name, "Jantar")
         self.assertEqual(updated.notes, "Atualizado")

@@ -20,3 +20,11 @@ class Patient:
     id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+def calculate_age(birth_date: date, on: date | None = None) -> int:
+    reference = on or date.today()
+    age = reference.year - birth_date.year
+    if (reference.month, reference.day) < (birth_date.month, birth_date.day):
+        age -= 1
+    return max(age, 1)

@@ -29,6 +29,7 @@ class UISmokeTest(unittest.TestCase):
                 migrations_path=Path("database/migrations"),
                 stylesheet_path=Path("src/nutri_app/ui/resources/app.qss"),
                 icon_path=Path("icone.png"),
+                seed_data_path=Path("database/seed/starter_foods.csv"),
             )
             context = build_app_context(settings)
             login = LoginDialog(context.auth_service)

@@ -204,6 +204,50 @@ class ClinicalValidationMatrix:
             population="adultos com percentual de gordura/massa magra conhecido",
             application_limits="dependente da qualidade da avaliacao de composicao corporal",
         ),
+        "Pollock 3 dobras": ClinicalValidationReference(
+            key="Pollock 3 dobras",
+            title="Protocolo de dobras cutaneas Pollock 3 dobras",
+            reference="Jackson & Pollock, 1978 (Br J Nutr); Jackson, Pollock & Ward, 1980",
+            population="adultos; sitios especificos por sexo (peitoral/abdominal/coxa "
+            "para homens, triceps/supra-iliaca/coxa para mulheres)",
+            application_limits=(
+                "densidade convertida a percentual de gordura pela equacao de Siri; "
+                "tecnica de coleta padronizada e treinamento do avaliador sao essenciais "
+                "para reprodutibilidade"
+            ),
+        ),
+        "Pollock 7 dobras": ClinicalValidationReference(
+            key="Pollock 7 dobras",
+            title="Protocolo de dobras cutaneas Pollock 7 dobras",
+            reference="Jackson & Pollock, 1978 (Br J Nutr)",
+            population="adultos; peitoral, axilar media, triceps, subescapular, "
+            "abdominal, supra-iliaca e coxa",
+            application_limits=(
+                "densidade convertida a percentual de gordura pela equacao de Siri; "
+                "maior numero de sitios reduz erro de medida frente ao protocolo de 3 dobras"
+            ),
+        ),
+        "Durnin & Womersley": ClinicalValidationReference(
+            key="Durnin & Womersley",
+            title="Protocolo de dobras cutaneas Durnin & Womersley",
+            reference="Durnin & Womersley, 1974 (Br J Nutr)",
+            population="adultos de 17 a mais de 50 anos; biceps, triceps, "
+            "subescapular e supra-iliaca",
+            application_limits=(
+                "coeficientes variam por faixa etaria e sexo; densidade convertida a "
+                "percentual de gordura pela equacao de Siri"
+            ),
+        ),
+        "Faulkner": ClinicalValidationReference(
+            key="Faulkner",
+            title="Protocolo de dobras cutaneas Faulkner",
+            reference="Faulkner, 1968",
+            population="adultos e atletas; triceps, subescapular, supra-iliaca e abdominal",
+            application_limits=(
+                "formula direta (sem conversao por densidade); amplamente usada em "
+                "avaliacao esportiva, com menor especificidade populacional"
+            ),
+        ),
     }
 
     @classmethod

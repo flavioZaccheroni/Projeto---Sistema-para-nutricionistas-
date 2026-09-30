@@ -14,6 +14,7 @@ class AppSettings:
     migrations_path: Path
     stylesheet_path: Path
     icon_path: Path
+    seed_data_path: Path
     data_dir: Path | None = None
 
     @property
@@ -43,6 +44,7 @@ class AppSettings:
                 migrations_path=resource_root / "database" / "migrations",
                 stylesheet_path=resource_root / "nutri_app" / "ui" / "resources" / "app.qss",
                 icon_path=resource_root / "icone.png",
+                seed_data_path=resource_root / "database" / "seed" / "starter_foods.csv",
                 data_dir=data_dir,
             )
 
@@ -54,5 +56,6 @@ class AppSettings:
             migrations_path=root / "database" / "migrations",
             stylesheet_path=root / "src" / "nutri_app" / "ui" / "resources" / "app.qss",
             icon_path=root / "icone.png",
+            seed_data_path=root / "database" / "seed" / "starter_foods.csv",
             data_dir=root,
         )

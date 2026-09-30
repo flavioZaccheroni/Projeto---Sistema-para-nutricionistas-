@@ -6,12 +6,18 @@ from tempfile import TemporaryDirectory
 from nutri_app.database.schema import initialize_database
 from nutri_app.domain.appointment import Appointment, AppointmentKind, AppointmentStatus
 from nutri_app.domain.body_composition import BodyComposition, BodyCompositionProtocol
+from nutri_app.domain.energy_expenditure import BiologicalSex
 from nutri_app.domain.patient import Patient
 from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.body_composition_repository import BodyCompositionRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.body_composition import BodyCompositionService
+from nutri_app.services.body_fat_calculation import (
+    BodyFatCalculationService,
+    SkinfoldProtocol,
+    SkinfoldSite,
+)
 
 
 class BodyCompositionServiceTest(unittest.TestCase):
@@ -28,6 +34,105 @@ class BodyCompositionServiceTest(unittest.TestCase):
             service.calculate_fat_mass(0, 20)
         with self.assertRaises(ValueError):
             service.calculate_lean_mass(80, 101)
+
+
+class BodyFatCalculationServiceTest(unittest.TestCase):
+    def test_pollock_3_dobras_homem(self) -> None:
+        service = BodyFatCalculationService()
+
+        percentage = service.calculate_body_fat_percentage(
+            SkinfoldProtocol.POLLOCK_3,
+            BiologicalSex.MALE,
+            20,
+            {
+                SkinfoldSite.CHEST: 10,
+                SkinfoldSite.ABDOMEN: 15,
+                SkinfoldSite.THIGH: 12,
+            },
+        )
+
+        self.assertAlmostEqual(percentage, 10.11, places=1)
+
+    def test_pollock_7_dobras_homem(self) -> None:
+        service = BodyFatCalculationService()
+
+        percentage = service.calculate_body_fat_percentage(
+            SkinfoldProtocol.POLLOCK_7,
+            BiologicalSex.MALE,
+            25,
+            {
+                SkinfoldSite.CHEST: 15,
+                SkinfoldSite.MIDAXILLARY: 10,
+                SkinfoldSite.TRICEPS: 12,
+                SkinfoldSite.SUBSCAPULAR: 15,
+                SkinfoldSite.ABDOMEN: 20,
+                SkinfoldSite.SUPRAILIAC: 18,
+                SkinfoldSite.THIGH: 10,
+            },
+        )
+
+        self.assertAlmostEqual(percentage, 14.01, places=1)
+
+    def test_durnin_womersley_homem(self) -> None:
+        service = BodyFatCalculationService()
+
+        percentage = service.calculate_body_fat_percentage(
+            SkinfoldProtocol.DURNIN_WOMERSLEY,
+            BiologicalSex.MALE,
+            25,
+            {
+                SkinfoldSite.BICEPS: 8,
+                SkinfoldSite.TRICEPS: 12,
+                SkinfoldSite.SUBSCAPULAR: 15,
+                SkinfoldSite.SUPRAILIAC: 18,
+            },
+        )
+
+        self.assertAlmostEqual(percentage, 19.58, places=1)
+
+    def test_faulkner_formula_direta(self) -> None:
+        service = BodyFatCalculationService()
+
+        percentage = service.calculate_body_fat_percentage(
+            SkinfoldProtocol.FAULKNER,
+            BiologicalSex.FEMALE,
+            30,
+            {
+                SkinfoldSite.TRICEPS: 12,
+                SkinfoldSite.SUBSCAPULAR: 15,
+                SkinfoldSite.SUPRAILIAC: 18,
+                SkinfoldSite.ABDOMEN: 20,
+            },
+        )
+
+        self.assertAlmostEqual(percentage, 15.728, places=2)
+
+    def test_rejeita_dobra_faltante(self) -> None:
+        service = BodyFatCalculationService()
+
+        with self.assertRaises(ValueError):
+            service.calculate_body_fat_percentage(
+                SkinfoldProtocol.POLLOCK_3,
+                BiologicalSex.MALE,
+                20,
+                {SkinfoldSite.CHEST: 10, SkinfoldSite.ABDOMEN: 15},
+            )
+
+    def test_rejeita_idade_invalida(self) -> None:
+        service = BodyFatCalculationService()
+
+        with self.assertRaises(ValueError):
+            service.calculate_body_fat_percentage(
+                SkinfoldProtocol.FAULKNER,
+                BiologicalSex.FEMALE,
+                0,
+                {
+                    SkinfoldSite.TRICEPS: 12,
+                    SkinfoldSite.SUBSCAPULAR: 15,
+                    SkinfoldSite.SUPRAILIAC: 18,
+                    SkinfoldSite.ABDOMEN: 20,
+                },
+            )
 
 
 class BodyCompositionRepositoryTest(unittest.TestCase):

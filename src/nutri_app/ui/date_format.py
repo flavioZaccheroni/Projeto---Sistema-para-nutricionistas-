@@ -18,12 +18,17 @@ def format_datetime(value: datetime | None) -> str:
 
 def parse_date(value: str) -> date:
     text = value.strip()
+    if not any(char.isdigit() for char in text):
+        raise ValueError("Data e obrigatoria.")
     for date_format in [DATE_FORMAT, "%d-%m-%Y", "%m-%d-%Y"]:
         try:
             return datetime.strptime(text, date_format).date()
         except ValueError:
             continue
-    return date.fromisoformat(text)
+    try:
+        return date.fromisoformat(text)
+    except ValueError as exc:
+        raise ValueError(f"Data invalida: {text}") from exc
 
 
 def parse_optional_date(value: str) -> date | None:
@@ -35,12 +40,17 @@ def parse_optional_date(value: str) -> date | None:
 
 def parse_datetime(value: str) -> datetime:
     text = value.strip()
+    if not any(char.isdigit() for char in text):
+        raise ValueError("Data e hora sao obrigatorias.")
     for date_format in [DATETIME_FORMAT, "%d-%m-%Y %H:%M", "%m-%d-%Y %H:%M"]:
         try:
             return datetime.strptime(text, date_format)
         except ValueError:
             continue
-    return datetime.fromisoformat(text)
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError as exc:
+        raise ValueError(f"Data e hora invalidas: {text}") from exc
 
 
 def today_text() -> str:

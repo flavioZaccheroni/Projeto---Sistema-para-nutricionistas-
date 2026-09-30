@@ -13,6 +13,19 @@ class FoodSource(StrEnum):
     CUSTOM = "Personalizado"
 
 
+class FoodGroup(StrEnum):
+    CEREAIS_TUBERCULOS = "Cereais e tuberculos"
+    LEGUMINOSAS = "Leguminosas"
+    CARNES_OVOS = "Carnes e ovos"
+    LATICINIOS = "Laticinios"
+    HORTALICAS = "Hortalicas"
+    FRUTAS = "Frutas"
+    GORDURAS_OLEOS = "Gorduras e oleos"
+    ACUCARES_DOCES = "Acucares e doces"
+    BEBIDAS = "Bebidas"
+    OUTROS = "Outros"
+
+
 @dataclass(frozen=True)
 class Food:
     name: str
@@ -28,6 +41,7 @@ class Food:
     sodium_mg: float = 0
     glycemic_index: float | None = None
     micronutrients: str = ""
+    allergens: str = ""
     notes: str = ""
     id: int | None = None
     created_at: datetime | None = None

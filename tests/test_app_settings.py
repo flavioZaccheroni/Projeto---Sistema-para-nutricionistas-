@@ -17,6 +17,10 @@ class AppSettingsTest(unittest.TestCase):
         self.assertEqual(settings.data_dir, Path(__file__).resolve().parents[1])
         self.assertEqual(settings.exports_dir, settings.data_dir / "exports")
         self.assertEqual(settings.backups_dir, settings.data_dir / "backups")
+        self.assertEqual(
+            settings.seed_data_path,
+            settings.data_dir / "database" / "seed" / "starter_foods.csv",
+        )
 
     def test_executavel_isola_dados_no_perfil_do_usuario(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -41,6 +45,10 @@ class AppSettingsTest(unittest.TestCase):
         self.assertEqual(
             settings.stylesheet_path,
             resource_root / "nutri_app" / "ui" / "resources" / "app.qss",
+        )
+        self.assertEqual(
+            settings.seed_data_path,
+            resource_root / "database" / "seed" / "starter_foods.csv",
         )
 
 

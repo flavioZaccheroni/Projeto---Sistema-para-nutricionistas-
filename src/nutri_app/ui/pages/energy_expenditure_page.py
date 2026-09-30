@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
 from PySide6.QtWidgets import (
     QComboBox,
     QGridLayout,
@@ -22,7 +20,7 @@ from nutri_app.domain.energy_expenditure import (
     EnergyEquation,
     EnergyExpenditure,
 )
-from nutri_app.domain.patient import Patient
+from nutri_app.domain.patient import Patient, calculate_age
 from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.energy_expenditure_repository import EnergyExpenditureRepository
@@ -422,11 +420,7 @@ class EnergyExpenditurePage(Page):
         if self.age.text().strip():
             return
         patient = self.patient_records_by_index[self.patient.currentIndex()]
-        today = date.today()
-        age = today.year - patient.birth_date.year
-        if (today.month, today.day) < (patient.birth_date.month, patient.birth_date.day):
-            age -= 1
-        self.age.setText(str(max(age, 1)))
+        self.age.setText(str(calculate_age(patient.birth_date)))
 
     def _fill_sex_from_patient(self) -> None:
         if self.patient.currentIndex() < 0 or not self.patient_records_by_index:
