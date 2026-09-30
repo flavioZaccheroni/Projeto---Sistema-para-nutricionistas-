@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
@@ -38,6 +39,8 @@ from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class AppointmentsPage(Page):
+    attend_requested = Signal(int)
+
     def __init__(
         self,
         connection_factory: SQLiteConnectionFactory,
@@ -79,9 +82,12 @@ class AppointmentsPage(Page):
         cancel.clicked.connect(lambda: self._set_status(AppointmentStatus.CANCELED))
         delete = QPushButton("Excluir")
         delete.clicked.connect(self._delete_appointment)
+        attend = QPushButton("Atender")
+        attend.setToolTip("Abre a Anamnese ja com este paciente selecionado.")
+        attend.clicked.connect(self._request_attend)
 
         actions = QHBoxLayout()
-        for button in [save, new, confirm, done, cancel, delete]:
+        for button in [save, new, confirm, done, cancel, delete, attend]:
             actions.addWidget(button)
         actions.addStretch()
 
@@ -205,6 +211,14 @@ class AppointmentsPage(Page):
         )
         self._clear_form()
         self._reload_table()
+
+    def _request_attend(self) -> None:
+        if self.patient.currentIndex() < 0 or not self.patient_ids_by_index:
+            QMessageBox.warning(self, "Agenda", "Selecione um paciente para atender.")
+            return
+
+        patient_id = self.patient_ids_by_index[self.patient.currentIndex()]
+        self.attend_requested.emit(patient_id)
 
     def _delete_appointment(self) -> None:
         if self.selected_appointment_id is None:

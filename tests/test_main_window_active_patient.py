@@ -100,6 +100,25 @@ class MainWindowActivePatientTest(unittest.TestCase):
 
         window.close()
 
+    def test_botao_atender_leva_para_anamnese_com_o_paciente_certo(self) -> None:
+        window = self._build_window()
+
+        agenda_page = self._show(window, "Agenda")
+        index = agenda_page.patient_ids_by_index.index(self.bruno_id)
+        agenda_page.patient.setCurrentIndex(index)
+
+        agenda_page._request_attend()
+
+        self.assertEqual(
+            window.pages.currentIndex(), window.page_indexes_by_module["Anamnese"]
+        )
+        anamnesis_page = window.pages.currentWidget()
+        selected_id = anamnesis_page.patient_ids_by_index[anamnesis_page.patient.currentIndex()]
+        self.assertEqual(selected_id, self.bruno_id)
+        self.assertEqual(window.active_patient.patient_id, self.bruno_id)
+
+        window.close()
+
 
 if __name__ == "__main__":
     unittest.main()

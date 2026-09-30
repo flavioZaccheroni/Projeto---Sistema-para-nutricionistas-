@@ -144,6 +144,18 @@ class MainWindow(QMainWindow):
                     )
                 )
 
+            attend_requested = getattr(page, "attend_requested", None)
+            if attend_requested is not None:
+                attend_requested.connect(self._attend_patient)
+
+    def _attend_patient(self, patient_id: int) -> None:
+        self.active_patient.set_patient(patient_id)
+        item = self._find_item_by_module("Anamnese")
+        if item is None:
+            return
+        self.menu.setCurrentItem(item)
+        self._show_page(item)
+
     def _on_page_patient_changed(self, page: QWidget, combo_attr: str, ids_attr: str) -> None:
         combo: QComboBox = getattr(page, combo_attr)
         ids: list = getattr(page, ids_attr)
