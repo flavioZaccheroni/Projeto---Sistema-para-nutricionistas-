@@ -3,14 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QFont, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
+    QPushButton,
     QSizePolicy,
     QStackedWidget,
     QStyle,
+    QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -91,6 +93,26 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._sidebar())
         layout.addWidget(self.pages, stretch=1)
         self.setCentralWidget(root)
+
+        save_shortcut = QShortcut(QKeySequence.StandardKey.Save, self)
+        save_shortcut.activated.connect(self._save_current_page)
+
+    def _save_current_page(self) -> None:
+        page = self.pages.currentWidget()
+        if page is None:
+            return
+
+        tabs = getattr(page, "tabs", None)
+        if isinstance(tabs, QTabWidget):
+            active_tab = tabs.currentWidget()
+            button = active_tab.findChild(QPushButton, "primaryButton") if active_tab else None
+            if button is not None and button.isEnabled():
+                button.click()
+                return
+
+        button = page.findChild(QPushButton, "primaryButton")
+        if button is not None and button.isEnabled():
+            button.click()
 
     def _navigation_items(self) -> list[NavigationItem]:
         advanced_service = AdvancedClinicalService()

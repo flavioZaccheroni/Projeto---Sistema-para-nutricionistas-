@@ -43,6 +43,7 @@ class LoginDialog(QDialog):
 
         login = QPushButton("Entrar")
         login.setObjectName("primaryButton")
+        login.setDefault(True)
         login.clicked.connect(self._login)
         cancel = QPushButton("Cancelar")
         cancel.clicked.connect(self.reject)
@@ -109,6 +110,7 @@ class PasswordChangeDialog(QDialog):
         guidance.setWordWrap(True)
         save = QPushButton("Alterar senha")
         save.setObjectName("primaryButton")
+        save.setDefault(True)
         save.clicked.connect(self._save)
         layout = QVBoxLayout(self)
         layout.addWidget(guidance)

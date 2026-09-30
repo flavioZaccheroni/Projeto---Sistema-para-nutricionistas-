@@ -82,6 +82,7 @@ class HospitalizationsDialog(QDialog):
 
         save = QPushButton("Salvar internacao")
         save.setObjectName("primaryButton")
+        save.setDefault(True)
         save.clicked.connect(self._save)
         new = QPushButton("Nova")
         new.clicked.connect(self._clear)
