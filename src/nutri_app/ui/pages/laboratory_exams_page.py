@@ -23,7 +23,7 @@ from nutri_app.repositories.laboratory_exam_repository import LaboratoryExamRepo
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.laboratory_exam import LaboratoryExamService
-from nutri_app.ui.date_format import format_date, format_datetime, parse_date
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
@@ -57,7 +57,7 @@ class LaboratoryExamsPage(Page):
         self.patient = QComboBox()
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
-        self.exam_date = QLineEdit()
+        self.exam_date = QLineEdit(today_text())
         apply_date_mask(self.exam_date)
         self.laboratory = QLineEdit()
         self.notes = QTextEdit()
@@ -266,8 +266,8 @@ class LaboratoryExamsPage(Page):
         self.selected_exam_id = None
         if self.patient.count() > 0:
             self.patient.setCurrentIndex(0)
-        for field in [self.exam_date, self.laboratory]:
-            field.clear()
+        self.exam_date.setText(today_text())
+        self.laboratory.clear()
         self.notes.clear()
         self.items = []
         self._clear_item_form()

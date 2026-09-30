@@ -27,7 +27,7 @@ from nutri_app.repositories.energy_expenditure_repository import EnergyExpenditu
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.energy_expenditure import EnergyExpenditureService
-from nutri_app.ui.date_format import format_date, format_datetime, parse_date
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
@@ -57,7 +57,7 @@ class EnergyExpenditurePage(Page):
         self.patient = QComboBox()
         self.patient.currentIndexChanged.connect(self._patient_changed)
         self.appointment = QComboBox()
-        self.assessment_date = QLineEdit()
+        self.assessment_date = QLineEdit(today_text())
         apply_date_mask(self.assessment_date)
         self.sex = QComboBox()
         self.sex.addItems([item.value for item in BiologicalSex])
@@ -370,8 +370,8 @@ class EnergyExpenditurePage(Page):
         self.goal_adjustment.setText("0")
         self.protein_per_kg.setText("1.20")
         self.fat_percentage.setText("30")
+        self.assessment_date.setText(today_text())
         for field in [
-            self.assessment_date,
             self.age,
             self.weight,
             self.height,

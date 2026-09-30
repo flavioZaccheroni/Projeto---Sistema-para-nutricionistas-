@@ -70,7 +70,7 @@ class AnthropometryPage(Page):
         self.patient = QComboBox()
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
-        self.assessment_date = QLineEdit()
+        self.assessment_date = QLineEdit(today_text())
         apply_date_mask(self.assessment_date)
         self.weight = QLineEdit()
         self.height = QLineEdit()
@@ -449,8 +449,8 @@ class AnthropometryPage(Page):
         self.selected_anthropometry_id = None
         if self.patient.count() > 0:
             self.patient.setCurrentIndex(0)
+        self.assessment_date.setText(today_text())
         for field in [
-            self.assessment_date,
             self.weight,
             self.height,
             self.waist,

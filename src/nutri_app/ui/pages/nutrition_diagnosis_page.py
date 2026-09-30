@@ -24,7 +24,7 @@ from nutri_app.repositories.nutrition_diagnosis_repository import NutritionDiagn
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.nutrition_diagnosis import NutritionDiagnosisService
-from nutri_app.ui.date_format import format_date, format_datetime, parse_date
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
@@ -53,7 +53,7 @@ class NutritionDiagnosisPage(Page):
         self.patient = QComboBox()
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
-        self.diagnosis_date = QLineEdit()
+        self.diagnosis_date = QLineEdit(today_text())
         apply_date_mask(self.diagnosis_date)
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in DiagnosisProtocol])
@@ -278,7 +278,8 @@ class NutritionDiagnosisPage(Page):
         self.secondary_count.setText("0")
         self.severe_marker.setChecked(False)
         self.confirmed.setChecked(False)
-        for field in [self.diagnosis_date, self.classification, self.severity]:
+        self.diagnosis_date.setText(today_text())
+        for field in [self.classification, self.severity]:
             field.clear()
         for field in [self.criteria, self.conduct, self.notes]:
             field.clear()

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from nutri_app.domain.meal_plan import Meal, MealPlan, MealPlanItem
-from nutri_app.ui.date_format import format_date, format_datetime, parse_date
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.meal_plan_page_validation import (
     format_optional,
@@ -39,7 +39,7 @@ class MealPlanFormTabMixin:
         self.patient = QComboBox()
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
-        self.start_date = QLineEdit()
+        self.start_date = QLineEdit(today_text())
         apply_date_mask(self.start_date)
         self.end_date = QLineEdit()
         apply_date_mask(self.end_date, optional=True)
@@ -387,8 +387,8 @@ class MealPlanFormTabMixin:
         self.selected_meal_index = None
         if self.patient.count() > 0:
             self.patient.setCurrentIndex(0)
+        self.start_date.setText(today_text())
         for field in [
-            self.start_date,
             self.end_date,
             self.objective,
             self.target_energy,

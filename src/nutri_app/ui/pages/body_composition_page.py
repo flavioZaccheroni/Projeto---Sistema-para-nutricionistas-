@@ -32,7 +32,7 @@ from nutri_app.services.body_fat_calculation import (
     SkinfoldProtocol,
     SkinfoldSite,
 )
-from nutri_app.ui.date_format import format_date, format_datetime, parse_date
+from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 
@@ -75,7 +75,7 @@ class BodyCompositionPage(Page):
         self.patient = QComboBox()
         self.patient.currentIndexChanged.connect(self._patient_changed)
         self.appointment = QComboBox()
-        self.assessment_date = QLineEdit()
+        self.assessment_date = QLineEdit(today_text())
         apply_date_mask(self.assessment_date)
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in BodyCompositionProtocol])
@@ -331,8 +331,8 @@ class BodyCompositionPage(Page):
         if self.patient.count() > 0:
             self.patient.setCurrentIndex(0)
         self.protocol.setCurrentIndex(0)
+        self.assessment_date.setText(today_text())
         for field in [
-            self.assessment_date,
             self.weight,
             self.body_fat_percentage,
             self.fat_mass,
