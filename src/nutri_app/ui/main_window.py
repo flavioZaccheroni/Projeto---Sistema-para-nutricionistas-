@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFont, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
+    QComboBox,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -22,6 +23,7 @@ from PySide6.QtWidgets import (
 from nutri_app.app.context import AppContext
 from nutri_app.domain.user import AuthenticatedUser
 from nutri_app.services.advanced_clinical import AdvancedClinicalService
+from nutri_app.ui.active_patient import ActivePatientContext
 from nutri_app.ui.pages.advanced_module_page import AdvancedModulePage
 from nutri_app.ui.pages.ai_assistant_page import AIAssistantPage
 from nutri_app.ui.pages.anamnesis_page import AnamnesisPage
@@ -62,6 +64,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.context = context
         self.current_user = current_user
+        self.active_patient = ActivePatientContext()
         self.setWindowTitle(context.settings.app_name)
         if context.settings.icon_path.exists():
             self.setWindowIcon(QIcon(str(context.settings.icon_path)))
@@ -86,6 +89,7 @@ class MainWindow(QMainWindow):
             self.page_indexes_by_module[item.module] = page_index
 
         self._populate_menu(navigation_items)
+        self._wire_active_patient(navigation_items)
 
         root = QWidget()
         layout = QHBoxLayout(root)
@@ -113,6 +117,64 @@ class MainWindow(QMainWindow):
         button = page.findChild(QPushButton, "primaryButton")
         if button is not None and button.isEnabled():
             button.click()
+
+    _PATIENT_FIELD_PAIRS = (
+        ("patient", "patient_ids_by_index"),
+        ("patient", "patient_ids"),
+        ("smart_patient", "smart_patient_ids_by_index"),
+        ("advanced_patient", "advanced_patient_ids_by_index"),
+    )
+
+    def _wire_active_patient(self, navigation_items: list[NavigationItem]) -> None:
+        for item in navigation_items:
+            page = item.page
+            for combo_attr, ids_attr in self._PATIENT_FIELD_PAIRS:
+                combo = getattr(page, combo_attr, None)
+                ids = getattr(page, ids_attr, None)
+                if not isinstance(combo, QComboBox) or ids is None:
+                    continue
+                combo.currentIndexChanged.connect(
+                    lambda _index, p=page, c=combo_attr, i=ids_attr: self._on_page_patient_changed(
+                        p, c, i
+                    )
+                )
+                self.active_patient.changed.connect(
+                    lambda patient_id, p=page, c=combo_attr, i=ids_attr: self._sync_page_patient(
+                        p, c, i, patient_id
+                    )
+                )
+
+    def _on_page_patient_changed(self, page: QWidget, combo_attr: str, ids_attr: str) -> None:
+        combo: QComboBox = getattr(page, combo_attr)
+        ids: list = getattr(page, ids_attr)
+        index = combo.currentIndex()
+        if index < 0 or index >= len(ids):
+            return
+        patient_id = ids[index]
+        if patient_id is None:
+            return
+        self.active_patient.set_patient(patient_id)
+
+    def _sync_page_patient(
+        self, page: QWidget, combo_attr: str, ids_attr: str, patient_id: int | None
+    ) -> None:
+        if patient_id is None:
+            return
+        combo: QComboBox = getattr(page, combo_attr)
+        ids: list = getattr(page, ids_attr)
+        if patient_id not in ids:
+            return
+        index = ids.index(patient_id)
+        if combo.currentIndex() == index:
+            return
+        combo.blockSignals(True)
+        combo.setCurrentIndex(index)
+        combo.blockSignals(False)
+
+    def _sync_active_patient_into_page(self, page: QWidget) -> None:
+        for combo_attr, ids_attr in self._PATIENT_FIELD_PAIRS:
+            if hasattr(page, combo_attr) and hasattr(page, ids_attr):
+                self._sync_page_patient(page, combo_attr, ids_attr, self.active_patient.patient_id)
 
     def _navigation_items(self) -> list[NavigationItem]:
         advanced_service = AdvancedClinicalService()
@@ -598,3 +660,4 @@ class MainWindow(QMainWindow):
         refresh = getattr(page, "refresh", None)
         if callable(refresh):
             refresh()
+        self._sync_active_patient_into_page(page)
