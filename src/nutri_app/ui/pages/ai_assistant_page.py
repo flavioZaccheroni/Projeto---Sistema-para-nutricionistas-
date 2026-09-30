@@ -23,6 +23,7 @@ from nutri_app.services.ai_assistant import AIAssistantService
 from nutri_app.services.privacy import PatientPrivacyService
 from nutri_app.ui.date_format import format_datetime
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class AIAssistantPage(Page):
@@ -47,7 +48,7 @@ class AIAssistantPage(Page):
         self.search = QLineEdit()
         self.search.setPlaceholderText("Pesquisar historico por paciente")
         self.search.textChanged.connect(self._reload_table)
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.request_type = QComboBox()
         self.request_type.addItems([item.value for item in AIAssistantRequestType])
         self.prompt = QTextEdit()

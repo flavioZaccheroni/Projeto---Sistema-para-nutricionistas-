@@ -29,6 +29,7 @@ from nutri_app.ui.pages.meal_plan_page_validation import (
     required_float,
 )
 from nutri_app.ui.pages.meal_plan_page_widgets import build_form_card, configure_table
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class MealPlanFormTabMixin:
@@ -36,7 +37,7 @@ class MealPlanFormTabMixin:
         self.search = QLineEdit()
         self.search.setPlaceholderText("Pesquisar pelo nome do paciente")
         self.search.textChanged.connect(self._reload_plan_table)
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.start_date = QLineEdit(today_text())

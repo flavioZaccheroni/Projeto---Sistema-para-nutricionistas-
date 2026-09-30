@@ -37,6 +37,7 @@ from nutri_app.services.patient_portal_server import PatientPortalServer
 from nutri_app.ui.date_format import format_date, parse_date, parse_optional_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask, apply_email_validator
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class PatientAppPage(Page):
@@ -71,7 +72,7 @@ class PatientAppPage(Page):
         for label in [self.access_summary, self.publication_summary, self.adherence_summary]:
             label.setObjectName("summaryBadge")
 
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.patient.currentIndexChanged.connect(self._reload_patient_dependents)
         self.email = QLineEdit()
         apply_email_validator(self.email)

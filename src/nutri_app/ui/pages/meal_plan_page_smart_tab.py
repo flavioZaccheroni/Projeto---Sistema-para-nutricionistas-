@@ -22,11 +22,12 @@ from nutri_app.services.meal_plan_suggestion import MealPlanSuggestionService, S
 from nutri_app.ui.date_format import format_date, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.meal_plan_page_widgets import configure_table
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class SmartMealPlanTabMixin:
     def _build_smart_plan_tab(self) -> QWidget:
-        self.smart_patient = QComboBox()
+        self.smart_patient = make_searchable_combo()
         self.smart_record_date = QLineEdit(today_text())
         apply_date_mask(self.smart_record_date)
         self.smart_profile = QComboBox()

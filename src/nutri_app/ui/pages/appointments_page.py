@@ -34,6 +34,7 @@ from nutri_app.ui.date_format import (
 )
 from nutri_app.ui.input_masks import apply_date_mask, apply_datetime_mask
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class AppointmentsPage(Page):
@@ -54,7 +55,7 @@ class AppointmentsPage(Page):
         self.selected_appointment_id: int | None = None
         self.patient_ids_by_index: list[int] = []
 
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.scheduled_at = QLineEdit()
         apply_datetime_mask(self.scheduled_at)
         self.kind = QComboBox()

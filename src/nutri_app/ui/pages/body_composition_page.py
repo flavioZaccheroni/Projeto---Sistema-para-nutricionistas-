@@ -35,6 +35,7 @@ from nutri_app.services.body_fat_calculation import (
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 SKINFOLD_PROTOCOLS = {
     BodyCompositionProtocol.DURNIN_WOMERSLEY: SkinfoldProtocol.DURNIN_WOMERSLEY,
@@ -72,7 +73,7 @@ class BodyCompositionPage(Page):
         self.search = QLineEdit()
         self.search.setPlaceholderText("Pesquisar pelo nome do paciente")
         self.search.textChanged.connect(self._reload_table)
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.patient.currentIndexChanged.connect(self._patient_changed)
         self.appointment = QComboBox()
         self.assessment_date = QLineEdit(today_text())

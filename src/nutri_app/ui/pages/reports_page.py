@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import (
     QCheckBox,
-    QComboBox,
     QFormLayout,
     QHBoxLayout,
     QLineEdit,
@@ -23,6 +22,7 @@ from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.repositories.user_repository import UserRepository
 from nutri_app.services.report import ClinicalReportOptions, ClinicalReportService
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class ReportsPage(Page):
@@ -47,7 +47,7 @@ class ReportsPage(Page):
         self.search = QLineEdit()
         self.search.setPlaceholderText("Pesquisar relatorios pelo paciente")
         self.search.textChanged.connect(self._reload_table)
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.include_anamnesis = QCheckBox("Anamnese")
         self.include_anthropometry = QCheckBox("Antropometria")
         self.include_laboratory_exams = QCheckBox("Exames")

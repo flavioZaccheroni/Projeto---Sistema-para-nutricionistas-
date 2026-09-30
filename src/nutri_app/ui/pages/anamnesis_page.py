@@ -47,6 +47,7 @@ from nutri_app.ui.anamnesis_form import (
 from nutri_app.ui.date_format import format_datetime
 from nutri_app.ui.pages.advanced_module_page import AdvancedModulePage
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class AnamnesisPage(Page):
@@ -77,7 +78,7 @@ class AnamnesisPage(Page):
         self.search = QLineEdit()
         self.search.setPlaceholderText("Pesquisar pelo nome do paciente")
         self.search.textChanged.connect(self._reload_table)
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
 

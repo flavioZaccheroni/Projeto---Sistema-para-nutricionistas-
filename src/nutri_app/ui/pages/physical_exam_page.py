@@ -26,6 +26,7 @@ from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.ui.date_format import format_date, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class PhysicalExamPage(Page):
@@ -81,7 +82,7 @@ class PhysicalExamPage(Page):
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
 
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.patient.currentIndexChanged.connect(self._reload_history)
         self.patient_ids: list[int | None] = []
         self.assessment_date = QLineEdit(today_text())

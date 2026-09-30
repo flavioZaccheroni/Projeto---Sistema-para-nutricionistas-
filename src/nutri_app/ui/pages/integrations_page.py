@@ -27,6 +27,7 @@ from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.integration import IntegrationService
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class IntegrationsPage(Page):
@@ -56,7 +57,7 @@ class IntegrationsPage(Page):
         self.credential_alias = QLineEdit()
         self.notes = QLineEdit()
         self.integration = QComboBox()
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.payload = QTextEdit()
         self.payload.setFixedHeight(120)
         self.result = QTextEdit()

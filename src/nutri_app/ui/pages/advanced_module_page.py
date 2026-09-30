@@ -30,6 +30,7 @@ from nutri_app.services.advanced_clinical import AdvancedModuleDefinition
 from nutri_app.ui.date_format import format_date, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class AdvancedModulePage(Page):
@@ -62,7 +63,7 @@ class AdvancedModulePage(Page):
         self.protocol_risk_checks: dict[str, QCheckBox] = {}
         self.protocol_score_sliders: dict[str, QSlider] = {}
 
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.record_date = QLineEdit(today_text())
         apply_date_mask(self.record_date)
         self.profile = QComboBox()

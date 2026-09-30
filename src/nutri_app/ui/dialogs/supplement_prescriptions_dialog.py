@@ -28,6 +28,7 @@ from nutri_app.repositories.supplement_prescription_repository import (
 from nutri_app.repositories.supplement_repository import SupplementRepository
 from nutri_app.ui.date_format import format_date, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class SupplementPrescriptionsDialog(QDialog):
@@ -52,7 +53,7 @@ class SupplementPrescriptionsDialog(QDialog):
         self.setWindowTitle("Prescricoes de suplementacao")
         self.resize(1100, 760)
 
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.patient.currentIndexChanged.connect(self._reload_prescriptions)
         self.supplement = QComboBox()
         self.start_date = QLineEdit(today_text())

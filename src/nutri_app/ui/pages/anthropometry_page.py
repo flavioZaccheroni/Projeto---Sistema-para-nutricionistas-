@@ -36,6 +36,7 @@ from nutri_app.ui.date_format import (
 )
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.searchable_combo import make_searchable_combo
 
 
 class AnthropometryPage(Page):
@@ -67,7 +68,7 @@ class AnthropometryPage(Page):
         self.search = QLineEdit()
         self.search.setPlaceholderText("Pesquisar pelo nome do paciente")
         self.search.textChanged.connect(self._reload_table)
-        self.patient = QComboBox()
+        self.patient = make_searchable_combo()
         self.patient.currentIndexChanged.connect(self._reload_appointments)
         self.appointment = QComboBox()
         self.assessment_date = QLineEdit(today_text())
@@ -229,7 +230,7 @@ class AnthropometryPage(Page):
         self._reload_advanced_table()
 
     def _build_advanced_tab(self) -> QWidget:
-        self.advanced_patient = QComboBox()
+        self.advanced_patient = make_searchable_combo()
         self.advanced_record_date = QLineEdit(today_text())
         apply_date_mask(self.advanced_record_date)
         self.advanced_profile = QComboBox()
