@@ -115,11 +115,17 @@ class AnamnesisPage(Page):
         new.clicked.connect(self._clear_form)
         delete = QPushButton("Excluir")
         delete.clicked.connect(self._delete_anamnesis)
+        repeat_last = QPushButton("Repetir ultima anamnese")
+        repeat_last.setToolTip(
+            "Carrega a anamnese mais recente do paciente selecionado como ponto de partida."
+        )
+        repeat_last.clicked.connect(self._repeat_last_anamnesis)
 
         actions = QHBoxLayout()
         actions.addWidget(save)
         actions.addWidget(new)
         actions.addWidget(delete)
+        actions.addWidget(repeat_last)
         actions.addStretch()
 
         self.table = QTableWidget(0, 5)
@@ -351,6 +357,38 @@ class AnamnesisPage(Page):
             return
 
         self.selected_anamnesis_id = record.id
+        self._apply_record_to_form(record)
+
+    def _repeat_last_anamnesis(self) -> None:
+        if self.patient.currentIndex() < 0 or not self.patient_ids_by_index:
+            QMessageBox.warning(self, "Anamnese", "Selecione um paciente.")
+            return
+
+        patient_id = self.patient_ids_by_index[self.patient.currentIndex()]
+        previous_records = [
+            record
+            for record in self.repository.list_active()
+            if record.patient_id == patient_id and record.id is not None
+        ]
+        if not previous_records:
+            QMessageBox.information(
+                self,
+                "Anamnese",
+                "Este paciente ainda nao tem uma anamnese anterior para repetir.",
+            )
+            return
+
+        self.selected_anamnesis_id = None
+        self._apply_record_to_form(previous_records[0])
+        self.appointment.setCurrentIndex(0)
+        QMessageBox.information(
+            self,
+            "Anamnese",
+            "Anamnese anterior carregada como ponto de partida. "
+            "Revise e clique em Salvar para registrar uma nova anamnese.",
+        )
+
+    def _apply_record_to_form(self, record: Anamnesis) -> None:
         if record.patient_id in self.patient_ids_by_index:
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(record.patient_id))
         self._reload_appointments()
