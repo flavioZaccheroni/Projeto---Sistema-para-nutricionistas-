@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QPushButton,
     QSizePolicy,
@@ -22,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from nutri_app.app.context import AppContext
 from nutri_app.domain.user import AuthenticatedUser
+from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.services.advanced_clinical import AdvancedClinicalService
 from nutri_app.ui.active_patient import ActivePatientContext
 from nutri_app.ui.pages.advanced_module_page import AdvancedModulePage
@@ -64,6 +66,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.context = context
         self.current_user = current_user
+        self.patient_repository = PatientRepository(context.connection_factory)
         self.active_patient = ActivePatientContext()
         self.setWindowTitle(context.settings.app_name)
         if context.settings.icon_path.exists():
@@ -649,12 +652,48 @@ class MainWindow(QMainWindow):
         user.setObjectName("currentUser")
         user.setMargin(16)
 
+        self.active_patient_label = QLabel("Nenhum paciente em atendimento")
+        self.active_patient_label.setObjectName("activePatientIndicator")
+        self.active_patient_label.setWordWrap(True)
+        self.active_patient_label.setMargin(16)
+        self.active_patient.changed.connect(self._update_active_patient_label)
+
+        self.menu_search = QLineEdit()
+        self.menu_search.setObjectName("menuSearch")
+        self.menu_search.setPlaceholderText("Buscar modulo")
+        self.menu_search.textChanged.connect(self._filter_menu)
+
         layout = QVBoxLayout(sidebar)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(title)
         layout.addWidget(user)
+        layout.addWidget(self.active_patient_label)
+        layout.addWidget(self.menu_search)
         layout.addWidget(self.menu)
         return sidebar
+
+    def _update_active_patient_label(self, patient_id: int) -> None:
+        patient = self.patient_repository.get(patient_id)
+        text = f"Atendendo: {patient.name}" if patient else "Nenhum paciente em atendimento"
+        self.active_patient_label.setText(text)
+
+    def _filter_menu(self, text: str) -> None:
+        query = text.strip().lower()
+        for index in range(self.menu.topLevelItemCount()):
+            self._filter_tree_item(self.menu.topLevelItem(index), query)
+
+    def _filter_tree_item(self, item: QTreeWidgetItem, query: str) -> bool:
+        child_matches = False
+        for index in range(item.childCount()):
+            if self._filter_tree_item(item.child(index), query):
+                child_matches = True
+
+        self_matches = not query or query in item.text(0).lower()
+        visible = self_matches or child_matches
+        item.setHidden(not visible)
+        if query and child_matches:
+            item.setExpanded(True)
+        return visible
 
     def _change_page(self, item: QTreeWidgetItem, _column: int) -> None:
         page_index = item.data(0, Qt.ItemDataRole.UserRole)

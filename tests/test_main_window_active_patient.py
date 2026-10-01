@@ -119,6 +119,19 @@ class MainWindowActivePatientTest(unittest.TestCase):
 
         window.close()
 
+    def test_indicador_lateral_mostra_o_paciente_em_atendimento(self) -> None:
+        window = self._build_window()
+
+        self.assertEqual(window.active_patient_label.text(), "Nenhum paciente em atendimento")
+
+        agenda_page = self._show(window, "Agenda")
+        index = agenda_page.patient_ids_by_index.index(self.bruno_id)
+        agenda_page.patient.setCurrentIndex(index)
+
+        self.assertEqual(window.active_patient_label.text(), "Atendendo: Bruno Teste")
+
+        window.close()
+
 
 if __name__ == "__main__":
     unittest.main()
