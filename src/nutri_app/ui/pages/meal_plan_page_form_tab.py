@@ -113,9 +113,15 @@ class MealPlanFormTabMixin:
         new.clicked.connect(self._clear_form)
         delete = QPushButton("Excluir")
         delete.clicked.connect(self._delete_plan)
+        duplicate_last = QPushButton("Duplicar ultimo plano")
+        duplicate_last.setToolTip(
+            "Carrega o plano mais recente do paciente selecionado como ponto de partida."
+        )
+        duplicate_last.clicked.connect(self._duplicate_last_plan)
 
         actions = QHBoxLayout()
-        for button in [add_meal, add_item, remove_meal, calculate, save, new, delete]:
+        buttons = [add_meal, add_item, remove_meal, calculate, save, new, delete, duplicate_last]
+        for button in buttons:
             actions.addWidget(button)
         actions.addStretch()
 
@@ -566,6 +572,52 @@ class MealPlanFormTabMixin:
         self.meal_name.setText(meal.name)
         self.meal_time.setText(meal.time)
         self.meal_notes.setText(meal.notes)
+
+    def _duplicate_last_plan(self) -> None:
+        if self.patient.currentIndex() < 0 or not self.patient_ids_by_index:
+            QMessageBox.warning(self, "Plano alimentar", "Selecione um paciente.")
+            return
+
+        patient_id = self.patient_ids_by_index[self.patient.currentIndex()]
+        previous_plans = [
+            plan
+            for plan in self.repository.list_active()
+            if plan.patient_id == patient_id and plan.id is not None
+        ]
+        if not previous_plans:
+            QMessageBox.information(
+                self,
+                "Plano alimentar",
+                "Este paciente ainda nao tem um plano anterior para duplicar.",
+            )
+            return
+
+        last_plan = previous_plans[0]
+        record = self.repository.get(last_plan.id)
+        if record is None:
+            return
+
+        self.selected_plan_id = None
+        self._reload_appointments()
+        self.appointment.setCurrentIndex(0)
+        self.start_date.setText(today_text())
+        self.end_date.clear()
+        self.objective.setText(record.objective)
+        self.target_energy.setText(format_optional(record.target_energy_kcal))
+        self.target_protein.setText(format_optional(record.target_protein_g))
+        self.target_carbohydrate.setText(format_optional(record.target_carbohydrate_g))
+        self.target_fat.setText(format_optional(record.target_fat_g))
+        self.notes.setPlainText(record.notes)
+        self.meals = list(record.meals)
+        self.selected_meal_index = None
+        self._reload_meal_table()
+        self._calculate_totals()
+        QMessageBox.information(
+            self,
+            "Plano alimentar",
+            f"Plano de {format_date(record.start_date)} duplicado como ponto de partida. "
+            "Ajuste o que for preciso e clique em Salvar para criar um novo plano.",
+        )
 
     def _select_plan_from_table(self, row: int, _column: int) -> None:
         item = self.plan_table.item(row, 0)
