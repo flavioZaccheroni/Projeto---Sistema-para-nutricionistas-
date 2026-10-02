@@ -74,6 +74,19 @@ class AnthropometryRepository:
             ).fetchone()
         return self._row_to_anthropometry(row) if row is not None else None
 
+    def latest_for_patient(self, patient_id: int) -> Anthropometry | None:
+        with self.connection_factory.connect() as connection:
+            row = connection.execute(
+                f"""
+                {self._select_sql()}
+                WHERE a.paciente_id = ? AND a.deleted_at IS NULL AND p.deleted_at IS NULL
+                ORDER BY a.data_avaliacao DESC, a.id DESC
+                LIMIT 1
+                """,
+                (patient_id,),
+            ).fetchone()
+        return self._row_to_anthropometry(row) if row is not None else None
+
     def list_active(self, patient_query: str = "") -> list[Anthropometry]:
         normalized = f"%{patient_query.strip().lower()}%"
         with self.connection_factory.connect() as connection:

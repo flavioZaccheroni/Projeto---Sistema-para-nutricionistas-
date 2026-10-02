@@ -23,12 +23,14 @@ from PySide6.QtWidgets import (
 
 from nutri_app.domain.advanced_clinical import AdvancedClinicalRecord
 from nutri_app.repositories.advanced_clinical_repository import AdvancedClinicalRepository
+from nutri_app.repositories.anthropometry_repository import AnthropometryRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.advanced_clinical import AdvancedModuleDefinition
 from nutri_app.ui.date_format import format_date, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
+from nutri_app.ui.measure_prefill import MeasurePrefill
 from nutri_app.ui.pages.base import Page
 from nutri_app.ui.searchable_combo import make_searchable_combo
 
@@ -86,6 +88,17 @@ class AdvancedModulePage(Page):
             if definition.module == "Exames Avancados":
                 field.textChanged.connect(self._refresh_advanced_labs_indicators)
             form.addRow(label, field)
+        self.measure_prefill: MeasurePrefill | None = None
+        if definition.module == "Pediatria":
+            self.measure_prefill = MeasurePrefill(
+                AnthropometryRepository(connection_factory),
+                {
+                    "age_months": self.inputs["age_months"],
+                    "weight": self.inputs["weight"],
+                    "height": self.inputs["height_cm"],
+                },
+            )
+            self.patient.currentIndexChanged.connect(self._prefill_measures)
         form.addRow("Observacoes", self.notes)
         form.addRow("Resultado", self.result)
 
@@ -471,6 +484,7 @@ class AdvancedModulePage(Page):
         self.notes.clear()
         self.result.clear()
         self.record_date.setText(today_text())
+        self._prefill_measures()
 
     def _load_patients(self) -> None:
         current = self.patient.currentText()
@@ -485,3 +499,13 @@ class AdvancedModulePage(Page):
         if index >= 0:
             self.patient.setCurrentIndex(index)
         self.patient.blockSignals(False)
+        self._prefill_measures()
+
+    def _prefill_measures(self) -> None:
+        if self.measure_prefill is None:
+            return
+        patient = None
+        index = self.patient.currentIndex()
+        if 0 <= index < len(self.patient_ids) and self.patient_ids[index] is not None:
+            patient = self.patient_repository.get(self.patient_ids[index])
+        self.measure_prefill.apply(patient)

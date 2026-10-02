@@ -20,7 +20,8 @@ from PySide6.QtWidgets import (
 
 from nutri_app.domain.body_composition import BodyComposition, BodyCompositionProtocol
 from nutri_app.domain.energy_expenditure import BiologicalSex
-from nutri_app.domain.patient import Patient, calculate_age
+from nutri_app.domain.patient import Patient
+from nutri_app.repositories.anthropometry_repository import AnthropometryRepository
 from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.body_composition_repository import BodyCompositionRepository
@@ -34,6 +35,7 @@ from nutri_app.services.body_fat_calculation import (
 )
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
+from nutri_app.ui.measure_prefill import MeasurePrefill
 from nutri_app.ui.pages.base import Page
 from nutri_app.ui.searchable_combo import make_searchable_combo
 
@@ -101,6 +103,10 @@ class BodyCompositionPage(Page):
         self.body_water_percentage = QLineEdit()
         self.muscle_mass = QLineEdit()
         self.visceral_fat = QLineEdit()
+        self.measure_prefill = MeasurePrefill(
+            AnthropometryRepository(connection_factory),
+            {"age": self.age, "weight": self.weight},
+        )
         self.notes = QTextEdit()
         self.notes.setFixedHeight(70)
 
@@ -345,7 +351,7 @@ class BodyCompositionPage(Page):
             field.clear()
         self.notes.clear()
         self._clear_skinfold_fields()
-        self._fill_age_from_patient()
+        self._prefill_measures()
         self._fill_sex_from_patient()
         self._reload_metrics_preview()
 
@@ -371,16 +377,14 @@ class BodyCompositionPage(Page):
 
     def _patient_changed(self) -> None:
         self._reload_appointments()
-        self._fill_age_from_patient()
+        self._prefill_measures()
         self._fill_sex_from_patient()
 
-    def _fill_age_from_patient(self) -> None:
-        if self.patient.currentIndex() < 0 or not self.patient_records_by_index:
-            return
-        if self.age.text().strip():
-            return
-        patient = self.patient_records_by_index[self.patient.currentIndex()]
-        self.age.setText(str(calculate_age(patient.birth_date)))
+    def _prefill_measures(self) -> None:
+        patient = None
+        if self.patient.currentIndex() >= 0 and self.patient_records_by_index:
+            patient = self.patient_records_by_index[self.patient.currentIndex()]
+        self.measure_prefill.apply(patient)
 
     def _fill_sex_from_patient(self) -> None:
         if self.patient.currentIndex() < 0 or not self.patient_records_by_index:
