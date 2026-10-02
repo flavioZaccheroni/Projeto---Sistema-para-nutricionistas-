@@ -77,6 +77,7 @@ class PatientAppPage(Page):
 
         self.patient = make_searchable_combo()
         self.patient.currentIndexChanged.connect(self._reload_patient_dependents)
+        self._auto_email = ""
         self.email = QLineEdit()
         apply_email_validator(self.email)
         self.access_code = QLineEdit()
@@ -357,12 +358,25 @@ class PatientAppPage(Page):
             self.patient.setCurrentIndex(self.patient_ids_by_index.index(current_id))
         self.patient.blockSignals(False)
 
+    def _prefill_login_email(self, patient_id: int | None) -> None:
+        """Sugere o e-mail do cadastro do paciente, sem sobrescrever o que foi digitado."""
+        suggested = ""
+        if patient_id is not None:
+            patient = self.patient_repository.get(patient_id)
+            suggested = patient.email.strip() if patient and patient.email else ""
+        current = self.email.text().strip()
+        if current and current != self._auto_email:
+            return
+        self.email.setText(suggested)
+        self._auto_email = suggested
+
     def _reload_patient_dependents(self) -> None:
         patient_id = (
             self.patient_ids_by_index[self.patient.currentIndex()]
             if self.patient.currentIndex() >= 0 and self.patient_ids_by_index
             else None
         )
+        self._prefill_login_email(patient_id)
         self.meal_plan.clear()
         self.meal_plan_ids_by_index = [None]
         self.meal_plan.addItem("Sem plano")
