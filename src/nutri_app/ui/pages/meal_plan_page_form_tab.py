@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from nutri_app.domain.meal_plan import Meal, MealPlan, MealPlanItem
+from nutri_app.ui.choice_combo import MEASURE_UNITS, TextChoiceComboBox
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.meal_plan_page_validation import (
@@ -74,7 +75,7 @@ class MealPlanFormTabMixin:
         self.food.textEdited.connect(self._on_food_text_edited)
         self.quantity = QLineEdit()
         self.quantity.textEdited.connect(self._recalculate_linked_item)
-        self.unit = QLineEdit()
+        self.unit = TextChoiceComboBox(MEASURE_UNITS, editable=True)
         self.energy = QLineEdit()
         self.protein = QLineEdit()
         self.carbohydrate = QLineEdit()

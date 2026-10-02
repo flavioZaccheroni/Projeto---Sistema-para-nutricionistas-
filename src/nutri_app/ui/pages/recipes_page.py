@@ -17,6 +17,7 @@ from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.recipe_repository import RecipeRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.recipe import RecipeService
+from nutri_app.ui.choice_combo import MEASURE_UNITS, TextChoiceComboBox
 from nutri_app.ui.pages.base import Page
 
 
@@ -63,7 +64,7 @@ class RecipesPage(Page):
 
         self.ingredient_name = QLineEdit()
         self.ingredient_quantity = QLineEdit()
-        self.ingredient_unit = QLineEdit()
+        self.ingredient_unit = TextChoiceComboBox(MEASURE_UNITS, editable=True)
         self.ingredient_weight = QLineEdit()
         self.ingredient_energy = QLineEdit()
         self.ingredient_protein = QLineEdit()

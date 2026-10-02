@@ -22,6 +22,7 @@ from nutri_app.repositories.finance_repository import FinanceRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.finance import FinanceService
+from nutri_app.ui.choice_combo import PAYMENT_METHODS, TextChoiceComboBox
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date, parse_optional_date
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
@@ -64,7 +65,7 @@ class FinancePage(Page):
         apply_date_mask(self.due_date)
         self.payment_date = QLineEdit()
         apply_date_mask(self.payment_date, optional=True)
-        self.payment_method = QLineEdit()
+        self.payment_method = TextChoiceComboBox(PAYMENT_METHODS, allow_blank=True)
         self.status = QComboBox()
         self.status.addItems([item.value for item in FinancialStatus])
         self.notes = QTextEdit()

@@ -26,6 +26,7 @@ from nutri_app.repositories.supplement_prescription_repository import (
     SupplementPrescriptionRepository,
 )
 from nutri_app.repositories.supplement_repository import SupplementRepository
+from nutri_app.ui.choice_combo import MEASURE_UNITS, TextChoiceComboBox
 from nutri_app.ui.date_format import format_date, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.searchable_combo import make_searchable_combo
@@ -61,7 +62,7 @@ class SupplementPrescriptionsDialog(QDialog):
         apply_date_mask(self.start_date)
         apply_date_mask(self.end_date)
         self.quantity = QLineEdit()
-        self.unit = QLineEdit("g")
+        self.unit = TextChoiceComboBox(MEASURE_UNITS, editable=True, default="g")
         self.frequency = QSpinBox()
         self.frequency.setRange(1, 24)
         self.times = QLineEdit()

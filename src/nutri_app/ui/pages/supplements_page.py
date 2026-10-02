@@ -18,6 +18,7 @@ from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.repositories.supplement_repository import SupplementRepository
 from nutri_app.services.supplement import SupplementService
+from nutri_app.ui.choice_combo import MEASURE_UNITS, TextChoiceComboBox
 from nutri_app.ui.dialogs.supplement_prescriptions_dialog import SupplementPrescriptionsDialog
 from nutri_app.ui.pages.base import Page
 
@@ -46,7 +47,7 @@ class SupplementsPage(Page):
         self.manufacturer = QLineEdit()
         self.presentation = QLineEdit()
         self.base_portion = QLineEdit("100")
-        self.portion_unit = QLineEdit("ml")
+        self.portion_unit = TextChoiceComboBox(MEASURE_UNITS, editable=True, default="ml")
         self.caloric_density = QLineEdit()
         self.osmolarity = QLineEdit()
         self.energy = QLineEdit()

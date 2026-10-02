@@ -28,6 +28,7 @@ from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.food_repository import FoodRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.food import FoodService
+from nutri_app.ui.choice_combo import FOOD_CATEGORIES, TextChoiceComboBox
 from nutri_app.ui.pages.base import Page
 
 
@@ -49,7 +50,7 @@ class FoodDatabasePage(Page):
         self.search.setPlaceholderText("Pesquisar por nome, categoria ou fonte")
         self.search.textChanged.connect(self._reload_table)
         self.name = QLineEdit()
-        self.category = QLineEdit()
+        self.category = TextChoiceComboBox(FOOD_CATEGORIES, allow_blank=True)
         self.source = QComboBox()
         self.source.addItems([source.value for source in FoodSource])
         self.base_portion = QLineEdit("100")
