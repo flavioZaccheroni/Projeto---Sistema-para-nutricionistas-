@@ -28,6 +28,7 @@ from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.repositories.web_portal_repository import WebPortalRepository
 from nutri_app.services.web_portal import WebPortalService
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.path_picker import with_browse_button
 
 
 class WebPortalPage(Page):
@@ -101,7 +102,12 @@ class WebPortalPage(Page):
     def _output_card(self) -> QGroupBox:
         card = QGroupBox("")
         layout = QGridLayout(card)
-        self._add_stacked_field(layout, 0, "Diretorio de saida", self.output_dir)
+        self._add_stacked_field(
+            layout,
+            0,
+            "Diretorio de saida",
+            with_browse_button(self.output_dir, title="Selecionar pasta de saida", folder=True),
+        )
         return card
 
     def _generation_card(self) -> QGroupBox:

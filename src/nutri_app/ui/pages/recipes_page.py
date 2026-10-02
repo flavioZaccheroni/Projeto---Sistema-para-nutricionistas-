@@ -29,6 +29,7 @@ from nutri_app.ui.choice_combo import (
 )
 from nutri_app.ui.food_lookup import FoodLookup
 from nutri_app.ui.pages.base import Page
+from nutri_app.ui.path_picker import with_browse_button
 
 
 class RecipesPage(Page):
@@ -101,7 +102,14 @@ class RecipesPage(Page):
         recipe_form.addRow("Categoria", self.category)
         recipe_form.addRow("Rendimento porcoes", self.servings)
         recipe_form.addRow("Peso total (g)", self.total_weight)
-        recipe_form.addRow("Foto/caminho", self.photo_path)
+        recipe_form.addRow(
+            "Foto/caminho",
+            with_browse_button(
+                self.photo_path,
+                title="Selecionar foto da receita",
+                file_filter="Imagens (*.png *.jpg *.jpeg *.webp)",
+            ),
+        )
         recipe_form.addRow("Energia total", self.total_energy)
         recipe_form.addRow("Proteina total", self.total_protein)
         recipe_form.addRow("Carboidrato total", self.total_carbohydrate)
