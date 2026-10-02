@@ -12,11 +12,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from nutri_app.domain.food import Food
 from nutri_app.domain.recipe import Recipe, RecipeIngredient
 from nutri_app.repositories.audit_repository import AuditRepository
 from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
+from nutri_app.repositories.food_repository import FoodRepository
 from nutri_app.repositories.recipe_repository import RecipeRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.services.food import FoodService
 from nutri_app.services.recipe import RecipeService
 from nutri_app.ui.choice_combo import (
     MEASURE_UNITS,
@@ -24,6 +27,7 @@ from nutri_app.ui.choice_combo import (
     TextChoiceComboBox,
     refresh_choices,
 )
+from nutri_app.ui.food_lookup import FoodLookup
 from nutri_app.ui.pages.base import Page
 
 
@@ -40,6 +44,8 @@ class RecipesPage(Page):
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.service = RecipeService()
+        self.food_repository = FoodRepository(connection_factory)
+        self.food_service = FoodService()
         self.selected_recipe_id: int | None = None
         self.selected_ingredient_index: int | None = None
         self.ingredients: list[RecipeIngredient] = []
@@ -80,6 +86,14 @@ class RecipesPage(Page):
         self.ingredient_fiber = QLineEdit()
         self.ingredient_sodium = QLineEdit()
         self.ingredient_notes = QLineEdit()
+        self.food_lookup = FoodLookup(
+            self.food_repository,
+            self.food_service,
+            self.ingredient_name,
+            self._apply_picked_food,
+        )
+        self.ingredient_quantity.textEdited.connect(self._on_ingredient_quantity_edited)
+        self.ingredient_weight.textEdited.connect(self._recalculate_linked_ingredient)
 
         recipe_form = QFormLayout()
         recipe_form.addRow("Pesquisar", self.search)
@@ -164,6 +178,7 @@ class RecipesPage(Page):
 
     def refresh(self) -> None:
         self._reload_choices()
+        self.food_lookup.reload()
         self._reload_recipe_table()
 
     def _save_recipe(self) -> None:
@@ -265,7 +280,35 @@ class RecipesPage(Page):
             fiber_g=self._optional_float(self.ingredient_fiber.text(), "Fibras") or 0,
             sodium_mg=self._optional_float(self.ingredient_sodium.text(), "Sodio") or 0,
             notes=self.ingredient_notes.text().strip(),
+            food_id=self.food_lookup.selected.id if self.food_lookup.selected else None,
         )
+
+    def _apply_picked_food(self, food: Food) -> None:
+        self.ingredient_unit.setText("g")
+        if not self.ingredient_quantity.text().strip():
+            self.ingredient_quantity.setText(f"{food.base_portion_g:g}")
+        self.ingredient_weight.setText(self.ingredient_quantity.text().strip())
+        self._recalculate_linked_ingredient()
+
+    def _on_ingredient_quantity_edited(self) -> None:
+        if self.food_lookup.selected is not None and self.ingredient_unit.text() == "g":
+            self.ingredient_weight.setText(self.ingredient_quantity.text().strip())
+            self._recalculate_linked_ingredient()
+
+    def _recalculate_linked_ingredient(self) -> None:
+        try:
+            grams = float(self.ingredient_weight.text().strip().replace(",", "."))
+        except ValueError:
+            return
+        nutrients = self.food_lookup.nutrients_for(grams)
+        if nutrients is None:
+            return
+        self.ingredient_energy.setText(f"{nutrients.energy_kcal:.1f}")
+        self.ingredient_protein.setText(f"{nutrients.protein_g:.1f}")
+        self.ingredient_carbohydrate.setText(f"{nutrients.carbohydrate_g:.1f}")
+        self.ingredient_fat.setText(f"{nutrients.fat_g:.1f}")
+        self.ingredient_fiber.setText(f"{nutrients.fiber_g:.1f}")
+        self.ingredient_sodium.setText(f"{nutrients.sodium_mg:.1f}")
 
     def _remove_ingredient(self) -> None:
         if self.selected_ingredient_index is None:
@@ -310,6 +353,7 @@ class RecipesPage(Page):
 
     def _clear_ingredient_form(self) -> None:
         self.selected_ingredient_index = None
+        self.food_lookup.clear_selection()
         for field in [
             self.ingredient_name,
             self.ingredient_quantity,
@@ -365,6 +409,7 @@ class RecipesPage(Page):
         self.ingredient_fiber.setText(f"{ingredient.fiber_g:g}")
         self.ingredient_sodium.setText(f"{ingredient.sodium_mg:g}")
         self.ingredient_notes.setText(ingredient.notes)
+        self.food_lookup.select_by_id(ingredient.food_id)
 
     def _select_recipe_from_table(self, row: int, _column: int) -> None:
         item = self.recipe_table.item(row, 0)
