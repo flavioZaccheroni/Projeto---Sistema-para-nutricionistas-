@@ -59,6 +59,8 @@ PAYMENT_METHODS = (
 
 INSURANCE_SEEDS = ("Particular",)
 
+MOOD_SEEDS = ("Otimo", "Bom", "Regular", "Ruim")
+
 LAB_EXAM_NAMES = (
     "Glicemia de jejum",
     "Hemoglobina glicada",

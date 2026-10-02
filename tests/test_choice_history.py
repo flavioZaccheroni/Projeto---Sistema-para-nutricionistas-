@@ -21,10 +21,15 @@ from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.ui.choice_combo import (
     INSURANCE_SEEDS,
     LAB_EXAM_NAMES,
+    MOOD_SEEDS,
     TextChoiceComboBox,
     merge_options,
 )
+from nutri_app.ui.dialogs.supplement_prescriptions_dialog import (
+    SupplementPrescriptionsDialog,
+)
 from nutri_app.ui.pages.laboratory_exams_page import LaboratoryExamsPage
+from nutri_app.ui.pages.patient_app_page import PatientAppPage
 from nutri_app.ui.pages.patients_page import PatientsPage
 
 
@@ -172,6 +177,47 @@ class ScreensLearnOptionsTest(unittest.TestCase):
             page.item_name.setText("Exame muito raro")
 
             self.assertEqual(page.item_name.text(), "Exame muito raro")
+
+
+class AppAndPrescriptionChoicesTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.app = QApplication.instance() or QApplication([])
+
+    def _items(self, combo: TextChoiceComboBox) -> list[str]:
+        return [combo.itemText(index) for index in range(combo.count())]
+
+    def test_novas_origens_existem_no_esquema(self) -> None:
+        with TemporaryDirectory() as tmp:
+            factory = SQLiteConnectionFactory(Path(tmp) / "test.sqlite")
+            initialize_database(factory)
+            history = ChoiceHistoryRepository(factory)
+
+            for source in ("app_mood", "app_difficulties", "supplement_objective"):
+                self.assertEqual(history.values(source), [], source)
+
+    def test_paciente_app_sugere_humores_comuns_e_dificuldades_vazias(self) -> None:
+        with TemporaryDirectory() as tmp:
+            factory = SQLiteConnectionFactory(Path(tmp) / "test.sqlite")
+            initialize_database(factory)
+
+            page = PatientAppPage(factory, AuditRepository(factory), current_user_id=1)
+
+            self.assertEqual(self._items(page.mood), list(MOOD_SEEDS))
+            self.assertEqual(self._items(page.difficulties), [])
+            self.assertTrue(page.mood.isEditable())
+
+    def test_prescricao_tem_objetivo_como_combo_editavel(self) -> None:
+        with TemporaryDirectory() as tmp:
+            factory = SQLiteConnectionFactory(Path(tmp) / "test.sqlite")
+            initialize_database(factory)
+
+            dialog = SupplementPrescriptionsDialog(factory, AuditRepository(factory), 1)
+
+            self.assertTrue(dialog.objective.isEditable())
+            dialog.objective.setText("Ganho de massa")
+            self.assertEqual(dialog.objective.text(), "Ganho de massa")
+            dialog.close()
 
 
 if __name__ == "__main__":

@@ -28,12 +28,14 @@ from nutri_app.domain.patient_app import (
     PatientPublicationType,
 )
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 from nutri_app.repositories.meal_plan_repository import MealPlanRepository
 from nutri_app.repositories.patient_app_repository import PatientAppRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.patient_app import PatientAppService
 from nutri_app.services.patient_portal_server import PatientPortalServer
+from nutri_app.ui.choice_combo import MOOD_SEEDS, TextChoiceComboBox, refresh_choices
 from nutri_app.ui.date_format import format_date, parse_date, parse_optional_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask, apply_email_validator
 from nutri_app.ui.pages.base import Page
@@ -52,6 +54,7 @@ class PatientAppPage(Page):
             "Acesso do paciente, plano publicado, orientacoes e adesao.",
         )
         self.repository = PatientAppRepository(connection_factory)
+        self.choice_history = ChoiceHistoryRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
         self.meal_plan_repository = MealPlanRepository(connection_factory)
         self.audit_repository = audit_repository
@@ -92,8 +95,8 @@ class PatientAppPage(Page):
         self.record_date = QLineEdit(today_text())
         apply_date_mask(self.record_date)
         self.adherence = QLineEdit()
-        self.mood = QLineEdit()
-        self.difficulties = QLineEdit()
+        self.mood = TextChoiceComboBox((), editable=True)
+        self.difficulties = TextChoiceComboBox((), editable=True)
         self.adherence_notes = QTextEdit()
         self.adherence_notes.setFixedHeight(70)
 
@@ -242,6 +245,7 @@ class PatientAppPage(Page):
         layout.setColumnStretch(column, 1)
 
     def refresh(self) -> None:
+        self._reload_choices()
         self._reload_patients()
         self._reload_patient_dependents()
         self._reload_tables()
@@ -330,6 +334,11 @@ class PatientAppPage(Page):
         self.adherence_notes.clear()
         self._reload_tables()
         self._reload_summary()
+        self._reload_choices()
+
+    def _reload_choices(self) -> None:
+        refresh_choices(self.mood, self.choice_history, "app_mood", MOOD_SEEDS)
+        refresh_choices(self.difficulties, self.choice_history, "app_difficulties")
 
     def _reload_patients(self) -> None:
         current_id = (

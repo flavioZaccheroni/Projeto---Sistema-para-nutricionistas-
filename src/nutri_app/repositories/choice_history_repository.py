@@ -13,6 +13,9 @@ CHOICE_SOURCES: dict[str, tuple[tuple[str, str], ...]] = {
     "lab_item_unit": (("exame_itens", "unidade"),),
     "supplement_manufacturer": (("suplementos", "fabricante"),),
     "recipe_category": (("receitas", "categoria"),),
+    "app_mood": (("paciente_app_adesoes", "humor"),),
+    "app_difficulties": (("paciente_app_adesoes", "dificuldades"),),
+    "supplement_objective": (("prescricoes_suplementos", "objetivo"),),
 }
 
 

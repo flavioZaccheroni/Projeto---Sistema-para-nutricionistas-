@@ -20,13 +20,14 @@ from PySide6.QtWidgets import (
 
 from nutri_app.domain.supplement_prescription import SupplementFollowUp, SupplementPrescription
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.repositories.supplement_prescription_repository import (
     SupplementPrescriptionRepository,
 )
 from nutri_app.repositories.supplement_repository import SupplementRepository
-from nutri_app.ui.choice_combo import MEASURE_UNITS, TextChoiceComboBox
+from nutri_app.ui.choice_combo import MEASURE_UNITS, TextChoiceComboBox, refresh_choices
 from nutri_app.ui.date_format import format_date, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.searchable_combo import make_searchable_combo
@@ -43,6 +44,7 @@ class SupplementPrescriptionsDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         self.repository = SupplementPrescriptionRepository(connection_factory)
+        self.choice_history = ChoiceHistoryRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
         self.supplement_repository = SupplementRepository(connection_factory)
         self.audit_repository = audit_repository
@@ -67,7 +69,8 @@ class SupplementPrescriptionsDialog(QDialog):
         self.frequency.setRange(1, 24)
         self.times = QLineEdit()
         self.times.setPlaceholderText("Ex.: 08:00, 16:00")
-        self.objective = QLineEdit()
+        self.objective = TextChoiceComboBox((), editable=True)
+        self._reload_choices()
         self.instructions = QTextEdit()
         self.instructions.setFixedHeight(55)
 
@@ -201,7 +204,11 @@ class SupplementPrescriptionsDialog(QDialog):
             f"Paciente {patient_id}; suplemento {supplement_id}.",
         )
         self._reload_prescriptions()
+        self._reload_choices()
         QMessageBox.information(self, "Suplementacao", "Prescricao registrada.")
+
+    def _reload_choices(self) -> None:
+        refresh_choices(self.objective, self.choice_history, "supplement_objective")
 
     def _reload_prescriptions(self, *_args: object) -> None:
         if not self.patient_ids or self.patient.currentIndex() >= len(self.patient_ids):
