@@ -35,6 +35,7 @@ from nutri_app.ui.date_format import (
     today_text,
 )
 from nutri_app.ui.input_masks import apply_date_mask
+from nutri_app.ui.measure_prefill import MeasurePrefill
 from nutri_app.ui.pages.base import Page
 from nutri_app.ui.searchable_combo import make_searchable_combo
 
@@ -248,6 +249,16 @@ class AnthropometryPage(Page):
             if key in {"weight", "height_cm"}:
                 field.textChanged.connect(self._update_advanced_bmi)
             self.advanced_inputs[key] = field
+        self.advanced_prefill = MeasurePrefill(
+            self.repository,
+            {
+                "weight": self.advanced_inputs["weight"],
+                "height": self.advanced_inputs["height_cm"],
+                "waist": self.advanced_inputs["waist"],
+                "hip": self.advanced_inputs["hip"],
+            },
+        )
+        self.advanced_patient.currentIndexChanged.connect(self._prefill_advanced_measures)
 
         calculate = QPushButton("Calcular / salvar")
         calculate.setObjectName("primaryButton")
@@ -581,6 +592,7 @@ class AnthropometryPage(Page):
             self.advanced_patient.setCurrentIndex(
                 self.advanced_patient_ids_by_index.index(current_patient_id)
             )
+        self._prefill_advanced_measures()
 
     def _reload_advanced_table(self) -> None:
         records = self.advanced_repository.list_by_module(self.advanced_definition.module)
@@ -604,6 +616,15 @@ class AnthropometryPage(Page):
         self.advanced_bmi.clear()
         self.advanced_notes.clear()
         self.advanced_result.clear()
+        self._prefill_advanced_measures()
+
+    def _prefill_advanced_measures(self) -> None:
+        patient = None
+        index = self.advanced_patient.currentIndex()
+        ids = self.advanced_patient_ids_by_index
+        if 0 <= index < len(ids) and ids[index] is not None:
+            patient = self.patient_repository.get(ids[index])
+        self.advanced_prefill.apply(patient)
 
     def _select_anthropometry_from_table(self, row: int, _column: int) -> None:
         item = self.table.item(row, 0)
