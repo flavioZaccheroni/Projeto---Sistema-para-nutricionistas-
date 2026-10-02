@@ -75,6 +75,20 @@ class NutritionDiagnosisRepository:
             ).fetchone()
         return self._row_to_diagnosis(row) if row is not None else None
 
+    def list_for_patient(self, patient_id: int) -> list[NutritionDiagnosis]:
+        with self.connection_factory.connect() as connection:
+            rows = connection.execute(
+                f"""
+                {self._select_sql()}
+                WHERE d.deleted_at IS NULL
+                  AND p.deleted_at IS NULL
+                  AND d.paciente_id = ?
+                ORDER BY d.data_diagnostico DESC, d.id DESC
+                """,
+                (patient_id,),
+            ).fetchall()
+        return [self._row_to_diagnosis(row) for row in rows]
+
     def list_active(self, patient_query: str = "") -> list[NutritionDiagnosis]:
         normalized = f"%{patient_query.strip().lower()}%"
         with self.connection_factory.connect() as connection:

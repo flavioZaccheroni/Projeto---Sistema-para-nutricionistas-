@@ -20,6 +20,9 @@ from PySide6.QtWidgets import (
 
 from nutri_app.domain.physical_exam import NutritionPhysicalExam
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.nutrition_diagnosis_repository import (
+    NutritionDiagnosisRepository,
+)
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.physical_exam_repository import PhysicalExamRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
@@ -27,6 +30,8 @@ from nutri_app.ui.date_format import format_date, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
 from nutri_app.ui.searchable_combo import make_searchable_combo
+
+NO_DIAGNOSIS = "Nenhum (opcional)"
 
 
 class PhysicalExamPage(Page):
@@ -79,6 +84,7 @@ class PhysicalExamPage(Page):
         )
         self.repository = PhysicalExamRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
+        self.diagnosis_repository = NutritionDiagnosisRepository(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
 
@@ -87,8 +93,10 @@ class PhysicalExamPage(Page):
         self.patient_ids: list[int | None] = []
         self.assessment_date = QLineEdit(today_text())
         apply_date_mask(self.assessment_date)
-        self.diagnosis_id = QLineEdit()
-        self.diagnosis_id.setPlaceholderText("Opcional")
+        self.diagnosis = QComboBox()
+        self.diagnosis_ids: list[int | None] = [None]
+        self.diagnosis.addItem(NO_DIAGNOSIS)
+        self.patient.currentIndexChanged.connect(self._reload_diagnoses)
         self.severity = QComboBox()
         self.severity.addItems(["Sem alerta", "Leve", "Moderada", "Grave", "Critica"])
 
@@ -96,7 +104,7 @@ class PhysicalExamPage(Page):
         header_layout = QGridLayout(header)
         self._field(header_layout, 0, 0, "Paciente", self.patient)
         self._field(header_layout, 0, 1, "Data", self.assessment_date)
-        self._field(header_layout, 0, 2, "Diagnostico vinculado (ID)", self.diagnosis_id)
+        self._field(header_layout, 0, 2, "Diagnostico vinculado", self.diagnosis)
         self._field(header_layout, 0, 3, "Gravidade global", self.severity)
         for column in range(4):
             header_layout.setColumnStretch(column, 1)
@@ -184,16 +192,39 @@ class PhysicalExamPage(Page):
             self.patient_ids.append(patient.id)
             self.patient.addItem(f"{patient.medical_record_number} - {patient.name}")
 
+    def refresh(self) -> None:
+        index = self.patient.currentIndex()
+        current = self.patient_ids[index] if 0 <= index < len(self.patient_ids) else None
+        self._load_patients()
+        if current in self.patient_ids:
+            self.patient.setCurrentIndex(self.patient_ids.index(current))
+        self._reload_diagnoses()
+
+    def _reload_diagnoses(self, *_args: object) -> None:
+        index = self.patient.currentIndex()
+        patient_id = self.patient_ids[index] if 0 <= index < len(self.patient_ids) else None
+        self.diagnosis.clear()
+        self.diagnosis_ids = [None]
+        self.diagnosis.addItem(NO_DIAGNOSIS)
+        if patient_id is None:
+            return
+        for diagnosis in self.diagnosis_repository.list_for_patient(patient_id):
+            self.diagnosis_ids.append(diagnosis.id)
+            self.diagnosis.addItem(
+                f"{format_date(diagnosis.diagnosis_date)} - {diagnosis.protocol.value}: "
+                f"{diagnosis.classification} ({diagnosis.severity.value})"
+            )
+
     def _save(self) -> None:
         patient_id = self.patient_ids[self.patient.currentIndex()]
         if patient_id is None:
             QMessageBox.warning(self, "Avaliacao clinica", "Selecione um paciente.")
             return
-        diagnosis_text = self.diagnosis_id.text().strip()
+        diagnosis_id = self.diagnosis_ids[max(self.diagnosis.currentIndex(), 0)]
         try:
             exam = NutritionPhysicalExam(
                 patient_id=patient_id,
-                diagnosis_id=int(diagnosis_text) if diagnosis_text else None,
+                diagnosis_id=diagnosis_id,
                 assessment_date=parse_date(self.assessment_date.text()),
                 findings={key: field.currentText() for key, field in self.findings.items()},
                 signs_symptoms=self.signs_symptoms.toPlainText(),
@@ -247,7 +278,7 @@ class PhysicalExamPage(Page):
 
     def _clear(self) -> None:
         self.assessment_date.setText(today_text())
-        self.diagnosis_id.clear()
+        self.diagnosis.setCurrentIndex(0)
         self.severity.setCurrentText("Sem alerta")
         for field in self.findings.values():
             field.setCurrentText("Nao avaliado")
