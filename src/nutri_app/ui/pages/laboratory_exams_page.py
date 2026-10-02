@@ -19,10 +19,17 @@ from PySide6.QtWidgets import (
 from nutri_app.domain.laboratory_exam import LaboratoryExam, LaboratoryExamItem
 from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 from nutri_app.repositories.laboratory_exam_repository import LaboratoryExamRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.laboratory_exam import LaboratoryExamService
+from nutri_app.ui.choice_combo import (
+    LAB_EXAM_NAMES,
+    LAB_EXAM_UNITS,
+    TextChoiceComboBox,
+    refresh_choices,
+)
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
@@ -41,6 +48,7 @@ class LaboratoryExamsPage(Page):
             "Cadastro de exames, itens e alertas clinicos.",
         )
         self.repository = LaboratoryExamRepository(connection_factory)
+        self.choice_history = ChoiceHistoryRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
         self.appointment_repository = AppointmentRepository(connection_factory)
         self.audit_repository = audit_repository
@@ -60,13 +68,13 @@ class LaboratoryExamsPage(Page):
         self.appointment = QComboBox()
         self.exam_date = QLineEdit(today_text())
         apply_date_mask(self.exam_date)
-        self.laboratory = QLineEdit()
+        self.laboratory = TextChoiceComboBox((), editable=True)
         self.notes = QTextEdit()
         self.notes.setFixedHeight(60)
 
-        self.item_name = QLineEdit()
+        self.item_name = TextChoiceComboBox((), editable=True)
         self.item_value = QLineEdit()
-        self.item_unit = QLineEdit()
+        self.item_unit = TextChoiceComboBox((), editable=True)
         self.item_min = QLineEdit()
         self.item_max = QLineEdit()
         self.item_alert = QLineEdit()
@@ -163,6 +171,7 @@ class LaboratoryExamsPage(Page):
         table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
     def refresh(self) -> None:
+        self._reload_choices()
         self._reload_patients()
         self._reload_exam_table()
 
@@ -190,6 +199,16 @@ class LaboratoryExamsPage(Page):
 
         self._clear_exam_form()
         self._reload_exam_table()
+        self._reload_choices()
+
+    def _reload_choices(self) -> None:
+        refresh_choices(self.laboratory, self.choice_history, "lab_name")
+        refresh_choices(
+            self.item_name, self.choice_history, "lab_item_name", LAB_EXAM_NAMES
+        )
+        refresh_choices(
+            self.item_unit, self.choice_history, "lab_item_unit", LAB_EXAM_UNITS
+        )
 
     def _build_exam(self) -> LaboratoryExam:
         return LaboratoryExam(

@@ -19,8 +19,10 @@ from PySide6.QtWidgets import (
 
 from nutri_app.domain.hospitalization import Hospitalization
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 from nutri_app.repositories.hospitalization_repository import HospitalizationRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
+from nutri_app.ui.choice_combo import INSURANCE_SEEDS, TextChoiceComboBox, refresh_choices
 from nutri_app.ui.date_format import format_date, parse_date, parse_optional_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 
@@ -38,6 +40,7 @@ class HospitalizationsDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         self.repository = HospitalizationRepository(connection_factory)
+        self.choice_history = ChoiceHistoryRepository(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.patient_id = patient_id
@@ -55,7 +58,10 @@ class HospitalizationsDialog(QDialog):
         self.unit = QLineEdit()
         self.ward = QLineEdit()
         self.bed = QLineEdit()
-        self.health_insurance = QLineEdit(default_health_insurance)
+        self.health_insurance = TextChoiceComboBox(
+            (), editable=True, default=default_health_insurance
+        )
+        self._reload_choices()
         self.responsible_team = QLineEdit()
         self.status = QComboBox()
         self.status.addItems(["Ativa", "Alta", "Transferida", "Cancelada"])
@@ -167,6 +173,12 @@ class HospitalizationsDialog(QDialog):
         )
         self._clear()
         self._reload()
+        self._reload_choices()
+
+    def _reload_choices(self) -> None:
+        refresh_choices(
+            self.health_insurance, self.choice_history, "patient_insurance", INSURANCE_SEEDS
+        )
 
     def _reload(self) -> None:
         hospitalizations = self.repository.list_for_patient(self.patient_id)

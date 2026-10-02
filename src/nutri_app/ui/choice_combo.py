@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QCompleter
+
+if TYPE_CHECKING:
+    from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 
 FOOD_CATEGORIES = (
     "Acucares e doces",
@@ -51,6 +55,97 @@ PAYMENT_METHODS = (
     "Transferencia",
     "Boleto",
 )
+
+
+INSURANCE_SEEDS = ("Particular",)
+
+LAB_EXAM_NAMES = (
+    "Glicemia de jejum",
+    "Hemoglobina glicada",
+    "Insulina de jejum",
+    "Colesterol total",
+    "HDL",
+    "LDL",
+    "VLDL",
+    "Triglicerideos",
+    "Hemoglobina",
+    "Hematocrito",
+    "Leucocitos",
+    "Plaquetas",
+    "Ferritina",
+    "Ferro serico",
+    "Vitamina D (25-OH)",
+    "Vitamina B12",
+    "Acido folico",
+    "Zinco",
+    "Magnesio",
+    "Calcio",
+    "Potassio",
+    "Sodio",
+    "Creatinina",
+    "Ureia",
+    "Acido urico",
+    "TGO (AST)",
+    "TGP (ALT)",
+    "Gama GT",
+    "TSH",
+    "T4 livre",
+    "PCR ultrassensivel",
+    "Albumina",
+    "Proteinas totais",
+    "Homocisteina",
+)
+
+LAB_EXAM_UNITS = (
+    "mg/dL",
+    "g/dL",
+    "ng/mL",
+    "pg/mL",
+    "ng/dL",
+    "mcg/dL",
+    "U/L",
+    "UI/L",
+    "mUI/L",
+    "uUI/mL",
+    "mmol/L",
+    "mEq/L",
+    "%",
+    "/mm3",
+)
+
+RECIPE_CATEGORY_SEEDS = (
+    "Cafe da manha",
+    "Almoco",
+    "Jantar",
+    "Lanche",
+    "Prato principal",
+    "Acompanhamento",
+    "Salada",
+    "Sopa",
+    "Sobremesa",
+    "Bebida",
+)
+
+
+def merge_options(learned: Sequence[str], seeds: Sequence[str] = ()) -> list[str]:
+    """Sugestoes ja usadas primeiro, depois as sementes; sem repetir (ignora caixa)."""
+    merged: list[str] = []
+    seen: set[str] = set()
+    for value in [*learned, *seeds]:
+        key = value.strip().lower()
+        if key and key not in seen:
+            seen.add(key)
+            merged.append(value.strip())
+    return merged
+
+
+def refresh_choices(
+    combo: TextChoiceComboBox,
+    history: ChoiceHistoryRepository,
+    source: str,
+    seeds: Sequence[str] = (),
+) -> None:
+    combo.set_options(merge_options(history.values(source), seeds))
 
 
 class TextChoiceComboBox(QComboBox):
@@ -114,6 +209,30 @@ class TextChoiceComboBox(QComboBox):
 
     def clear(self) -> None:
         self.setText(self._default)
+
+    def set_options(self, options: Sequence[str]) -> None:
+        """Troca as opcoes mantendo o texto atual (ex.: sugestoes aprendidas)."""
+        current = self.text()
+        self.blockSignals(True)
+        super().clear()
+        if self._allow_blank:
+            self.addItem("")
+        self.addItems(list(options))
+        self._base_count = self.count()
+        self.blockSignals(False)
+        self.setText(current)
+
+    def setPlaceholderText(self, text: str) -> None:
+        line_edit = self.lineEdit()
+        if line_edit is not None:
+            line_edit.setPlaceholderText(text)
+        else:
+            super().setPlaceholderText(text)
+
+    def setMaxLength(self, length: int) -> None:
+        line_edit = self.lineEdit()
+        if line_edit is not None:
+            line_edit.setMaxLength(length)
 
     def _select_empty(self) -> None:
         if self._allow_blank:

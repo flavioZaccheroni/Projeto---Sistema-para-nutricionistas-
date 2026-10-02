@@ -23,9 +23,11 @@ from PySide6.QtWidgets import (
 
 from nutri_app.domain.patient import Patient
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.privacy import PatientPrivacyService
+from nutri_app.ui.choice_combo import INSURANCE_SEEDS, TextChoiceComboBox, refresh_choices
 from nutri_app.ui.date_format import DATE_PLACEHOLDER, format_date, parse_date
 from nutri_app.ui.dialogs.hospitalizations_dialog import HospitalizationsDialog
 from nutri_app.ui.input_masks import apply_date_mask, apply_email_validator, apply_phone_mask
@@ -53,6 +55,7 @@ class PatientsPage(Page):
         super().__init__("Cadastro de Pacientes", "Dados pessoais, contato e historico clinico.")
         self.repository = PatientRepository(connection_factory)
         self.connection_factory = connection_factory
+        self.choice_history = ChoiceHistoryRepository(connection_factory)
         self.privacy_service = PatientPrivacyService(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
@@ -70,7 +73,7 @@ class PatientsPage(Page):
         self.biological_sex.addItems(["Feminino", "Masculino"])
         self.phone = QLineEdit()
         self.email = QLineEdit()
-        self.health_insurance = QLineEdit()
+        self.health_insurance = TextChoiceComboBox((), editable=True)
         self.document = QLineEdit()
         self.medical_record_number = QLineEdit()
         self.cns = QLineEdit()
@@ -138,6 +141,7 @@ class PatientsPage(Page):
         self.layout.addWidget(wrapper)
         self.layout.addWidget(self.table)
         self._reload_table()
+        self._reload_choices()
 
     def _search_card(self) -> QGroupBox:
         card = QGroupBox("")
@@ -286,6 +290,12 @@ class PatientsPage(Page):
 
         self._clear_form()
         self._reload_table()
+        self._reload_choices()
+
+    def _reload_choices(self) -> None:
+        refresh_choices(
+            self.health_insurance, self.choice_history, "patient_insurance", INSURANCE_SEEDS
+        )
 
     def _clear_form(self) -> None:
         self.selected_patient_id = None

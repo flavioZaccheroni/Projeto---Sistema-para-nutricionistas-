@@ -14,10 +14,16 @@ from PySide6.QtWidgets import (
 
 from nutri_app.domain.recipe import Recipe, RecipeIngredient
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 from nutri_app.repositories.recipe_repository import RecipeRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.recipe import RecipeService
-from nutri_app.ui.choice_combo import MEASURE_UNITS, TextChoiceComboBox
+from nutri_app.ui.choice_combo import (
+    MEASURE_UNITS,
+    RECIPE_CATEGORY_SEEDS,
+    TextChoiceComboBox,
+    refresh_choices,
+)
 from nutri_app.ui.pages.base import Page
 
 
@@ -30,6 +36,7 @@ class RecipesPage(Page):
     ) -> None:
         super().__init__("Receitas", "Ingredientes, preparo, rendimento e calculo nutricional.")
         self.repository = RecipeRepository(connection_factory)
+        self.choice_history = ChoiceHistoryRepository(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.service = RecipeService()
@@ -41,7 +48,7 @@ class RecipesPage(Page):
         self.search.setPlaceholderText("Pesquisar por nome ou categoria")
         self.search.textChanged.connect(self._reload_recipe_table)
         self.name = QLineEdit()
-        self.category = QLineEdit()
+        self.category = TextChoiceComboBox((), editable=True)
         self.servings = QLineEdit()
         self.total_weight = QLineEdit()
         self.photo_path = QLineEdit()
@@ -156,6 +163,7 @@ class RecipesPage(Page):
         self.refresh()
 
     def refresh(self) -> None:
+        self._reload_choices()
         self._reload_recipe_table()
 
     def _save_recipe(self) -> None:
@@ -176,6 +184,12 @@ class RecipesPage(Page):
 
         self._clear_form()
         self._reload_recipe_table()
+        self._reload_choices()
+
+    def _reload_choices(self) -> None:
+        refresh_choices(
+            self.category, self.choice_history, "recipe_category", RECIPE_CATEGORY_SEEDS
+        )
 
     def _build_recipe(self) -> Recipe:
         totals = self.service.calculate_totals(self.ingredients)

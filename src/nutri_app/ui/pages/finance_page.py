@@ -18,11 +18,12 @@ from PySide6.QtWidgets import (
 from nutri_app.domain.finance import FinancialEntry, FinancialEntryType, FinancialStatus
 from nutri_app.repositories.appointment_repository import AppointmentRepository
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 from nutri_app.repositories.finance_repository import FinanceRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.finance import FinanceService
-from nutri_app.ui.choice_combo import PAYMENT_METHODS, TextChoiceComboBox
+from nutri_app.ui.choice_combo import PAYMENT_METHODS, TextChoiceComboBox, refresh_choices
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date, parse_optional_date
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
@@ -41,6 +42,7 @@ class FinancePage(Page):
             "Planos, pagamentos, recebimentos, inadimplencia e relatorio mensal.",
         )
         self.repository = FinanceRepository(connection_factory)
+        self.choice_history = ChoiceHistoryRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
         self.appointment_repository = AppointmentRepository(connection_factory)
         self.audit_repository = audit_repository
@@ -58,7 +60,7 @@ class FinancePage(Page):
         self.appointment = QComboBox()
         self.entry_type = QComboBox()
         self.entry_type.addItems([item.value for item in FinancialEntryType])
-        self.category = QLineEdit()
+        self.category = TextChoiceComboBox((), editable=True)
         self.description = QLineEdit()
         self.amount = QLineEdit()
         self.due_date = QLineEdit()
@@ -144,6 +146,7 @@ class FinancePage(Page):
         self.refresh()
 
     def refresh(self) -> None:
+        self._reload_choices()
         self._reload_patients()
         self._reload_appointments()
         self._reload_table()
@@ -168,6 +171,10 @@ class FinancePage(Page):
 
         self._clear_form()
         self._reload_table()
+        self._reload_choices()
+
+    def _reload_choices(self) -> None:
+        refresh_choices(self.category, self.choice_history, "finance_category")
 
     def _build_entry(self) -> FinancialEntry:
         payment_date = self._optional_date(self.payment_date.text())

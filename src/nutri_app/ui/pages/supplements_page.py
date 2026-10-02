@@ -15,10 +15,11 @@ from PySide6.QtWidgets import (
 
 from nutri_app.domain.supplement import Supplement, SupplementType
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.repositories.supplement_repository import SupplementRepository
 from nutri_app.services.supplement import SupplementService
-from nutri_app.ui.choice_combo import MEASURE_UNITS, TextChoiceComboBox
+from nutri_app.ui.choice_combo import MEASURE_UNITS, TextChoiceComboBox, refresh_choices
 from nutri_app.ui.dialogs.supplement_prescriptions_dialog import SupplementPrescriptionsDialog
 from nutri_app.ui.pages.base import Page
 
@@ -32,6 +33,7 @@ class SupplementsPage(Page):
     ) -> None:
         super().__init__("Suplementos", "Suplementos, formulas enterais e modulos.")
         self.repository = SupplementRepository(connection_factory)
+        self.choice_history = ChoiceHistoryRepository(connection_factory)
         self.connection_factory = connection_factory
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
@@ -44,7 +46,7 @@ class SupplementsPage(Page):
         self.name = QLineEdit()
         self.supplement_type = QComboBox()
         self.supplement_type.addItems([item.value for item in SupplementType])
-        self.manufacturer = QLineEdit()
+        self.manufacturer = TextChoiceComboBox((), editable=True)
         self.presentation = QLineEdit()
         self.base_portion = QLineEdit("100")
         self.portion_unit = TextChoiceComboBox(MEASURE_UNITS, editable=True, default="ml")
@@ -124,6 +126,7 @@ class SupplementsPage(Page):
         self.refresh()
 
     def refresh(self) -> None:
+        self._reload_choices()
         self._reload_table()
 
     def _save_supplement(self) -> None:
@@ -144,6 +147,10 @@ class SupplementsPage(Page):
 
         self._clear_form()
         self._reload_table()
+        self._reload_choices()
+
+    def _reload_choices(self) -> None:
+        refresh_choices(self.manufacturer, self.choice_history, "supplement_manufacturer")
 
     def _build_supplement(self) -> Supplement:
         return Supplement(
