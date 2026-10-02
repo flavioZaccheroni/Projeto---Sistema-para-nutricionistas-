@@ -47,6 +47,8 @@ MEASURE_UNITS = (
     "scoop",
 )
 
+CRITERIA_COUNTS = tuple(str(number) for number in range(11))
+
 PAYMENT_METHODS = (
     "Dinheiro",
     "PIX",
@@ -128,6 +130,54 @@ RECIPE_CATEGORY_SEEDS = (
     "Bebida",
 )
 
+# Sugestoes da Anamnese Avancada. O avaliador de risco procura as palavras
+# ansiedade, estresse, culpa, compulsao, restricao e delivery em gatilhos e
+# barreiras; por isso as sugestoes as contem. Sao so sugestoes: o texto e livre.
+ANAMNESIS_PATTERN_SEEDS = (
+    "Regular",
+    "Irregular",
+    "Pula refeicoes",
+    "Belisca ao longo do dia",
+    "Come em excesso a noite",
+    "Restricao alimentar",
+)
+ANAMNESIS_TRIGGER_SEEDS = (
+    "Ansiedade",
+    "Estresse",
+    "Culpa",
+    "Compulsao alimentar",
+    "Restricao alimentar",
+    "Tedio",
+    "Tristeza",
+    "Solidao",
+)
+ANAMNESIS_GI_SEEDS = (
+    "Constipacao",
+    "Diarreia",
+    "Distensao abdominal",
+    "Refluxo",
+    "Nauseas",
+    "Gases",
+    "Dor abdominal",
+)
+ANAMNESIS_BARRIER_SEEDS = (
+    "Falta de tempo",
+    "Delivery frequente",
+    "Custo dos alimentos",
+    "Pouco apoio familiar",
+    "Rotina de trabalho",
+    "Come fora com frequencia",
+    "Falta de motivacao",
+)
+
+
+def append_choice(current: str, picked: str) -> str:
+    """Acrescenta uma escolha a uma lista separada por virgula, sem repetir."""
+    parts = [part.strip() for part in current.split(",") if part.strip()]
+    if picked.strip() and picked.strip().lower() not in {part.lower() for part in parts}:
+        parts.append(picked.strip())
+    return ", ".join(parts)
+
 
 def merge_options(learned: Sequence[str], seeds: Sequence[str] = ()) -> list[str]:
     """Sugestoes ja usadas primeiro, depois as sementes; sem repetir (ignora caixa)."""
@@ -169,8 +219,11 @@ class TextChoiceComboBox(QComboBox):
         editable: bool = False,
         allow_blank: bool = False,
         default: str = "",
+        multi: bool = False,
     ) -> None:
         super().__init__()
+        self._multi = multi
+        self._snapshot = ""
         self._default = default
         self._allow_blank = allow_blank
         if allow_blank:
@@ -187,12 +240,35 @@ class TextChoiceComboBox(QComboBox):
                 completer.setFilterMode(Qt.MatchFlag.MatchContains)
                 completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
+        if multi:
+            if not editable:
+                raise ValueError("multi exige combo editavel.")
+            self.setCompleter(None)
+            self.lineEdit().textEdited.connect(self._remember_text)
+            self.activated.connect(self._append_picked)
+
         self.setText(default)
+
+    def showPopup(self) -> None:
+        self._snapshot = self.currentText()
+        super().showPopup()
+
+    def _remember_text(self, text: str) -> None:
+        self._snapshot = text
+
+    def _append_picked(self, index: int) -> None:
+        merged = append_choice(self._snapshot, self.itemText(index))
+        self.setEditText(merged)
+        self._snapshot = merged
 
     def text(self) -> str:
         return self.currentText().strip()
 
     def setText(self, value: str | None) -> None:
+        self._set_text(value)
+        self._snapshot = self.currentText()
+
+    def _set_text(self, value: str | None) -> None:
         value = (value or "").strip()
         self._drop_temporary_options()
 

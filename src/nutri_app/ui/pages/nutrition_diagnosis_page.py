@@ -24,6 +24,7 @@ from nutri_app.repositories.nutrition_diagnosis_repository import NutritionDiagn
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.nutrition_diagnosis import NutritionDiagnosisService
+from nutri_app.ui.choice_combo import CRITERIA_COUNTS, TextChoiceComboBox
 from nutri_app.ui.date_format import format_date, format_datetime, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.pages.base import Page
@@ -59,9 +60,9 @@ class NutritionDiagnosisPage(Page):
         self.protocol = QComboBox()
         self.protocol.addItems([protocol.value for protocol in DiagnosisProtocol])
         self.primary_label = QLineEdit("Criterios principais/fenotipicos")
-        self.primary_count = QLineEdit("0")
+        self.primary_count = TextChoiceComboBox(CRITERIA_COUNTS, default="0")
         self.secondary_label = QLineEdit("Criterios secundarios/etiologicos")
-        self.secondary_count = QLineEdit("0")
+        self.secondary_count = TextChoiceComboBox(CRITERIA_COUNTS, default="0")
         self.severe_marker = QCheckBox("Marcador de gravidade")
         self.confirmed = QCheckBox("Confirmado pela nutricionista")
         self.classification = QLineEdit()

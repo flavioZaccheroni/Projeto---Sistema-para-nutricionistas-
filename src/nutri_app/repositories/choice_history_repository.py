@@ -18,6 +18,15 @@ CHOICE_SOURCES: dict[str, tuple[tuple[str, str], ...]] = {
     "supplement_objective": (("prescricoes_suplementos", "objetivo"),),
 }
 
+# Campos guardados dentro do JSON de registros_clinicos_avancados: (modulo, chave).
+# Aceitam varios valores separados por virgula; cada valor vira uma sugestao.
+JSON_CHOICE_SOURCES: dict[str, tuple[str, str]] = {
+    "anamnesis_pattern": ("Anamnese Avancada", "pattern"),
+    "anamnesis_triggers": ("Anamnese Avancada", "emotional_triggers"),
+    "anamnesis_gi_symptoms": ("Anamnese Avancada", "gi_symptoms"),
+    "anamnesis_barriers": ("Anamnese Avancada", "barriers"),
+}
+
 
 class ChoiceHistoryRepository:
     """Valores ja digitados em outros registros, para sugerir em campos de texto."""
@@ -26,6 +35,8 @@ class ChoiceHistoryRepository:
         self.connection_factory = connection_factory
 
     def values(self, source: str, limit: int = 300) -> list[str]:
+        if source in JSON_CHOICE_SOURCES:
+            return self._ranked(self._json_counts(source), limit)
         counts: Counter[str] = Counter()
         with self.connection_factory.connect() as connection:
             for table, column in CHOICE_SOURCES[source]:
@@ -40,6 +51,28 @@ class ChoiceHistoryRepository:
                 for row in rows:
                     counts[row["value"]] += int(row["uses"])
 
+        return self._ranked(counts, limit)
+
+    def _json_counts(self, source: str) -> Counter[str]:
+        module, key = JSON_CHOICE_SOURCES[source]
+        counts: Counter[str] = Counter()
+        with self.connection_factory.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT json_extract(entradas_json, ?) AS value, COUNT(*) AS uses
+                FROM registros_clinicos_avancados
+                WHERE deleted_at IS NULL AND modulo = ?
+                GROUP BY value
+                """,
+                (f"$.{key}", module),
+            ).fetchall()
+        for row in rows:
+            for token in str(row["value"] or "").replace(";", ",").split(","):
+                if token.strip():
+                    counts[token.strip()] += int(row["uses"])
+        return counts
+
+    def _ranked(self, counts: Counter[str], limit: int) -> list[str]:
         by_key: dict[str, Counter[str]] = {}
         for value, uses in counts.items():
             by_key.setdefault(value.lower(), Counter())[value] += uses

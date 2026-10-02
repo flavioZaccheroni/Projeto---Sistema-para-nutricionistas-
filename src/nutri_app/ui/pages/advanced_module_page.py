@@ -25,14 +25,30 @@ from nutri_app.domain.advanced_clinical import AdvancedClinicalRecord
 from nutri_app.repositories.advanced_clinical_repository import AdvancedClinicalRepository
 from nutri_app.repositories.anthropometry_repository import AnthropometryRepository
 from nutri_app.repositories.audit_repository import AuditRepository
+from nutri_app.repositories.choice_history_repository import ChoiceHistoryRepository
 from nutri_app.repositories.patient_repository import PatientRepository
 from nutri_app.repositories.sqlite_connection import SQLiteConnectionFactory
 from nutri_app.services.advanced_clinical import AdvancedModuleDefinition
+from nutri_app.ui.choice_combo import (
+    ANAMNESIS_BARRIER_SEEDS,
+    ANAMNESIS_GI_SEEDS,
+    ANAMNESIS_PATTERN_SEEDS,
+    ANAMNESIS_TRIGGER_SEEDS,
+    TextChoiceComboBox,
+    refresh_choices,
+)
 from nutri_app.ui.date_format import format_date, parse_date, today_text
 from nutri_app.ui.input_masks import apply_date_mask
 from nutri_app.ui.measure_prefill import MeasurePrefill
 from nutri_app.ui.pages.base import Page
 from nutri_app.ui.searchable_combo import make_searchable_combo
+
+ANAMNESIS_CHOICES = {
+    "pattern": ("anamnesis_pattern", ANAMNESIS_PATTERN_SEEDS),
+    "emotional_triggers": ("anamnesis_triggers", ANAMNESIS_TRIGGER_SEEDS),
+    "gi_symptoms": ("anamnesis_gi_symptoms", ANAMNESIS_GI_SEEDS),
+    "barriers": ("anamnesis_barriers", ANAMNESIS_BARRIER_SEEDS),
+}
 
 
 class AdvancedModulePage(Page):
@@ -55,6 +71,7 @@ class AdvancedModulePage(Page):
         self.definition = definition
         self.repository = AdvancedClinicalRepository(connection_factory)
         self.patient_repository = PatientRepository(connection_factory)
+        self.choice_history = ChoiceHistoryRepository(connection_factory)
         self.audit_repository = audit_repository
         self.current_user_id = current_user_id
         self.patient_ids: list[int | None] = []
@@ -83,7 +100,7 @@ class AdvancedModulePage(Page):
         form.addRow("Data", self.record_date)
         form.addRow("Perfil", self.profile)
         for key, label in definition.fields:
-            field = QLineEdit()
+            field = self._create_input(key)
             self.inputs[key] = field
             if definition.module == "Exames Avancados":
                 field.textChanged.connect(self._refresh_advanced_labs_indicators)
@@ -431,6 +448,7 @@ class AdvancedModulePage(Page):
         return key
 
     def refresh(self) -> None:
+        self._reload_choices()
         self._load_patients()
         records = self.repository.list_by_module(self.definition.module)
         self.table.setRowCount(len(records))
@@ -485,6 +503,17 @@ class AdvancedModulePage(Page):
         self.result.clear()
         self.record_date.setText(today_text())
         self._prefill_measures()
+
+    def _create_input(self, key: str) -> QLineEdit:
+        if self.definition.module == "Anamnese Avancada" and key in ANAMNESIS_CHOICES:
+            return TextChoiceComboBox((), editable=True, multi=True)
+        return QLineEdit()
+
+    def _reload_choices(self) -> None:
+        if self.definition.module != "Anamnese Avancada":
+            return
+        for key, (source, seeds) in ANAMNESIS_CHOICES.items():
+            refresh_choices(self.inputs[key], self.choice_history, source, seeds)
 
     def _load_patients(self) -> None:
         current = self.patient.currentText()
